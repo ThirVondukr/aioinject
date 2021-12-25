@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, ContextManager, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Optional, Type, TypeVar
 
 if TYPE_CHECKING:
     from .containers import Depression
