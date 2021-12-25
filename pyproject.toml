@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "dependency_depression"
+version = "0.1.0"
+description = ""
+authors = ["Doctor <thirvondukr@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+line-profiler = "^3.3.1"
+anyio = "^3.4.0"
+trio = "^0.19.0"
+coverage = "^6.2"
+fastapi = "^0.70.1"
+strawberry-graphql = "^0.93.12"
+black = "^21.12b0"
+isort = "^5.10.1"
+
+[tool.isort]
+profile = "black"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

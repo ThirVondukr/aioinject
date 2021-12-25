@@ -1,0 +1,8 @@
+__pychache__/
+
+.idea
+
+.pytest_cache/
+
+htmlcov/
+.coverage
