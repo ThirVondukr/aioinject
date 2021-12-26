@@ -1,6 +1,6 @@
 from typing import Any, Optional, Type, TypeVar
 
-from .context import DepressionContext
+from .context import DepressionContext, SyncDepressionContext
 from .providers import Provider
 
 _T = TypeVar("_T")
@@ -36,3 +36,6 @@ class Depression:
 
     def context(self) -> DepressionContext:
         return DepressionContext(container=self)
+
+    def sync_context(self) -> SyncDepressionContext:
+        return SyncDepressionContext(self)
