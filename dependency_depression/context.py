@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Optional, Type, TypeVar, Any
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 if TYPE_CHECKING:
     from .containers import Depression
@@ -28,7 +28,7 @@ class DepressionContext(_BaseDepressionContext):
         self,
         interface: Type[_T],
         impl: Optional[Type] = None,
-        use_cache: bool = True
+        use_cache: bool = True,
     ):
         if use_cache and impl in self.cache:
             return self.cache[impl]
@@ -71,7 +71,7 @@ class SyncDepressionContext(_BaseDepressionContext):
         self,
         interface: Type[_T],
         impl: Optional[Any] = None,
-        use_cache: bool = True
+        use_cache: bool = True,
     ):
         if use_cache and impl in self.cache:
             return self.cache[impl]

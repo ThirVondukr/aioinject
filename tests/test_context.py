@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from dependency_depression import providers, Callable
+from dependency_depression import Callable, providers
 from dependency_depression.containers import Depression
 from dependency_depression.markers import Inject
 
