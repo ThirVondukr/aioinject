@@ -5,6 +5,7 @@ import typing
 from typing import Any, Type
 
 from dependency_depression.context import context_var
+from dependency_depression.providers import collect_dependencies
 
 
 def _missing_kwargs(
@@ -25,18 +26,29 @@ def _missing_kwargs(
 
 
 def _wrap_sync(func):
-    type_hints = typing.get_type_hints(func)
+    type_hints = typing.get_type_hints(func, include_extras=True)
     signature = inspect.signature(func)
+    dependencies = list(collect_dependencies(type_hints=type_hints))
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        dependencies = _missing_kwargs(type_hints, signature, *args, **kwargs)
+        missing_dependencies = _missing_kwargs(type_hints, signature, *args, **kwargs)
         try:
             ctx = context_var.get()
         except LookupError:
             return func(*args, **kwargs)
         return func(
-            *args, **kwargs, **{k: ctx.resolve_sync(v) for k, v in dependencies.items()}
+            *args,
+            **kwargs,
+            **{
+                dep.name: ctx.resolve(
+                    interface=dep.interface,
+                    impl=dep.impl,
+                    use_cache=dep.use_cache,
+                )
+                for dep in dependencies
+                if dep.name in missing_dependencies
+            },
         )
 
     return wrapper
