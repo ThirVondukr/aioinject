@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import abc
+import asyncio
 import collections.abc
 import functools
 import inspect
+import threading
 import typing
 import typing as t
 from inspect import isclass
@@ -74,22 +77,55 @@ def _guess_impl(factory) -> type:
     return return_type
 
 
-class Provider(t.Generic[_T]):
+class Provider(t.Generic[_T], abc.ABC):
     def __init__(
         self,
         interface: t.Type[_T],
-        factory: t.Optional[t.Callable[..., _T]] = None,
-        impl: Optional[type] = None,
+        impl: type,
     ):
         self.interface = interface
-        self.factory = factory or interface
-        self.impl: type = impl or _guess_impl(self.factory)
+        self.impl = impl
 
+    @abc.abstractmethod
     def provide_sync(self, **kwargs):
         raise NotImplementedError
 
+    @abc.abstractmethod
     async def provide(self, **kwargs):
         raise NotImplementedError
+
+    @property
+    def type_hints(self):
+        raise NotImplementedError
+
+    @property
+    def is_async(self) -> bool:
+        raise NotImplementedError
+
+    @functools.cached_property
+    def dependencies(self) -> Sequence[_Dependency]:
+        return tuple(collect_dependencies(self.type_hints))
+
+
+class Callable(Provider):
+    def __init__(
+        self,
+        interface: Type[_T],
+        factory: Optional[t.Callable[..., _T]] = None,
+        impl: Optional[type] = None,
+    ):
+        factory = factory or interface
+        super().__init__(
+            interface=interface,
+            impl=impl or _guess_impl(factory)
+        )
+        self.factory = factory
+
+    def provide_sync(self, **kwargs):
+        return self.factory(**kwargs)
+
+    async def provide(self, **kwargs):
+        return await self.factory(**kwargs)
 
     @functools.cached_property
     def type_hints(self):
@@ -102,14 +138,47 @@ class Provider(t.Generic[_T]):
     def is_async(self) -> bool:
         return inspect.iscoroutinefunction(self.factory)
 
-    @functools.cached_property
-    def dependencies(self) -> Sequence[_Dependency]:
-        return tuple(collect_dependencies(self.type_hints))
+
+class Singleton(Callable):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cache: Optional[_T] = None
+        self._lock = threading.Lock()
+        self._async_lock = asyncio.Lock()
+
+    def provide_sync(self, **kwargs) -> _T:
+        if self.cache is None:
+            with self._lock:
+                if self.cache is None:
+                    self.cache = super().provide_sync(**kwargs)
+        return self.cache
+
+    async def provide(self, **kwargs) -> _T:
+        if self.cache is None:
+            async with self._async_lock:
+                if self.cache is None:
+                    self.cache = await super(Singleton, self).provide()
+        return self.cache
 
 
-class Callable(Provider):
+class Object(Provider):
+    is_async = False
+    type_hints = {}
+
+    def __init__(
+        self,
+        interface: t.Type[_T],
+        object_: _T,
+        impl: Optional[type] = None,
+    ):
+        super().__init__(
+            interface=interface,
+            impl=impl or type(object_),
+        )
+        self.object = object
+
     def provide_sync(self, **kwargs):
-        return self.factory(**kwargs)
+        return self.object
 
     async def provide(self, **kwargs):
-        return await self.factory(**kwargs)
+        return self.object
