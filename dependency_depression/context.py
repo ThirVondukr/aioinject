@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import contextlib
+import contextvars
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, Union
 
 if TYPE_CHECKING:
     from .containers import Depression
 
 _T = TypeVar("_T")
 
-context_var: ContextVar[DepressionContext] = ContextVar("depression_context")
+_AnyCtx = Union["DepressionContext", "SyncDepressionContext"]
+context_var: contextvars.ContextVar[_AnyCtx] = ContextVar("depression_context")
 
 
 class _BaseDepressionContext:
