@@ -170,3 +170,26 @@ async def test_should_not_use_resolved_class_as_async_context_manager():
         assert isinstance(instance, Test)
     mock.open.assert_not_called()
     mock.close.assert_not_called()
+
+
+def test_sync_context_manager_should_receive_exception():
+    mock = MagicMock()
+
+    @contextlib.contextmanager
+    def get_number() -> Iterable[int]:
+        try:
+            yield 42
+        except Exception:
+            mock.exception_happened()
+
+    container = Depression()
+    container.register(int, Callable(get_number))
+
+    with pytest.raises(Exception):
+        with container.sync_context() as ctx:
+            number = ctx.resolve(int)
+            assert number == 42
+            mock.exception_happened.assert_not_called()
+            raise Exception
+
+    mock.exception_happened.asssert_called_once()
