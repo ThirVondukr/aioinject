@@ -2,7 +2,7 @@ from typing import Annotated
 
 import pytest
 
-from dependency_depression import inject, Inject, Depression, Callable, NoCache
+from dependency_depression import Callable, Depression, Inject, NoCache, inject
 
 
 class _Test:

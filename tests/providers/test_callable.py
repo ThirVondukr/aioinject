@@ -51,7 +51,7 @@ async def test_provide_async():
     async def factory() -> int:
         return 42
 
-    provider = providers.Callable(int, factory)
+    provider = providers.Callable(factory)
     assert await provider.provide() == 42
 
 
@@ -59,7 +59,7 @@ def test_type_hints():
     def factory(a: int, b: str) -> None:
         pass
 
-    provider = providers.Callable(None, factory)
+    provider = providers.Callable(factory)
     expected = {
         "a": int,
         "b": str,
@@ -86,7 +86,7 @@ def test_annotated_type_hint():
     ) -> None:
         pass
 
-    provider = providers.Callable(None, factory)
+    provider = providers.Callable(factory)
     assert provider.type_hints == {"a": Annotated[int, Inject, NoCache]}
 
 
@@ -95,19 +95,19 @@ def test_should_specify_return_type():
         pass
 
     with pytest.raises(ValueError):
-        providers.Callable(None, factory)
+        providers.Callable(factory)
 
     def factory_with_return() -> None:
         pass
 
-    providers.Callable(None, factory_with_return)
+    providers.Callable(factory_with_return)
 
 
 def test_is_async_on_sync():
     def factory() -> None:
         pass
 
-    provider = providers.Callable(None, factory)
+    provider = providers.Callable(factory)
     assert not provider.is_async
 
 
@@ -115,7 +115,7 @@ def test_is_async_on_async():
     async def factory() -> None:
         pass
 
-    provider = providers.Callable(None, factory)
+    provider = providers.Callable(factory)
     assert provider.is_async
 
 
@@ -123,7 +123,7 @@ def test_empty_dependencies():
     def factory() -> None:
         pass
 
-    provider = providers.Callable(None, factory)
+    provider = providers.Callable(factory)
     assert provider.dependencies == tuple()
 
 
@@ -135,7 +135,7 @@ def test_does_not_collect_dependencies_not_annotated_with_inject():
     ) -> None:
         pass
 
-    provider = providers.Callable(None, factory)
+    provider = providers.Callable(factory)
     assert provider.dependencies == tuple()
 
 
@@ -147,7 +147,7 @@ def test_dependencies():
     ) -> None:
         pass
 
-    provider = providers.Callable(None, factory)
+    provider = providers.Callable(factory)
     expected = (
         _Dependency(
             name="service", interface=dict[str, int], impl=defaultdict, use_cache=True
@@ -172,5 +172,5 @@ def test_generator_return_types():
 
     factories = [iterable, gen, async_iterable, async_gen]
     for factory in factories:
-        provider = providers.Callable(None, factory)
+        provider = providers.Callable(factory)
         assert provider.impl is int

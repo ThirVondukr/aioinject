@@ -124,7 +124,7 @@ async def test_async_context_manager():
         mock.close()
 
     container = Depression()
-    container.register(int, Callable(int, ctx_async))
+    container.register(int, Callable(ctx_async))
     async with container.context() as ctx:
         mock.open.assert_not_called()
         instance = await ctx.resolve(int)
@@ -144,7 +144,7 @@ async def test_async_context_would_use_sync_context_managers():
         mock.close()
 
     container = Depression()
-    container.register(int, Callable(int, ctx_sync))
+    container.register(int, Callable(ctx_sync))
     async with container.context() as ctx:
         mock.open.assert_not_called()
         await ctx.resolve(int)

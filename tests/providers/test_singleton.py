@@ -25,6 +25,6 @@ async def test_async_function():
     async def create_test() -> _Test:
         return _Test()
 
-    provider = Singleton(_Test, factory=create_test)
+    provider = Singleton(factory=create_test)
     instance = await provider.provide()
     assert instance is await provider.provide()
