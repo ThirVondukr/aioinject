@@ -61,7 +61,7 @@ class DepressionContext(_BaseDepressionContext):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         context_var.reset(self._token)
-        await self.exit_stack.aclose()
+        await self.exit_stack.__aexit__(exc_type, exc_val, exc_tb)
 
 
 class SyncDepressionContext(_BaseDepressionContext):
@@ -102,4 +102,4 @@ class SyncDepressionContext(_BaseDepressionContext):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         context_var.reset(self._token)
-        self.exit_stack.close()
+        self.exit_stack.__exit__(exc_type, exc_val, exc_tb)
