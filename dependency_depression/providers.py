@@ -9,7 +9,7 @@ import threading
 import typing
 import typing as t
 from inspect import isclass
-from typing import Any, Iterable, NamedTuple, Optional, Sequence, Type
+from typing import Any, Iterable, NamedTuple, Optional, Sequence, Type, Union
 
 from dependency_depression.markers import Impl, Inject, NoCache
 
@@ -80,10 +80,8 @@ def _guess_impl(factory) -> type:
 class Provider(t.Generic[_T], abc.ABC):
     def __init__(
         self,
-        interface: t.Type[_T],
         impl: type,
     ):
-        self.interface = interface
         self.impl = impl
 
     @abc.abstractmethod
@@ -110,13 +108,10 @@ class Provider(t.Generic[_T], abc.ABC):
 class Callable(Provider):
     def __init__(
         self,
-        interface: Type[_T],
-        factory: Optional[t.Callable[..., _T]] = None,
-        impl: Optional[type] = None,
+        factory: Union[t.Callable[..., _T], Type[_T]],
+        impl: Optional[Type[_T]] = None,
     ):
-        factory = factory or interface
         super().__init__(
-            interface=interface,
             impl=impl or _guess_impl(factory),
         )
         self.factory = factory
@@ -169,12 +164,10 @@ class Object(Provider):
 
     def __init__(
         self,
-        interface: t.Type[_T],
         object_: _T,
         impl: Optional[type] = None,
     ):
         super().__init__(
-            interface=interface,
             impl=impl or type(object_),
         )
         self.object = object_
