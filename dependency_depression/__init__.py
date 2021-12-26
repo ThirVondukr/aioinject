@@ -2,7 +2,7 @@ from .containers import Depression
 from .context import DepressionContext
 from .decorators import inject
 from .markers import Impl, Inject, NoCache
-from .providers import Callable, Provider, Singleton, Object
+from .providers import Callable, Object, Provider, Singleton
 
 __all__ = [
     "Depression",

@@ -1,10 +1,10 @@
 from collections import defaultdict
-from typing import Annotated, Iterable, Generator, AsyncIterable, AsyncGenerator
+from typing import Annotated, AsyncGenerator, AsyncIterable, Generator, Iterable
 from unittest.mock import patch
 
 import pytest
 
-from dependency_depression import providers, Inject, NoCache, Impl
+from dependency_depression import Impl, Inject, NoCache, providers
 from dependency_depression.providers import _Dependency
 
 

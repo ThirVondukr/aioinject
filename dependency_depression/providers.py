@@ -117,7 +117,7 @@ class Callable(Provider):
         factory = factory or interface
         super().__init__(
             interface=interface,
-            impl=impl or _guess_impl(factory)
+            impl=impl or _guess_impl(factory),
         )
         self.factory = factory
 
