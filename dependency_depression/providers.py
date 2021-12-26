@@ -125,7 +125,9 @@ class Callable(Provider):
         return self.factory(**kwargs)
 
     async def provide(self, **kwargs):
-        return await self.factory(**kwargs)
+        if self.is_async:
+            return await self.factory(**kwargs)
+        return self.provide_sync()
 
     @functools.cached_property
     def type_hints(self):
