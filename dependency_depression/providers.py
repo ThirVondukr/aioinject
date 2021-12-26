@@ -175,7 +175,7 @@ class Object(Provider):
             interface=interface,
             impl=impl or type(object_),
         )
-        self.object = object
+        self.object = object_
 
     def provide_sync(self, **kwargs):
         return self.object
