@@ -333,3 +333,31 @@ with container.sync_context():
     print(injectee())  # 0, injected
     print(injectee(42))  # 42, provided by user
 ```
+
+## Usage with Asyncio
+Dependency Depression can be used in async context,
+just use `context` instead of `sync_context`:
+
+```python
+import asyncio
+
+from dependency_depression import Callable, Depression
+
+
+async def get_number() -> int:
+    await asyncio.sleep(1)
+    return 42
+
+
+async def main():
+    container = Depression()
+    container.register(int, Callable(get_number))
+    async with container.context() as ctx:
+        number = await ctx.resolve(int)
+        assert number == 42
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
+```
+Async context also supports both sync and async context managers and factory functions.
