@@ -134,6 +134,25 @@ async def test_async_context_manager():
 
 
 @pytest.mark.anyio
+async def test_async_context_would_use_sync_context_managers():
+    mock = MagicMock()
+
+    @contextlib.contextmanager
+    def ctx_sync() -> int:
+        mock.open()
+        yield 42
+        mock.close()
+
+    container = Depression()
+    container.register(int, Callable(int, ctx_sync))
+    async with container.context() as ctx:
+        mock.open.assert_not_called()
+        await ctx.resolve(int)
+        mock.open.assert_called_once()
+    mock.close.assert_called_once()
+
+
+@pytest.mark.anyio
 async def test_should_not_use_resolved_class_as_async_context_manager():
     mock = MagicMock()
 
