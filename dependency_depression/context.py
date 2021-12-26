@@ -17,7 +17,7 @@ context_var: contextvars.ContextVar[_AnyCtx] = ContextVar("depression_context")
 class _BaseDepressionContext:
     def __init__(self, container: Depression):
         self.container = container
-        self.cache: dict[Type[_T], _T] = {}
+        self.cache: dict[tuple[Type[_T], Optional[Any]], _T] = {}
         self._token = None
 
 
@@ -32,8 +32,8 @@ class DepressionContext(_BaseDepressionContext):
         impl: Optional[Type] = None,
         use_cache: bool = True,
     ):
-        if use_cache and impl in self.cache:
-            return self.cache[impl]
+        if use_cache and (interface, impl) in self.cache:
+            return self.cache[interface, impl]
         provider = self.container.get_provider(interface, impl)
         dependencies = {
             dep.name: await self.resolve(
@@ -52,7 +52,7 @@ class DepressionContext(_BaseDepressionContext):
             resolved = await self.exit_stack.enter_async_context(resolved)
 
         if use_cache:
-            self.cache[impl] = resolved
+            self.cache[interface, impl] = resolved
         return resolved
 
     async def __aenter__(self):
@@ -75,8 +75,8 @@ class SyncDepressionContext(_BaseDepressionContext):
         impl: Optional[Any] = None,
         use_cache: bool = True,
     ):
-        if use_cache and impl in self.cache:
-            return self.cache[impl]
+        if use_cache and (interface, impl) in self.cache:
+            return self.cache[interface, impl]
 
         provider = self.container.get_provider(interface, impl)
         dependencies = {
@@ -93,7 +93,7 @@ class SyncDepressionContext(_BaseDepressionContext):
             resolved = self.exit_stack.enter_context(resolved)
 
         if use_cache:
-            self.cache[impl] = resolved
+            self.cache[interface, impl] = resolved
         return resolved
 
     def __enter__(self):
