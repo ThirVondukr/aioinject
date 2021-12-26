@@ -95,7 +95,7 @@ class SyncDepressionContext(_BaseDepressionContext):
         return resolved
 
     def __enter__(self):
-        self._token = context_var.set(self._token)
+        self._token = context_var.set(self)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
