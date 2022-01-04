@@ -129,9 +129,12 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 name = "coverage"
 version = "6.2"
 description = "Code coverage measurement for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
+
+[package.dependencies]
+tomli = {version = "*", optional = true, markers = "extra == \"toml\""}
 
 [package.extras]
 toml = ["tomli"]
@@ -570,7 +573,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 name = "tomli"
 version = "1.2.3"
 description = "A lil' TOML parser"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -621,7 +624,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "6bd1ffc834fce508ad080045e7fbfa1be51a381e8cd61b889e957afd061857b7"
+content-hash = "35d39a1e389e1fab7c465b0598c38a4be2dc09677900fccf2cba353df1ff1e94"
 
 [metadata.files]
 anyio = [

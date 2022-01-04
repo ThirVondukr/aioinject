@@ -29,21 +29,32 @@ def collect_dependencies(type_hints: dict[str, any]) -> Iterable[_Dependency]:
             dep_type, *args = typing.get_args(hint)
         except ValueError:
             dep_type, args = hint, tuple()
-        dep_impl = next((impl.type for impl in args if isinstance(impl, Impl)), None)
 
-        if Inject not in args:
+        inject = None
+        for arg in args:
+            try:
+                if issubclass(arg, Inject):
+                    arg = Inject(None)
+            except TypeError:
+                pass
+
+            if isinstance(arg, Inject):
+                inject = arg
+                break
+
+        if inject is None:
             continue
 
         yield _Dependency(
             name=name,
             interface=dep_type,
-            impl=dep_impl,
+            impl=inject.type,
             use_cache=NoCache not in args,
         )
 
 
 def _get_hints(provider: Provider):
-    source = provider.factory
+    source = provider.impl
     if inspect.isclass(source):
         source = source.__init__
 
@@ -80,8 +91,10 @@ def _guess_impl(factory) -> type:
 class Provider(t.Generic[_T], abc.ABC):
     def __init__(
         self,
-        impl: type,
+        type_: Type[_T],
+        impl: Any
     ):
+        self.type = type_
         self.impl = impl
 
     @abc.abstractmethod
@@ -109,19 +122,19 @@ class Callable(Provider):
     def __init__(
         self,
         factory: Union[t.Callable[..., _T], Type[_T]],
-        impl: Optional[Type[_T]] = None,
+        type_: Optional[Type[_T]] = None,
     ):
         super().__init__(
-            impl=impl or _guess_impl(factory),
+            type_=type_ or _guess_impl(factory),
+            impl=factory,
         )
-        self.factory = factory
 
     def provide_sync(self, **kwargs):
-        return self.factory(**kwargs)
+        return self.impl(**kwargs)
 
     async def provide(self, **kwargs):
         if self.is_async:
-            return await self.factory(**kwargs)
+            return await self.impl(**kwargs)
         return self.provide_sync()
 
     @functools.cached_property
@@ -133,7 +146,7 @@ class Callable(Provider):
 
     @functools.cached_property
     def is_async(self) -> bool:
-        return inspect.iscoroutinefunction(self.factory)
+        return inspect.iscoroutinefunction(self.impl)
 
 
 class Singleton(Callable):
@@ -165,15 +178,15 @@ class Object(Provider):
     def __init__(
         self,
         object_: _T,
-        impl: Optional[type] = None,
+        type_: Optional[type] = None,
     ):
         super().__init__(
-            impl=impl or type(object_),
+            type_=type_ or type(object_),
+            impl=object_,
         )
-        self.object = object_
 
     def provide_sync(self, **kwargs):
-        return self.object
+        return self.impl
 
     async def provide(self, **kwargs):
-        return self.object
+        return self.impl

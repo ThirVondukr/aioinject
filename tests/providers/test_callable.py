@@ -28,20 +28,20 @@ def test_provided_instances_are_unique(provider):
     assert first is not second
 
 
-def test_would_pass_kwargs_into_factory(provider):
-    with patch.object(provider, "factory") as factory_mock:
+def test_would_pass_kwargs_into_impl(provider):
+    with patch.object(provider, "impl") as factory_mock:
         provider.provide_sync()
         factory_mock.assert_called_once_with()
 
     kwargs = {"a": 1, "b": 2}
-    with patch.object(provider, "factory") as factory_mock:
+    with patch.object(provider, "impl") as factory_mock:
         provider.provide_sync(**kwargs)
         factory_mock.assert_called_once_with(**kwargs)
 
 
 def test_would_return_factory_result(provider):
     instance = object()
-    with patch.object(provider, "factory") as factory_mock:
+    with patch.object(provider, "impl") as factory_mock:
         factory_mock.return_value = instance
         assert provider.provide_sync() is instance
 
@@ -142,7 +142,7 @@ def test_does_not_collect_dependencies_not_annotated_with_inject():
 def test_dependencies():
     def factory(
         a: int,
-        service: Annotated[dict[str, int], Inject, Impl[defaultdict]],
+        service: Annotated[dict[str, int], Inject[defaultdict]],
         string: Annotated[str, Inject, NoCache],
     ) -> None:
         pass
@@ -173,4 +173,4 @@ def test_generator_return_types():
     factories = [iterable, gen, async_iterable, async_gen]
     for factory in factories:
         provider = providers.Callable(factory)
-        assert provider.impl is int
+        assert provider.type is int

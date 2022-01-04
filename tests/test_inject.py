@@ -2,7 +2,7 @@ from typing import Annotated
 
 import pytest
 
-from dependency_depression import Callable, Depression, Inject, NoCache, inject
+from dependency_depression import Callable, Depression, Inject, NoCache, inject, providers
 
 
 class _Test:
@@ -12,7 +12,7 @@ class _Test:
 @pytest.fixture
 def container():
     depression = Depression()
-    depression.register(_Test, Callable(_Test))
+    depression.register(Callable(_Test))
     return depression
 
 
@@ -53,3 +53,36 @@ def test_no_cache_marker(container):
     assert test_first is not no_cache_first
     assert test_second is not no_cache_second
     assert no_cache_first is not no_cache_second
+
+
+def test_inject_concrete_implementation():
+    class Session:
+        pass
+
+    def get_session() -> Session:
+        return Session()
+
+    class Service:
+        def __init__(
+            self,
+            # If you don't care how session is created you can leave `Inject` empty
+            session: Annotated[Session, Inject],
+        ):
+            pass
+
+    @inject
+    def injectee(
+        service: Annotated[Service, Inject],
+        # Alternatively you can pass an implementation into Inject
+        session: Annotated[Session, Inject[get_session]],
+    ):
+        return service, session
+
+    container = Depression()
+    container.register(providers.Callable(get_session))
+    container.register(providers.Callable(Service))
+
+    with container.sync_context() as ctx:
+        service, session = injectee()
+        assert isinstance(service, Service)
+        assert isinstance(session, Session)

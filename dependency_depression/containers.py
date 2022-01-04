@@ -11,26 +11,29 @@ class Depression:
     def __init__(self):
         self.providers: _Providers = {}
 
-    def register(self, type_: Type[_T], provider: Provider[_T]) -> None:
-        if type_ not in self.providers:
-            self.providers[type_] = []
+    def register(
+        self,
+        provider: Provider[_T],
+    ) -> None:
+        if provider.type not in self.providers:
+            self.providers[provider.type] = []
 
-        self.providers[type_].append(provider)
+        self.providers[provider.type].append(provider)
 
     def get_provider(
         self,
-        interface: Type[_T],
+        type_: Type[_T],
         impl: Optional[Any] = None,
     ) -> Provider[_T]:
-        providers = self.providers[interface]
+        providers = self.providers[type_]
         if impl is None and len(providers) == 1:
             return providers[0]
 
         if impl is None:
             raise ValueError(
-                f"Multiple providers for type {interface} were found,"
+                f"Multiple providers for type {type_} were found,"
                 f"you have to specify implementation using Impl"
-                f"argument: Annotated[IService, Inject, Impl[Service]]"
+                f"argument: Annotated[IService, Inject(Service)]"
             )
         return next(p for p in providers if p.impl == impl)
 
