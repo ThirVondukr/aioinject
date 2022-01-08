@@ -24,6 +24,7 @@ profile = "black"
 
 [tool.coverage.run]
 source = ["dependency_depression"]
+command_line = "-m pytest"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
