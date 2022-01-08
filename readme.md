@@ -147,6 +147,74 @@ with container.sync_context() as ctx:
     injectee()
 ```
 
+## Working with Resources
+
+Often you need to initialize and close a resource (file, database session, etc...),
+you can do that by using a `contextmanager` that would return your resource.  
+We would use custom `Session` class that defines `__exit__` and `__enter__` methods:
+```python
+import contextlib
+
+from dependency_depression import Depression, providers
+
+
+class Session:
+    def __init__(self):
+        self.closed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.closed = True
+
+
+@contextlib.contextmanager
+def get_session() -> Session:
+    with Session() as session:
+        yield session
+
+
+container = Depression()
+container.register(providers.Callable(get_session))
+
+with container.sync_context() as ctx:
+    session = ctx.resolve(Session)
+    print(session.closed)
+print(session.closed)  # <- Session.__exit__ would be called when context closes
+```
+
+## Async Dependencies
+You can register async resolvers the same way as you do with other dependencies,
+all you need to change is to use `Depression.context` instead of `Depression.sync_context`:
+```python
+import asyncio
+
+from dependency_depression import Depression, providers
+
+
+class Service:
+    pass
+
+
+async def get_service() -> Service:
+    await asyncio.sleep(1)
+    return Service()
+
+
+async def main():
+    container = Depression()
+    container.register(providers.Callable(get_service))
+
+    async with container.context() as ctx:
+        service = await ctx.resolve(Service)
+        print(service)
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
+```
+
 ## Providers
 
 When creating a provider you should specify the type it returns, but it can be inferred from class type or function
