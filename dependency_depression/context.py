@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import contextvars
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, Union
 
@@ -11,7 +10,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T")
 
 _AnyCtx = Union["DepressionContext", "SyncDepressionContext"]
-context_var: contextvars.ContextVar[_AnyCtx] = ContextVar("depression_context")
+context_var: ContextVar[_AnyCtx] = ContextVar("depression_context")
 
 
 class _BaseDepressionContext:
@@ -31,7 +30,7 @@ class DepressionContext(_BaseDepressionContext):
         interface: Type[_T],
         impl: Optional[Type] = None,
         use_cache: bool = True,
-    ):
+    ) -> _T:
         if use_cache and (interface, impl) in self.cache:
             return self.cache[interface, impl]
         provider = self.container.get_provider(interface, impl)
@@ -55,7 +54,7 @@ class DepressionContext(_BaseDepressionContext):
             self.cache[interface, impl] = resolved
         return resolved
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> DepressionContext:
         self._token = context_var.set(self)
         return self
 
@@ -74,7 +73,7 @@ class SyncDepressionContext(_BaseDepressionContext):
         interface: Type[_T],
         impl: Optional[Any] = None,
         use_cache: bool = True,
-    ):
+    ) -> _T:
         if use_cache and (interface, impl) in self.cache:
             return self.cache[interface, impl]
 
@@ -96,7 +95,7 @@ class SyncDepressionContext(_BaseDepressionContext):
             self.cache[interface, impl] = resolved
         return resolved
 
-    def __enter__(self):
+    def __enter__(self) -> SyncDepressionContext:
         self._token = context_var.set(self)
         return self
 
