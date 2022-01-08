@@ -135,7 +135,7 @@ class Callable(Provider):
     async def provide(self, **kwargs):
         if self.is_async:
             return await self.impl(**kwargs)
-        return self.provide_sync()
+        return self.provide_sync(**kwargs)
 
     @functools.cached_property
     def type_hints(self):
@@ -167,7 +167,7 @@ class Singleton(Callable):
         if self.cache is None:
             async with self._async_lock:
                 if self.cache is None:
-                    self.cache = await super(Singleton, self).provide()
+                    self.cache = await super().provide(**kwargs)
         return self.cache
 
 
