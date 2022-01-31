@@ -1,5 +1,4 @@
 import functools
-import typing
 from typing import Optional
 
 from fastapi import Request
@@ -7,7 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
-from aioinject import Container, Inject
+from aioinject import Container, utils
 from aioinject.context import context_var
 from aioinject.providers import collect_dependencies
 from aioinject.utils import clear_wrapper
@@ -30,13 +29,7 @@ def _wrap_async(function, inject_annotations):
 
 
 def inject(function):
-    inject_annotations = {
-        name: annotation
-        for name, annotation in typing.get_type_hints(
-            function, include_extras=True
-        ).items()
-        if Inject in typing.get_args(annotation)
-    }
+    inject_annotations = utils.get_inject_annotations(function)
     wrapper = _wrap_async(function, inject_annotations)
     clear_wrapper(wrapper, inject_annotations)
     return wrapper
