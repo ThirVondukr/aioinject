@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from dependency_depression import Impl, Inject, NoCache, providers
+from dependency_depression import Inject, providers
 from dependency_depression.providers import _Dependency
 
 
@@ -82,12 +82,12 @@ def test_type_hints_on_class():
 
 def test_annotated_type_hint():
     def factory(
-        a: Annotated[int, Inject, NoCache],
+        a: Annotated[int, Inject(cache=False)],
     ) -> None:
         pass
 
     provider = providers.Callable(factory)
-    assert provider.type_hints == {"a": Annotated[int, Inject, NoCache]}
+    assert provider.type_hints == {"a": Annotated[int, Inject(cache=False)]}
 
 
 def test_should_specify_return_type():
@@ -127,32 +127,28 @@ def test_empty_dependencies():
     assert provider.dependencies == tuple()
 
 
-def test_does_not_collect_dependencies_not_annotated_with_inject():
-    def factory(
-        a: int,
-        b: Annotated[int, Impl[bool]],
-        c: Annotated[int, NoCache],
-    ) -> None:
-        pass
-
-    provider = providers.Callable(factory)
-    assert provider.dependencies == tuple()
-
-
 def test_dependencies():
     def factory(
         a: int,
-        service: Annotated[dict[str, int], Inject[defaultdict]],
-        string: Annotated[str, Inject, NoCache],
+        service: Annotated[dict[str, int], Inject(defaultdict)],
+        string: Annotated[str, Inject(cache=False)],
     ) -> None:
         pass
 
     provider = providers.Callable(factory)
     expected = (
         _Dependency(
-            name="service", interface=dict[str, int], impl=defaultdict, use_cache=True
+            name="service",
+            type=dict[str, int],
+            implementation=defaultdict,
+            use_cache=True,
         ),
-        _Dependency(name="string", interface=str, impl=None, use_cache=False),
+        _Dependency(
+            name="string",
+            type=str,
+            implementation=None,
+            use_cache=False
+        ),
     )
     assert provider.dependencies == expected
 

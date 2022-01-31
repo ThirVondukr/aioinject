@@ -2,7 +2,7 @@ from typing import Annotated
 
 import pytest
 
-from dependency_depression import NoCache, inject, Depression, providers, Inject
+from dependency_depression import inject, Depression, providers, Inject
 
 
 class _Session:
@@ -34,8 +34,8 @@ def _get_impl_b(session: Annotated[_Session, Inject]) -> _ImplementationB:
 class _NeedsMultipleImplementations:
     def __init__(
         self,
-        a: Annotated[_Interface, Inject[_ImplementationA]],
-        b: Annotated[_Interface, Inject[_get_impl_b]],
+        a: Annotated[_Interface, Inject(_ImplementationA)],
+        b: Annotated[_Interface, Inject(_get_impl_b)],
     ):
         self.a = a
         self.b = b
@@ -55,7 +55,7 @@ def container() -> Depression:
 @inject
 def _injectee(
     test: Annotated[_Session, Inject],
-    test_no_cache: Annotated[_Session, Inject, NoCache],
+    test_no_cache: Annotated[_Session, Inject(cache=False)],
 ):
     return test, test_no_cache
 
