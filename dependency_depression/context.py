@@ -27,17 +27,17 @@ class DepressionContext(_BaseDepressionContext):
 
     async def resolve(
         self,
-        interface: Type[_T],
+        type_: Type[_T],
         impl: Optional[Type] = None,
         use_cache: bool = True,
     ) -> _T:
-        if use_cache and (interface, impl) in self.cache:
-            return self.cache[interface, impl]
-        provider = self.container.get_provider(interface, impl)
+        if use_cache and (type_, impl) in self.cache:
+            return self.cache[type_, impl]
+        provider = self.container.get_provider(type_, impl)
         dependencies = {
             dep.name: await self.resolve(
-                interface=dep.interface,
-                impl=dep.impl,
+                type_=dep.type,
+                impl=dep.implementation,
                 use_cache=dep.use_cache,
             )
             for dep in provider.dependencies
@@ -51,7 +51,7 @@ class DepressionContext(_BaseDepressionContext):
             resolved = await self.exit_stack.enter_async_context(resolved)
 
         if use_cache:
-            self.cache[interface, impl] = resolved
+            self.cache[type_, impl] = resolved
         return resolved
 
     async def __aenter__(self) -> DepressionContext:
@@ -80,8 +80,8 @@ class SyncDepressionContext(_BaseDepressionContext):
         provider = self.container.get_provider(interface, impl)
         dependencies = {
             dep.name: self.resolve(
-                interface=dep.interface,
-                impl=dep.impl,
+                interface=dep.type,
+                impl=dep.implementation,
                 use_cache=dep.use_cache,
             )
             for dep in provider.dependencies

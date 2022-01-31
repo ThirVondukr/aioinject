@@ -31,8 +31,8 @@ def _wrap_async(function, inject_annotations):
             dependencies = {}
             for dependency in collect_dependencies(inject_annotations):
                 dependencies[dependency.name] = ctx.resolve_sync(
-                    interface=dependency.interface,
-                    impl=dependency.impl,
+                    interface=dependency.type,
+                    impl=dependency.implementation,
                     use_cache=dependency.use_cache,
                 )
             return await function(*args, **kwargs, **dependencies)

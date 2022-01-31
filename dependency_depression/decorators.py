@@ -42,8 +42,8 @@ def _wrap_sync(func):
             **kwargs,
             **{
                 dep.name: ctx.resolve(
-                    interface=dep.interface,
-                    impl=dep.impl,
+                    type_=dep.type,
+                    impl=dep.implementation,
                     use_cache=dep.use_cache,
                 )
                 for dep in dependencies

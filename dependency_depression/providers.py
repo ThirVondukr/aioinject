@@ -11,15 +11,15 @@ import typing as t
 from inspect import isclass
 from typing import Any, Iterable, NamedTuple, Optional, Sequence, Type, Union
 
-from dependency_depression.markers import Impl, Inject, NoCache
+from dependency_depression.markers import Inject
 
 _T = t.TypeVar("_T")
 
 
 class _Dependency(NamedTuple):
     name: str
-    interface: Type[_T]
-    impl: Any
+    type: Type[_T]
+    implementation: Any
     use_cache: bool
 
 
@@ -34,7 +34,7 @@ def collect_dependencies(type_hints: dict[str, any]) -> Iterable[_Dependency]:
         for arg in args:
             try:
                 if issubclass(arg, Inject):
-                    arg = Inject(None)
+                    inject = Inject()
             except TypeError:
                 pass
 
@@ -47,9 +47,9 @@ def collect_dependencies(type_hints: dict[str, any]) -> Iterable[_Dependency]:
 
         yield _Dependency(
             name=name,
-            interface=dep_type,
-            impl=inject.type,
-            use_cache=NoCache not in args,
+            type=dep_type,
+            implementation=inject.impl,
+            use_cache=inject.cache,
         )
 
 
