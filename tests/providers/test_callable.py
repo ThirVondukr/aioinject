@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
-from dependency_depression import Inject, providers
-from dependency_depression.providers import _Dependency
+from aioinject import Inject, providers
+from aioinject.providers import _Dependency
 
 
 class _Test:

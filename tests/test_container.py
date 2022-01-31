@@ -1,8 +1,8 @@
 import pytest
 
-from dependency_depression import providers
-from dependency_depression.containers import Depression
-from dependency_depression.context import DepressionContext
+from aioinject import providers
+from aioinject.containers import Container
+from aioinject.context import InjectionContext
 
 
 class _AbstractService:
@@ -18,17 +18,17 @@ class _ServiceB(_AbstractService):
 
 
 @pytest.fixture
-def container() -> Depression:
-    return Depression()
+def container() -> Container:
+    return Container()
 
 
 def test_can_init(container):
-    Depression()
+    Container()
 
 
 def test_can_retrieve_context(container):
     ctx = container.context()
-    assert isinstance(ctx, DepressionContext)
+    assert isinstance(ctx, InjectionContext)
 
 
 def test_can_register_single(container):

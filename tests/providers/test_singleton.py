@@ -1,6 +1,6 @@
 import pytest
 
-from dependency_depression import Singleton
+from aioinject import Singleton
 
 
 class _Test:

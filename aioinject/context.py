@@ -5,22 +5,22 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, Union
 
 if TYPE_CHECKING:
-    from .containers import Depression
+    from .containers import Container
 
 _T = TypeVar("_T")
 
-_AnyCtx = Union["DepressionContext", "SyncDepressionContext"]
-context_var: ContextVar[_AnyCtx] = ContextVar("depression_context")
+_AnyCtx = Union["InjectionContext", "SyncInjectionContext"]
+context_var: ContextVar[_AnyCtx] = ContextVar("aioinject_context")
 
 
-class _BaseDepressionContext:
-    def __init__(self, container: Depression):
+class _BaseInjectionContext:
+    def __init__(self, container: Container):
         self.container = container
         self.cache: dict[tuple[Type[_T], Optional[Any]], _T] = {}
         self._token = None
 
 
-class DepressionContext(_BaseDepressionContext):
+class InjectionContext(_BaseInjectionContext):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.exit_stack = contextlib.AsyncExitStack()
@@ -54,7 +54,7 @@ class DepressionContext(_BaseDepressionContext):
             self.cache[type_, impl] = resolved
         return resolved
 
-    async def __aenter__(self) -> DepressionContext:
+    async def __aenter__(self) -> InjectionContext:
         self._token = context_var.set(self)
         return self
 
@@ -63,7 +63,7 @@ class DepressionContext(_BaseDepressionContext):
         await self.exit_stack.__aexit__(exc_type, exc_val, exc_tb)
 
 
-class SyncDepressionContext(_BaseDepressionContext):
+class SyncInjectionContext(_BaseInjectionContext):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.exit_stack = contextlib.ExitStack()
@@ -95,7 +95,7 @@ class SyncDepressionContext(_BaseDepressionContext):
             self.cache[interface, impl] = resolved
         return resolved
 
-    def __enter__(self) -> SyncDepressionContext:
+    def __enter__(self) -> SyncInjectionContext:
         self._token = context_var.set(self)
         return self
 

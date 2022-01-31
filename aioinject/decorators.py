@@ -4,8 +4,8 @@ import itertools
 import typing
 from typing import Any, Type
 
-from dependency_depression.context import context_var
-from dependency_depression.providers import collect_dependencies
+from aioinject.context import context_var
+from aioinject.providers import collect_dependencies
 
 
 def _missing_kwargs(

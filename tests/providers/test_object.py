@@ -2,7 +2,7 @@ from typing import Annotated, Any
 
 import pytest
 
-from dependency_depression import Inject, Object
+from aioinject import Inject, Object
 
 
 @pytest.mark.anyio

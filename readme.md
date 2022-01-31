@@ -12,9 +12,9 @@ class Service:
 Then we should create instance of container and register `Service` class in it using a provider:
 
 ```python
-from dependency_depression import Depression, providers
+from aioinject import Container, providers
 
-container = Depression()
+container = Container()
 container.register(providers.Callable(Service))
 ```
 
@@ -29,7 +29,7 @@ If you need to inject something into a function just annotate it with inject:
 
 ```python
 from typing import Annotated
-from dependency_depression import Inject, inject
+from aioinject import Inject, inject
 
 
 @inject
@@ -51,14 +51,14 @@ Complete example (should run as-is):
 ```python
 from typing import Annotated
 
-from dependency_depression import Depression, Inject, inject, providers
+from aioinject import Container, Inject, inject, providers
 
 
 class Service:
     pass
 
 
-container = Depression()
+container = Container()
 container.register(providers.Callable(Service))
 
 
@@ -82,7 +82,7 @@ and `Inject` marker
 
 ```python
 from typing import Annotated
-from dependency_depression import Callable, Depression, Inject
+from aioinject import Callable, Container, Inject
 
 
 class Session:
@@ -97,7 +97,7 @@ class Service:
         self.session = session
 
 
-container = Depression()
+container = Container()
 container.register(Callable(Session))
 container.register(Callable(Service))
 
@@ -111,7 +111,7 @@ If you have multiple dependencies with same type you can specify concrete implem
 import dataclasses
 from typing import Annotated
 
-from dependency_depression import Depression, providers, inject, Inject
+from aioinject import Container, providers, inject, Inject
 
 
 @dataclasses.dataclass
@@ -127,7 +127,7 @@ def get_gitlab_client() -> Client:
     return Client(name="GitLab Client")
 
 
-container = Depression()
+container = Container()
 container.register(providers.Callable(get_github_client))
 container.register(providers.Callable(get_gitlab_client))
 
@@ -152,10 +152,11 @@ with container.sync_context() as ctx:
 Often you need to initialize and close a resource (file, database session, etc...),
 you can do that by using a `contextmanager` that would return your resource.  
 We would use custom `Session` class that defines `__exit__` and `__enter__` methods:
+
 ```python
 import contextlib
 
-from dependency_depression import Depression, providers
+from aioinject import Container, providers
 
 
 class Session:
@@ -175,7 +176,7 @@ def get_session() -> Session:
         yield session
 
 
-container = Depression()
+container = Container()
 container.register(providers.Callable(get_session))
 
 with container.sync_context() as ctx:
@@ -186,11 +187,12 @@ print(session.closed)  # <- Session.__exit__ would be called when context closes
 
 ## Async Dependencies
 You can register async resolvers the same way as you do with other dependencies,
-all you need to change is to use `Depression.context` instead of `Depression.sync_context`:
+all you need to change is to use `Container.context` instead of `Container.sync_context`:
+
 ```python
 import asyncio
 
-from dependency_depression import Depression, providers
+from aioinject import Container, providers
 
 
 class Service:
@@ -203,7 +205,7 @@ async def get_service() -> Service:
 
 
 async def main():
-    container = Depression()
+    container = Container()
     container.register(providers.Callable(get_service))
 
     async with container.context() as ctx:
@@ -225,7 +227,7 @@ return type:
 `Callable` provider would create instance of a class each time:
 
 ```python
-from dependency_depression import Callable
+from aioinject import Callable
 
 
 class Service:
@@ -244,7 +246,7 @@ print(service_one is service_two)
 `Singleton` works the same way as `Callable` but it caches first created object:
 
 ```python
-from dependency_depression import Singleton
+from aioinject import Singleton
 
 
 class Service:
@@ -264,7 +266,7 @@ print(first is second)
 `Object` provider just returns an object provided to it:
 
 ```python
-from dependency_depression import Object
+from aioinject import Object
 
 
 class Service:

@@ -2,7 +2,7 @@ from typing import Annotated
 
 import pytest
 
-from dependency_depression import inject, Depression, providers, Inject
+from aioinject import inject, Container, providers, Inject
 
 
 class _Session:
@@ -42,8 +42,8 @@ class _NeedsMultipleImplementations:
 
 
 @pytest.fixture
-def container() -> Depression:
-    container = Depression()
+def container() -> Container:
+    container = Container()
     container.register(providers.Callable(_Session))
     container.register(providers.Callable(_Service))
     container.register(providers.Callable(_ImplementationA, type_=_Interface))

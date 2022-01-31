@@ -1,13 +1,13 @@
 from typing import Any, Optional, Type, TypeVar
 
-from .context import DepressionContext, SyncDepressionContext
+from .context import InjectionContext, SyncInjectionContext
 from .providers import Provider
 
 _T = TypeVar("_T")
 _Providers = dict[Type[_T], list[Provider[_T]]]
 
 
-class Depression:
+class Container:
     def __init__(self):
         self.providers: _Providers = {}
 
@@ -37,8 +37,8 @@ class Depression:
             )
         return next(p for p in providers if p.impl == impl)
 
-    def context(self) -> DepressionContext:
-        return DepressionContext(container=self)
+    def context(self) -> InjectionContext:
+        return InjectionContext(container=self)
 
-    def sync_context(self) -> SyncDepressionContext:
-        return SyncDepressionContext(self)
+    def sync_context(self) -> SyncInjectionContext:
+        return SyncInjectionContext(self)

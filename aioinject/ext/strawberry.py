@@ -4,12 +4,12 @@ import inspect
 import typing
 from typing import Any
 
-from dependency_depression.containers import Depression
-from dependency_depression.markers import Inject
-from dependency_depression.providers import collect_dependencies
+from aioinject.containers import Container
+from aioinject.markers import Inject
+from aioinject.providers import collect_dependencies
 
-container_var: contextvars.ContextVar["Depression"] = contextvars.ContextVar(
-    "depression_container"
+container_var: contextvars.ContextVar["Container"] = contextvars.ContextVar(
+    "aioinject_container"
 )
 
 

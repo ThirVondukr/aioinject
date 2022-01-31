@@ -11,7 +11,7 @@ import typing as t
 from inspect import isclass
 from typing import Any, Iterable, NamedTuple, Optional, Sequence, Type, Union
 
-from dependency_depression.markers import Inject
+from aioinject.markers import Inject
 
 _T = t.TypeVar("_T")
 

@@ -1,12 +1,13 @@
-from .containers import Depression
-from .context import DepressionContext
+from .containers import Container
+from .context import InjectionContext, SyncInjectionContext
 from .decorators import inject
 from .markers import Inject
 from .providers import Callable, Object, Provider, Singleton
 
 __all__ = [
-    "Depression",
-    "DepressionContext",
+    "Container",
+    "InjectionContext",
+    "SyncInjectionContext",
     "inject",
     "Inject",
     "Callable",

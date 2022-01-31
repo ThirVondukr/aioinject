@@ -7,10 +7,10 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
-from dependency_depression import Depression, Inject
-from dependency_depression.context import context_var
-from dependency_depression.providers import collect_dependencies
-from dependency_depression.utils import clear_wrapper
+from aioinject import Container, Inject
+from aioinject.context import context_var
+from aioinject.providers import collect_dependencies
+from aioinject.utils import clear_wrapper
 
 
 def _wrap_async(function, inject_annotations):
@@ -46,7 +46,7 @@ class InjectMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        container: Depression,
+        container: Container,
         dispatch: Optional[DispatchFunction] = None,
     ) -> None:
         super().__init__(app, dispatch)

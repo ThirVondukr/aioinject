@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "dependency_depression"
+name = "aioinject"
 version = "0.1.0"
 description = ""
 authors = ["Doctor <thirvondukr@gmail.com>"]
@@ -22,7 +22,7 @@ isort = "^5.10.1"
 profile = "black"
 
 [tool.coverage.run]
-source = ["dependency_depression"]
+source = ["aioinject"]
 command_line = "-m pytest"
 
 [build-system]

@@ -4,9 +4,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from dependency_depression import Callable, providers
-from dependency_depression.containers import Depression
-from dependency_depression.markers import Inject
+from aioinject import Callable, providers
+from aioinject.containers import Container
+from aioinject.markers import Inject
 
 
 class _Session:
@@ -25,11 +25,11 @@ class _Service:
 
 @pytest.fixture
 def container():
-    depression = Depression()
-    depression.register(providers.Callable(_Session))
-    depression.register(providers.Callable(_Repository))
-    depression.register(providers.Callable(_Service))
-    return depression
+    container = Container()
+    container.register(providers.Callable(_Session))
+    container.register(providers.Callable(_Repository))
+    container.register(providers.Callable(_Service))
+    return container
 
 
 def test_can_instantiate_context(container):
@@ -71,7 +71,7 @@ def test_shutdowns_context_manager():
         yield _Session()
         mock.close()
 
-    container = Depression()
+    container = Container()
     container.register(providers.Callable(get_session))
 
     with container.sync_context() as ctx:
@@ -92,7 +92,7 @@ def test_should_not_use_resolved_class_as_context_manager():
         def __exit__(self, exc_type, exc_val, exc_tb):
             mock.close()
 
-    container = Depression()
+    container = Container()
     container.register(providers.Callable(_Test))
 
     with container.sync_context() as ctx:
@@ -106,7 +106,7 @@ async def test_provide_async():
     class Test:
         pass
 
-    container = Depression()
+    container = Container()
     container.register(Callable(Test))
     async with container.context() as ctx:
         instance = await ctx.resolve(Test)
@@ -123,7 +123,7 @@ async def test_async_context_manager():
         yield _Session()
         mock.close()
 
-    container = Depression()
+    container = Container()
     container.register(Callable(get_session))
     async with container.context() as ctx:
         mock.open.assert_not_called()
@@ -143,7 +143,7 @@ async def test_async_context_would_use_sync_context_managers():
         yield _Session()
         mock.close()
 
-    container = Depression()
+    container = Container()
     container.register(Callable(get_session))
     async with container.context() as ctx:
         mock.open.assert_not_called()
@@ -163,7 +163,7 @@ async def test_should_not_use_resolved_class_as_async_context_manager():
         def __aexit__(self, exc_type, exc_val, exc_tb):
             mock.close()
 
-    container = Depression()
+    container = Container()
     container.register(Callable(Test))
     async with container.context() as ctx:
         instance = await ctx.resolve(Test)
@@ -182,7 +182,7 @@ def test_sync_context_manager_should_receive_exception():
         except Exception:
             mock.exception_happened()
 
-    container = Depression()
+    container = Container()
     container.register(Callable(get_session))
 
     with pytest.raises(Exception):
