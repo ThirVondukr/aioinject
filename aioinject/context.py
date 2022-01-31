@@ -70,17 +70,17 @@ class SyncInjectionContext(_BaseInjectionContext):
 
     def resolve(
         self,
-        interface: Type[_T],
+        type_: Type[_T],
         impl: Optional[Any] = None,
         use_cache: bool = True,
     ) -> _T:
-        if use_cache and (interface, impl) in self.cache:
-            return self.cache[interface, impl]
+        if use_cache and (type_, impl) in self.cache:
+            return self.cache[type_, impl]
 
-        provider = self.container.get_provider(interface, impl)
+        provider = self.container.get_provider(type_, impl)
         dependencies = {
             dep.name: self.resolve(
-                interface=dep.type,
+                type_=dep.type,
                 impl=dep.implementation,
                 use_cache=dep.use_cache,
             )
@@ -92,7 +92,7 @@ class SyncInjectionContext(_BaseInjectionContext):
             resolved = self.exit_stack.enter_context(resolved)
 
         if use_cache:
-            self.cache[interface, impl] = resolved
+            self.cache[type_, impl] = resolved
         return resolved
 
     def __enter__(self) -> SyncInjectionContext:
