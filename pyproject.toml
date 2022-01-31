@@ -6,17 +6,16 @@ authors = ["Doctor <thirvondukr@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-coverage = {extras = ["toml"], version = "^6.2"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
-line-profiler = "^3.3.1"
-anyio = "^3.4.0"
+line-profiler = "^3.4.0"
+anyio = "^3.5.0"
 trio = "^0.19.0"
-coverage = "^6.2"
-fastapi = "^0.70.1"
-strawberry-graphql = "^0.93.12"
-black = "^21.12b0"
+coverage = {extras = ["toml"], version = "^6.3"}
+fastapi = {extras = ["all"], version = "^0.73.0"}
+strawberry-graphql = "^0.95.1"
+black = "^22.1.0"
 isort = "^5.10.1"
 
 [tool.isort]
