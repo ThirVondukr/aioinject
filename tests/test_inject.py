@@ -2,7 +2,7 @@ from typing import Annotated
 
 import pytest
 
-from aioinject import inject, Container, providers, Inject
+from aioinject import Container, Inject, inject, providers
 
 
 class _Session:

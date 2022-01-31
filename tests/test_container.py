@@ -45,10 +45,7 @@ def test_can_register_multi(container):
     container.register(provider_a)
     container.register(provider_b)
 
-    expected = {
-        _ServiceA: [provider_a],
-        _ServiceB: [provider_b]
-    }
+    expected = {_ServiceA: [provider_a], _ServiceB: [provider_b]}
     assert container.providers == expected
 
 

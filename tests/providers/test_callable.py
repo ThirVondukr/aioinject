@@ -143,12 +143,7 @@ def test_dependencies():
             implementation=defaultdict,
             use_cache=True,
         ),
-        _Dependency(
-            name="string",
-            type=str,
-            implementation=None,
-            use_cache=False
-        ),
+        _Dependency(name="string", type=str, implementation=None, use_cache=False),
     )
     assert provider.dependencies == expected
 

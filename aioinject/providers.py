@@ -89,11 +89,7 @@ def _guess_impl(factory) -> type:
 
 
 class Provider(t.Generic[_T], abc.ABC):
-    def __init__(
-        self,
-        type_: Type[_T],
-        impl: Any
-    ):
+    def __init__(self, type_: Type[_T], impl: Any):
         self.type = type_
         self.impl = impl
 

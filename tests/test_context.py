@@ -1,5 +1,5 @@
 import contextlib
-from typing import Annotated, Iterable, AsyncIterable
+from typing import Annotated, AsyncIterable, Iterable
 from unittest.mock import MagicMock
 
 import pytest

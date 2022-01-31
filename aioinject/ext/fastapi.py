@@ -2,7 +2,11 @@ import functools
 from typing import Optional
 
 from fastapi import Request
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint, DispatchFunction
+from starlette.middleware.base import (
+    BaseHTTPMiddleware,
+    DispatchFunction,
+    RequestResponseEndpoint,
+)
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
@@ -45,6 +49,8 @@ class InjectMiddleware(BaseHTTPMiddleware):
         super().__init__(app, dispatch)
         self.container = container
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         async with self.container.context():
             return await call_next(request)
