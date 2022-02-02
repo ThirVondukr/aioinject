@@ -1,5 +1,9 @@
 import contextvars
 import functools
+from typing import Type
+
+from strawberry.extensions import Extension
+from strawberry.utils.await_maybe import AwaitableOrValue
 
 from aioinject import utils
 from aioinject.containers import Container
@@ -14,11 +18,11 @@ def _wrap_async(function, inject_annotations):
     @functools.wraps(function)
     async def wrapper(*args, **kwargs):
         container = container_var.get()
-        with container.context() as ctx:
+        async with container.context() as ctx:
             dependencies = {}
             for dependency in collect_dependencies(inject_annotations):
-                dependencies[dependency.name] = ctx.resolve_sync(
-                    interface=dependency.type,
+                dependencies[dependency.name] = await ctx.resolve(
+                    type_=dependency.type,
                     impl=dependency.implementation,
                     use_cache=dependency.use_cache,
                 )
@@ -32,3 +36,16 @@ def inject(function):
     wrapper = _wrap_async(function, inject_annotations)
     wrapper = utils.clear_wrapper(wrapper, inject_annotations)
     return wrapper
+
+
+def make_container_ext(container: Container) -> Type[Extension]:
+    class ContainerExtension(Extension):
+        token: contextvars.Token
+
+        def on_request_start(self) -> AwaitableOrValue[None]:
+            self.token = container_var.set(container)
+
+        def on_request_end(self) -> AwaitableOrValue[None]:
+            container_var.reset(self.token)
+
+    return ContainerExtension
