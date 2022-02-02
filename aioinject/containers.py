@@ -1,6 +1,7 @@
 from typing import Any, Optional, Type, TypeVar
 
 from .context import InjectionContext, SyncInjectionContext
+from .module import Module
 from .providers import Provider
 
 _T = TypeVar("_T")
@@ -42,3 +43,7 @@ class Container:
 
     def sync_context(self) -> SyncInjectionContext:
         return SyncInjectionContext(self)
+
+    def mount(self, module: Type[Module]) -> None:
+        for provider in module.providers:
+            self.register(provider)
