@@ -8,15 +8,16 @@ authors = ["Doctor <thirvondukr@gmail.com>"]
 python = "^3.10"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
+pytest = "^7.0.1"
 line-profiler = "^3.4.0"
 anyio = "^3.5.0"
 trio = "^0.19.0"
 coverage = {extras = ["toml"], version = "^6.3"}
 fastapi = {extras = ["all"], version = "^0.73.0"}
-strawberry-graphql = "^0.95.1"
+strawberry-graphql = "^0.96.0"
 black = "^22.1.0"
 isort = "^5.10.1"
+mypy = "^0.931"
 
 [tool.isort]
 profile = "black"
@@ -24,6 +25,12 @@ profile = "black"
 [tool.coverage.run]
 source = ["aioinject"]
 command_line = "-m pytest"
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+skip_empty = true
+precision = 2
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
