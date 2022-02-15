@@ -3,27 +3,36 @@ from __future__ import annotations
 import abc
 import asyncio
 import collections.abc
+import dataclasses
 import functools
 import inspect
 import threading
 import typing
 import typing as t
 from inspect import isclass
-from typing import Any, Iterable, NamedTuple, Optional, Sequence, Type, Union
+from typing import Any, Generic, Iterable, Optional, Sequence, Type, Union
 
 from aioinject.markers import Inject
 
 _T = t.TypeVar("_T")
 
 
-class _Dependency(NamedTuple):
+@dataclasses.dataclass
+class Dependency(Generic[_T]):
     name: str
     type: Type[_T]
     implementation: Any
     use_cache: bool
 
 
-def collect_dependencies(type_hints: dict[str, any]) -> Iterable[_Dependency]:
+def collect_dependencies(
+    dependant: t.Callable | dict[str, Any]
+) -> Iterable[Dependency]:
+    if not isinstance(dependant, dict):
+        type_hints = typing.get_type_hints(dependant, include_extras=True)
+    else:
+        type_hints = dependant
+
     for name, hint in type_hints.items():
         try:
             dep_type, *args = typing.get_args(hint)
@@ -45,7 +54,7 @@ def collect_dependencies(type_hints: dict[str, any]) -> Iterable[_Dependency]:
         if inject is None:
             continue
 
-        yield _Dependency(
+        yield Dependency(
             name=name,
             type=dep_type,
             implementation=inject.impl,
@@ -110,7 +119,7 @@ class Provider(t.Generic[_T], abc.ABC):
         raise NotImplementedError
 
     @functools.cached_property
-    def dependencies(self) -> Sequence[_Dependency]:
+    def dependencies(self) -> Sequence[Dependency]:
         return tuple(collect_dependencies(self.type_hints))
 
 

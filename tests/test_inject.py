@@ -61,7 +61,7 @@ def _injectee(
 
 
 def test_would_fail_without_active_context():
-    with pytest.raises(TypeError):
+    with pytest.raises(LookupError):
         _injectee()
 
 

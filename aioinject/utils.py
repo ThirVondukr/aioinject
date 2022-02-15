@@ -2,10 +2,11 @@ import inspect
 import typing
 from typing import Any
 
-from aioinject import Inject
+from aioinject.markers import Inject
 
 
-def clear_wrapper(wrapper: Any, inject_annotations: dict[str, Any]):
+def clear_wrapper(wrapper: Any):
+    inject_annotations = get_inject_annotations(wrapper)
     signature = inspect.signature(wrapper)
     new_params = tuple(
         p for p in signature.parameters.values() if p.name not in inject_annotations

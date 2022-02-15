@@ -1,8 +1,20 @@
 from __future__ import annotations
 
 import contextlib
+import inspect
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
+
+from .providers import Dependency
 
 if TYPE_CHECKING:
     from .containers import Container
@@ -11,6 +23,8 @@ _T = TypeVar("_T")
 
 _AnyCtx = Union["InjectionContext", "SyncInjectionContext"]
 context_var: ContextVar[_AnyCtx] = ContextVar("aioinject_context")
+
+container_var: ContextVar["Container"] = ContextVar("aioinject_container")
 
 
 class _BaseInjectionContext:
@@ -54,6 +68,26 @@ class InjectionContext(_BaseInjectionContext):
             self.cache[type_, impl] = resolved
         return resolved
 
+    async def execute(
+        self,
+        function: Callable[[Any], _T],
+        dependencies: Iterable[Dependency],
+        *args: Any,
+        **kwargs: Any,
+    ) -> _T:
+        resolved = {}
+        for dependency in dependencies:
+            if dependency.name in kwargs:
+                continue
+            resolved[dependency.name] = await self.resolve(
+                type_=dependency.type,
+                impl=dependency.implementation,
+                use_cache=dependency.use_cache,
+            )
+        if inspect.iscoroutinefunction(function):
+            return await function(*args, **kwargs, **resolved)
+        return function(*args, **kwargs, **resolved)
+
     async def __aenter__(self) -> InjectionContext:
         self._token = context_var.set(self)
         return self
@@ -94,6 +128,24 @@ class SyncInjectionContext(_BaseInjectionContext):
         if use_cache:
             self.cache[type_, impl] = resolved
         return resolved
+
+    def execute(
+        self,
+        function: Callable[[Any], _T],
+        dependencies: Iterable[Dependency],
+        *args,
+        **kwargs: Any,
+    ) -> _T:
+        resolved = {}
+        for dependency in dependencies:
+            if dependency.name in kwargs:
+                continue
+            resolved[dependency.name] = self.resolve(
+                type_=dependency.type,
+                impl=dependency.implementation,
+                use_cache=dependency.use_cache,
+            )
+        return function(*args, **kwargs, **resolved)
 
     def __enter__(self) -> SyncInjectionContext:
         self._token = context_var.set(self)

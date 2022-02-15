@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from aioinject import Inject, providers
-from aioinject.providers import _Dependency
+from aioinject.providers import Dependency
 
 
 class _Test:
@@ -137,13 +137,13 @@ def test_dependencies():
 
     provider = providers.Callable(factory)
     expected = (
-        _Dependency(
+        Dependency(
             name="service",
             type=dict[str, int],
             implementation=defaultdict,
             use_cache=True,
         ),
-        _Dependency(name="string", type=str, implementation=None, use_cache=False),
+        Dependency(name="string", type=str, implementation=None, use_cache=False),
     )
     assert provider.dependencies == expected
 

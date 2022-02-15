@@ -1,58 +1,70 @@
+import enum
 import functools
 import inspect
-import itertools
-import typing
-from typing import Any, Type
 
-from aioinject.context import context_var
+from aioinject.context import container_var, context_var
 from aioinject.providers import collect_dependencies
 
 
-def _missing_kwargs(
-    type_hints: dict[str, Type],
-    signature: inspect.Signature,
-    *args: Any,
-    **kwargs: Any,
-) -> dict[str, Type]:
-    already_provided_args: set[str] = set(
-        itertools.islice(signature.parameters, len(args))
-    )
-    already_provided_args.update(kwargs)
-
-    need_to_provide = {
-        k: v for k, v in type_hints.items() if k not in already_provided_args
-    }
-    return need_to_provide
+class InjectMethod(enum.Enum):
+    container = enum.auto()
+    context = enum.auto()
 
 
-def _wrap_sync(func):
-    type_hints = typing.get_type_hints(func, include_extras=True)
-    signature = inspect.signature(func)
-    dependencies = list(collect_dependencies(type_hints=type_hints))
+def _get_context(inject_method: InjectMethod):
+    if inject_method is InjectMethod.container:
+        return container_var.get().context()
+    return context_var.get()
 
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        missing_dependencies = _missing_kwargs(type_hints, signature, *args, **kwargs)
-        try:
-            ctx = context_var.get()
-        except LookupError:
-            return func(*args, **kwargs)
-        return func(
-            *args,
-            **kwargs,
-            **{
-                dep.name: ctx.resolve(
-                    type_=dep.type,
-                    impl=dep.implementation,
-                    use_cache=dep.use_cache,
-                )
-                for dep in dependencies
-                if dep.name in missing_dependencies
-            },
+
+def _wrap_async(
+    function,
+    inject_method: InjectMethod,
+):
+    dependencies = list(collect_dependencies(function))
+
+    @functools.wraps(function)
+    async def wrapper(*args, **kwargs):
+        context = _get_context(inject_method)
+        execute = functools.partial(
+            context.execute, function, dependencies, *args, **kwargs
         )
+
+        if inject_method is InjectMethod.container:
+            async with context:
+                return await execute()
+
+        return await execute()
 
     return wrapper
 
 
-def inject(func):
-    return _wrap_sync(func)
+def _wrap_sync(function, inject_method: InjectMethod):
+    dependencies = list(collect_dependencies(function))
+
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        context = _get_context(inject_method)
+        execute = functools.partial(
+            context.execute, function, dependencies, *args, **kwargs
+        )
+
+        if inject_method is InjectMethod.container:
+            with context:
+                return execute()
+
+        return execute()
+
+    return wrapper
+
+
+def inject(func=None, inject_method=InjectMethod.context):
+    def wrap(function):
+        if inspect.iscoroutinefunction(function):
+            return _wrap_async(function, inject_method=inject_method)
+        return _wrap_sync(function, inject_method=inject_method)
+
+    if func is None:
+        return wrap
+
+    return wrap(func)
