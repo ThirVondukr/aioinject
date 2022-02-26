@@ -1,3 +1,5 @@
+import contextlib
+from collections import defaultdict
 from typing import Any, Optional, Type, TypeVar
 
 from .context import InjectionContext, SyncInjectionContext
@@ -9,7 +11,8 @@ _Providers = dict[Type[_T], list[Provider[_T]]]
 
 class Container:
     def __init__(self):
-        self.providers: _Providers = {}
+        self.providers: _Providers = defaultdict(list)
+        self._overrides: _Providers = defaultdict(list)
 
     def register(
         self,
@@ -20,14 +23,18 @@ class Container:
 
         self.providers[provider.type].append(provider)
 
-    def get_provider(
-        self,
+    @staticmethod
+    def _get_provider(
+        providers: _Providers,
         type_: Type[_T],
         impl: Optional[Any] = None,
-    ) -> Provider[_T]:
-        providers = self.providers[type_]
-        if impl is None and len(providers) == 1:
-            return providers[0]
+    ) -> Optional[Provider[_T]]:
+        type_providers = providers[type_]
+        if not type_providers:
+            return None
+
+        if impl is None and len(type_providers) == 1:
+            return type_providers[0]
 
         if impl is None:
             raise ValueError(
@@ -35,10 +42,38 @@ class Container:
                 f"you have to specify implementation using Impl"
                 f"argument: Annotated[IService, Inject(Service)]"
             )
-        return next(p for p in providers if p.impl == impl)
+        return next((p for p in type_providers if p.impl == impl), None)
+
+    def get_provider(
+        self,
+        type_: Type[_T],
+        impl: Optional[Any] = None,
+    ) -> Provider[_T]:
+        overriden_provider = self._get_provider(self._overrides, type_, impl)
+        if overriden_provider is not None:
+            return overriden_provider
+
+        provider = self._get_provider(self.providers, type_, impl)
+        if provider is None:
+            raise ValueError(f"Provider for type {type_} not found")
+        return provider
 
     def context(self) -> InjectionContext:
         return InjectionContext(container=self)
 
     def sync_context(self) -> SyncInjectionContext:
-        return SyncInjectionContext(self)
+        return SyncInjectionContext(container=self)
+
+    @contextlib.contextmanager
+    def override(
+        self,
+        provider: Provider[_T],
+        type_: Optional[Type[_T]] = None,
+        impl: Optional[Any] = None,
+    ) -> None:
+        provider_type = type_ or provider.type
+        impl = impl or provider.impl
+
+        self._overrides[provider.type].append(provider)
+        yield
+        self._overrides[provider.type].remove(provider)

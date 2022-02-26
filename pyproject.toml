@@ -27,6 +27,11 @@ source = ["aioinject"]
 command_line = "-m pytest"
 
 [tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
 show_missing = true
 skip_covered = true
 skip_empty = true

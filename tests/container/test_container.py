@@ -72,3 +72,9 @@ def test_get_provider_raises_error_if_multiple_providers(multi_provider_containe
 def test_can_get_multi_provider_if__specified(multi_provider_container):
     assert multi_provider_container.get_provider(_AbstractService, _ServiceA)
     assert multi_provider_container.get_provider(_AbstractService, _ServiceB)
+
+
+def test_missing_provider():
+    container = Container()
+    with pytest.raises(ValueError):
+        assert container.get_provider(_ServiceA)
