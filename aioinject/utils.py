@@ -23,5 +23,8 @@ def get_inject_annotations(function) -> dict[str, Any]:
         for name, annotation in typing.get_type_hints(
             function, include_extras=True
         ).items()
-        if Inject in typing.get_args(annotation)
+        if any(
+            isinstance(arg, Inject) or arg is Inject
+            for arg in typing.get_args(annotation)
+        )
     }
