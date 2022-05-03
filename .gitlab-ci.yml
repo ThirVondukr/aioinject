@@ -1,0 +1,53 @@
+stages:
+  - lint
+
+.lint-job: &lint_job
+  image: python:3.10-slim
+  stage: lint
+  interruptible: true
+  cache:
+    - key:
+        files:
+          - poetry.lock
+      paths:
+        - .venv
+        - .cache/pip
+
+  before_script:
+    - pip install poetry
+    - poetry config virtualenvs.in-project true
+    - poetry install
+  variables:
+    GIT_STRATEGY: clone
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+mypy:
+  <<: *lint_job
+  script:
+    - poetry run mypy .
+
+black:
+  <<: *lint_job
+  script:
+    - poetry run black . --check
+
+isort:
+  <<: *lint_job
+  script:
+    - poetry run isort . --check
+
+flake8:
+  <<: *lint_job
+  script:
+    - poetry run flake8
+
+pytest:
+  <<: *lint_job
+  script:
+    - poetry run coverage run
+    - poetry run coverage report -m
+    - poetry run coverage xml
+  coverage: "/^TOTAL.*\\s(\\d*)/"
+  artifacts:
+    reports:
+      cobertura: coverage.xml
