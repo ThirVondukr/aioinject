@@ -49,9 +49,9 @@ class Container:
         type_: Type[_T],
         impl: Optional[Any] = None,
     ) -> Provider[_T]:
-        overriden_provider = self._get_provider(self._overrides, type_, impl)
-        if overriden_provider is not None:
-            return overriden_provider
+        overridden_provider = self._get_provider(self._overrides, type_, impl)
+        if overridden_provider is not None:
+            return overridden_provider
 
         provider = self._get_provider(self.providers, type_, impl)
         if provider is None:

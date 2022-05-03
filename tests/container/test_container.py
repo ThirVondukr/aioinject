@@ -64,7 +64,9 @@ def multi_provider_container(container):
     return container
 
 
-def test_get_provider_raises_error_if_multiple_providers(multi_provider_container):
+def test_get_provider_raises_error_if_multiple_providers(
+    multi_provider_container,
+):
     with pytest.raises(ValueError):
         assert multi_provider_container.get_provider(_AbstractService)
 

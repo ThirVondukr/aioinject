@@ -1,5 +1,11 @@
 from collections import defaultdict
-from typing import Annotated, AsyncGenerator, AsyncIterable, Generator, Iterable
+from typing import (
+    Annotated,
+    AsyncGenerator,
+    AsyncIterable,
+    Generator,
+    Iterable,
+)
 from unittest.mock import patch
 
 import pytest
@@ -143,7 +149,9 @@ def test_dependencies():
             implementation=defaultdict,
             use_cache=True,
         ),
-        Dependency(name="string", type=str, implementation=None, use_cache=False),
+        Dependency(
+            name="string", type=str, implementation=None, use_cache=False
+        ),
     )
     assert provider.dependencies == expected
 

@@ -20,9 +20,6 @@ isort = "^5.10.1"
 mypy = "^0.931"
 flake8 = "^4.0.1"
 
-[tool.isort]
-profile = "black"
-
 [tool.coverage.run]
 source = ["aioinject"]
 command_line = "-m pytest"
@@ -38,10 +35,13 @@ skip_covered = true
 skip_empty = true
 precision = 2
 
+[tool.black]
+line_length = 79
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-
-[tool.black]
-line_length = 79

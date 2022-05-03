@@ -9,7 +9,9 @@ def clear_wrapper(wrapper: Any):
     inject_annotations = get_inject_annotations(wrapper)
     signature = inspect.signature(wrapper)
     new_params = tuple(
-        p for p in signature.parameters.values() if p.name not in inject_annotations
+        p
+        for p in signature.parameters.values()
+        if p.name not in inject_annotations
     )
     wrapper.__signature__ = signature.replace(parameters=new_params)
     for name in inject_annotations:
