@@ -28,14 +28,11 @@ with container.sync_context() as ctx:
 If you need to inject something into a function just annotate it with inject:
 
 ```python
-from typing import Annotated
-from aioinject import Inject, inject
+from aioinject import inject
 
 
 @inject
-def awesome_function(
-    service: Annotated[Service, Inject],
-):
+def awesome_function(service: Service):
     print(service)
 ```
 
@@ -64,7 +61,7 @@ container.register(providers.Callable(Service))
 
 @inject
 def awesome_function(
-    service: Annotated[Service, Inject],
+    service: Service,
 ):
     print(service)
 
@@ -90,10 +87,7 @@ class Session:
 
 
 class Service:
-    def __init__(
-        self,
-        session: Annotated[Session, Inject],
-    ):
+    def __init__(self, session: Session):
         self.session = session
 
 
