@@ -61,14 +61,14 @@ async def test_provide_async():
     assert await provider.provide() == 42
 
 
-def test_type_hints():
+def test_type_hints_on_function():
     def factory(a: int, b: str) -> None:
         pass
 
     provider = providers.Callable(factory)
     expected = {
-        "a": int,
-        "b": str,
+        "a": Annotated[int, Inject],
+        "b": Annotated[str, Inject],
     }
     assert provider.type_hints == expected
 
@@ -80,8 +80,8 @@ def test_type_hints_on_class():
 
     provider = providers.Callable(Test)
     expected = {
-        "a": int,
-        "b": str,
+        "a": Annotated[int, Inject],
+        "b": Annotated[str, Inject],
     }
     assert provider.type_hints == expected
 
@@ -143,6 +143,12 @@ def test_dependencies():
 
     provider = providers.Callable(factory)
     expected = (
+        Dependency(
+            name="a",
+            type=int,
+            implementation=None,
+            use_cache=True,
+        ),
         Dependency(
             name="service",
             type=dict[str, int],

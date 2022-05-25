@@ -10,7 +10,16 @@ import threading
 import typing
 import typing as t
 from inspect import isclass
-from typing import Any, Generic, Iterable, Optional, Sequence, Type, Union
+from typing import (
+    Annotated,
+    Any,
+    Generic,
+    Iterable,
+    Optional,
+    Sequence,
+    Type,
+    Union,
+)
 
 from aioinject.markers import Inject
 
@@ -25,6 +34,14 @@ class Dependency(Generic[_T]):
     use_cache: bool
 
 
+def _get_annotation_args(type_hint: Any) -> tuple[Type, tuple[Any]]:
+    try:
+        dep_type, *args = typing.get_args(type_hint)
+    except ValueError:
+        dep_type, args = type_hint, tuple()
+    return dep_type, args
+
+
 def collect_dependencies(
     dependant: t.Callable | dict[str, Any]
 ) -> Iterable[Dependency]:
@@ -34,11 +51,7 @@ def collect_dependencies(
         type_hints = dependant
 
     for name, hint in type_hints.items():
-        try:
-            dep_type, *args = typing.get_args(hint)
-        except ValueError:
-            dep_type, args = hint, tuple()
-
+        dep_type, args = _get_annotation_args(hint)
         inject = None
         for arg in args:
             try:
@@ -68,6 +81,14 @@ def _get_hints(provider: Provider):
         source = source.__init__
 
     type_hints = typing.get_type_hints(source, include_extras=True)
+    for key, value in type_hints.items():
+        dep_type, args = _get_annotation_args(value)
+        for arg in args:
+            if isinstance(arg, Inject):
+                break
+        else:
+            type_hints[key] = Annotated[value, Inject]
+
     return type_hints
 
 
