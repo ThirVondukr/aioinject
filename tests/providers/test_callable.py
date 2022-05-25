@@ -29,7 +29,7 @@ def test_can_provide(provider):
 
 
 def test_provided_instances_are_unique(provider):
-    first = (provider.provide_sync(),)
+    first = provider.provide_sync()
     second = provider.provide_sync()
     assert first is not second
 
