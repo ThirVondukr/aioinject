@@ -11,9 +11,10 @@ class InjectMethod(enum.Enum):
     context = enum.auto()
 
 
-def _get_context(inject_method: InjectMethod):
+def _get_context(inject_method: InjectMethod, is_async: bool):
     if inject_method is InjectMethod.container:
-        return container_var.get().context()
+        container = container_var.get()
+        return container.context() if is_async else container.sync_context()
     return context_var.get()
 
 
@@ -25,7 +26,7 @@ def _wrap_async(
 
     @functools.wraps(function)
     async def wrapper(*args, **kwargs):
-        context = _get_context(inject_method)
+        context = _get_context(inject_method, is_async=True)
         execute = functools.partial(
             context.execute, function, dependencies, *args, **kwargs
         )
@@ -44,7 +45,7 @@ def _wrap_sync(function, inject_method: InjectMethod):
 
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
-        context = _get_context(inject_method)
+        context = _get_context(inject_method, is_async=False)
         execute = functools.partial(
             context.execute, function, dependencies, *args, **kwargs
         )
