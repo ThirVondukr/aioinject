@@ -26,8 +26,10 @@ def make_container_ext(container: Container) -> Type[Extension]:
 
         def on_request_start(self) -> AwaitableOrValue[None]:
             self.token = container_var.set(container)
+            return None
 
         def on_request_end(self) -> AwaitableOrValue[None]:
             container_var.reset(self.token)
+            return None
 
     return ContainerExtension
