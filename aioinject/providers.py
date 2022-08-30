@@ -34,12 +34,12 @@ class Dependency(Generic[_T]):
     use_cache: bool
 
 
-def _get_annotation_args(type_hint: Any) -> tuple[Type, tuple[Any]]:
+def _get_annotation_args(type_hint: Any) -> tuple[Type, tuple[Any, ...]]:
     try:
         dep_type, *args = typing.get_args(type_hint)
     except ValueError:
-        dep_type, args = type_hint, tuple()
-    return dep_type, args
+        dep_type, args = type_hint, []
+    return dep_type, tuple(args)
 
 
 def collect_dependencies(
@@ -132,7 +132,7 @@ class Provider(t.Generic[_T], abc.ABC):
         raise NotImplementedError
 
     @property
-    def type_hints(self):
+    def type_hints(self) -> dict[str, Any]:
         raise NotImplementedError
 
     @property
@@ -182,14 +182,14 @@ class Singleton(Callable):
         self._lock = threading.Lock()
         self._async_lock = asyncio.Lock()
 
-    def provide_sync(self, **kwargs) -> _T:
+    def provide_sync(self, **kwargs: Any) -> _T:
         if self.cache is None:
             with self._lock:
                 if self.cache is None:
                     self.cache = super().provide_sync(**kwargs)
         return self.cache
 
-    async def provide(self, **kwargs) -> _T:
+    async def provide(self, **kwargs: Any) -> _T:
         if self.cache is None:
             async with self._async_lock:
                 if self.cache is None:
@@ -199,7 +199,7 @@ class Singleton(Callable):
 
 class Object(Provider):
     is_async = False
-    type_hints = {}
+    type_hints: dict[str, Any] = {}
 
     def __init__(
         self,

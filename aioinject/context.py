@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import contextvars
 import inspect
 from contextvars import ContextVar
 from typing import (
@@ -28,6 +29,8 @@ container_var: ContextVar["Container"] = ContextVar("aioinject_container")
 
 
 class _BaseInjectionContext:
+    _token: Optional[contextvars.Token]
+
     def __init__(self, container: Container):
         self.container = container
         self.cache: dict[tuple[Type[_T], Optional[Any]], _T] = {}

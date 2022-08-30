@@ -1,5 +1,5 @@
 import contextlib
-from typing import AsyncIterable, Iterable
+from typing import AsyncIterable, Generator, Iterable
 from unittest.mock import MagicMock
 
 import pytest
@@ -71,7 +71,7 @@ async def test_async_context_would_use_sync_context_managers():
     mock = MagicMock()
 
     @contextlib.contextmanager
-    def get_session() -> _Session:
+    def get_session() -> Generator[_Session, None, None]:
         mock.open()
         yield _Session()
         mock.close()
@@ -111,7 +111,7 @@ def test_sync_context_manager_should_receive_exception():
     @contextlib.contextmanager
     def get_session() -> Iterable[_Session]:
         try:
-            yield 42
+            yield _Session()
         except Exception:
             mock.exception_happened()
 

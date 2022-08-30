@@ -1,6 +1,6 @@
 import contextlib
 from collections import defaultdict
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Generator, Optional, Type, TypeVar
 
 from .context import InjectionContext, SyncInjectionContext
 from .providers import Provider
@@ -70,7 +70,7 @@ class Container:
         provider: Provider[_T],
         type_: Optional[Type[_T]] = None,
         impl: Optional[Any] = None,
-    ) -> None:
+    ) -> Generator[None, None, None]:
         provider_type = type_ or provider.type
         impl = impl or provider.impl
 
