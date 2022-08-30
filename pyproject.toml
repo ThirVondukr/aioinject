@@ -8,17 +8,17 @@ authors = ["Doctor <thirvondukr@gmail.com>"]
 python = "^3.10"
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.0.1"
+pytest = "^7.1.2"
 line-profiler = "^3.4.0"
-anyio = "^3.5.0"
-trio = "^0.20.0"
-coverage = {extras = ["toml"], version = "^6.3"}
-fastapi = {extras = ["all"], version = "^0.74.1"}
-strawberry-graphql = "^0.98.2"
-black = "^22.1.0"
+anyio = "^3.6.1"
+trio = "^0.21.0"
+coverage = {extras = ["toml"], version = "^6.4.4"}
+strawberry-graphql = "^0.126.2"
+black = "^22.6.0"
 isort = "^5.10.1"
-mypy = "^0.931"
-flake8 = "^4.0.1"
+mypy = "^0.971"
+flake8 = "^5.0.4"
+fastapi = "^0.81.0"
 
 [tool.coverage.run]
 source = ["aioinject"]
