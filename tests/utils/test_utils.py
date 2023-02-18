@@ -6,9 +6,9 @@ from aioinject.utils import get_inject_annotations
 
 def test_inject_annotations_returns_all_inject_markers() -> None:
     def func(
-        a: int,
-        b: Annotated[int, Inject],
-        c: Annotated[int, Inject(impl=bool)],
+        a: int,  # noqa: ARG001
+        b: Annotated[int, Inject],  # noqa: ARG001
+        c: Annotated[int, Inject(impl=bool)],  # noqa: ARG001
     ) -> None:
         pass
 

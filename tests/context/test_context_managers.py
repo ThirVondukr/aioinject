@@ -1,13 +1,19 @@
 import contextlib
-from collections.abc import AsyncIterable, Generator, Iterable
+from collections.abc import (
+    AsyncIterable,
+    AsyncIterator,
+    Generator,
+    Iterable,
+    Iterator,
+)
 from types import TracebackType
-from typing import Iterator, AsyncIterator
 from unittest.mock import MagicMock
 
 import pytest
 
 from aioinject import Callable, Container, providers
 from tests.context.test_context import _Session
+
 
 class _SyncContextManager:
     def __init__(self) -> None:
@@ -16,8 +22,12 @@ class _SyncContextManager:
     def __enter__(self) -> None:
         self.mock.open()
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None,
-                  exc_tb: TracebackType | None) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         self.mock.close()
 
 
@@ -28,9 +38,14 @@ class _AsyncContextManager:
     async def __aenter__(self) -> None:
         self.mock.open()
 
-    async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None,
-                  exc_tb: TracebackType | None) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         self.mock.close()
+
 
 def test_shutdowns_context_manager() -> None:
     mock = MagicMock()
@@ -119,17 +134,16 @@ def test_sync_context_manager_should_receive_exception() -> None:
     def get_session() -> Iterator[_Session]:
         try:
             yield _Session()
-        except Exception:
+        except Exception:  # noqa: BLE001
             mock.exception_happened()
 
     container = Container()
     container.register(Callable(get_session))
 
-    with pytest.raises(Exception):
-        with container.sync_context() as ctx:
-            session = ctx.resolve(_Session)
-            assert isinstance(session, _Session)
-            mock.exception_happened.assert_not_called()
-            raise Exception
+    with pytest.raises(Exception), container.sync_context() as ctx:
+        session = ctx.resolve(_Session)
+        assert isinstance(session, _Session)
+        mock.exception_happened.assert_not_called()
+        raise Exception
 
     mock.exception_happened.asssert_called_once()

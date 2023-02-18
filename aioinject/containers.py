@@ -38,11 +38,12 @@ class Container:
             return type_providers[0]
 
         if impl is None:
-            raise ValueError(
+            err_msg = (
                 f"Multiple providers for type {type_} were found,"
                 f"you have to specify implementation using Impl"
                 f"argument: Annotated[IService, Inject(Service)]"
             )
+            raise ValueError(err_msg)
         return next((p for p in type_providers if p.impl == impl), None)
 
     def get_provider(
@@ -56,7 +57,8 @@ class Container:
 
         provider = self._get_provider(self.providers, type_, impl)
         if provider is None:
-            raise ValueError(f"Provider for type {type_} not found")
+            err_msg = f"Provider for type {type_} not found"
+            raise ValueError(err_msg)
         return provider
 
     def context(self) -> InjectionContext:
@@ -69,11 +71,7 @@ class Container:
     def override(
         self,
         provider: Provider[_T],
-        type_: type[_T] | None = None,
-        impl: Any | None = None,
     ) -> Generator[None, None, None]:
-        impl = impl or provider.impl
-
         self._overrides[provider.type].append(provider)
         yield
         self._overrides[provider.type].remove(provider)

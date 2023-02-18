@@ -18,8 +18,7 @@ def inject(function: _T) -> _T:
         function,
         inject_method=InjectMethod.container,
     )
-    wrapper = utils.clear_wrapper(wrapper)
-    return wrapper
+    return utils.clear_wrapper(wrapper)
 
 
 def make_container_ext(container: Container) -> type[Extension]:
@@ -28,10 +27,10 @@ def make_container_ext(container: Container) -> type[Extension]:
 
         def on_request_start(self) -> AwaitableOrValue[None]:
             self.token = container_var.set(container)
-            return None
+            return None  # noqa: RET501
 
         def on_request_end(self) -> AwaitableOrValue[None]:
             container_var.reset(self.token)
-            return None
+            return None  # noqa: RET501
 
     return ContainerExtension

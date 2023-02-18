@@ -67,8 +67,8 @@ def test_would_fail_without_active_context() -> None:
 
 def test_would_not_inject_without_inject_marker(container: Container) -> None:
     @inject
-    def injectee(test: _Session) -> None:
-        pass
+    def injectee(session: _Session) -> _Session:
+        return session
 
     with container.sync_context(), pytest.raises(TypeError):
         injectee()
@@ -103,7 +103,9 @@ async def test_simple_service(container: Container) -> None:
 
 
 @pytest.mark.anyio
-async def test_retrieve_service_with_dependencies(container: Container) -> None:
+async def test_retrieve_service_with_dependencies(
+    container: Container,
+) -> None:
     with container.sync_context() as ctx:
         service = ctx.resolve(_Service)
         assert isinstance(service, _Service)
@@ -116,7 +118,9 @@ async def test_retrieve_service_with_dependencies(container: Container) -> None:
 
 
 @pytest.mark.anyio
-async def test_service_with_multiple_dependencies_with_same_type(container: Container) -> None:
+async def test_service_with_multiple_dependencies_with_same_type(
+    container: Container,
+) -> None:
     with container.sync_context() as ctx:
         service = ctx.resolve(_NeedsMultipleImplementations)
         assert isinstance(service.a, _ImplementationA)

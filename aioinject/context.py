@@ -4,10 +4,10 @@ import contextlib
 import contextvars
 import inspect
 import typing
-from collections.abc import Callable, Iterable, Coroutine
+from collections.abc import Callable, Coroutine, Iterable
 from contextvars import ContextVar
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar, Union, Awaitable
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, Union
 
 from .providers import Dependency
 
@@ -54,6 +54,7 @@ class InjectionContext(_BaseInjectionContext):
         self,
         type_: type[_T],
         impl: Any | None = None,
+        *,
         use_cache: bool = True,
     ) -> _T:
         if use_cache and (type_, impl) in self.cache:
@@ -88,6 +89,7 @@ class InjectionContext(_BaseInjectionContext):
         **kwargs: Any,
     ) -> _T:
         ...
+
     @typing.overload
     async def execute(
         self,
@@ -97,7 +99,6 @@ class InjectionContext(_BaseInjectionContext):
         **kwargs: Any,
     ) -> _T:
         ...
-
 
     async def execute(
         self,
@@ -142,6 +143,7 @@ class SyncInjectionContext(_BaseInjectionContext):
         self,
         type_: type[_T],
         impl: Any | None = None,
+        *,
         use_cache: bool = True,
     ) -> _T:
         if use_cache and (type_, impl) in self.cache:

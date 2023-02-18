@@ -1,6 +1,7 @@
 import inspect
 import typing
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from aioinject.markers import Inject
 
@@ -25,7 +26,8 @@ def get_inject_annotations(function: Callable[..., Any]) -> dict[str, Any]:
     return {
         name: annotation
         for name, annotation in typing.get_type_hints(
-            function, include_extras=True
+            function,
+            include_extras=True,
         ).items()
         if any(
             isinstance(arg, Inject) or arg is Inject

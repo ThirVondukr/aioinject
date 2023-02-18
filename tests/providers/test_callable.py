@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from aioinject import Inject, providers, Provider
+from aioinject import Inject, Provider, providers
 from aioinject.providers import Dependency
 
 
@@ -49,15 +49,17 @@ def test_would_return_factory_result(provider: Provider) -> None:
 
 @pytest.mark.anyio
 async def test_provide_async() -> None:
+    return_value = 42
+
     async def factory() -> int:
-        return 42
+        return return_value
 
     provider = providers.Callable(factory)
-    assert await provider.provide() == 42
+    assert await provider.provide() == return_value
 
 
 def test_type_hints_on_function() -> None:
-    def factory(a: int, b: str) -> None:
+    def factory(a: int, b: str) -> None:  # noqa: ARG001
         pass
 
     provider = providers.Callable(factory)
@@ -83,7 +85,7 @@ def test_type_hints_on_class() -> None:
 
 def test_annotated_type_hint() -> None:
     def factory(
-        a: Annotated[int, Inject(cache=False)],
+        a: Annotated[int, Inject(cache=False)],  # noqa: ARG001
     ) -> None:
         pass
 
@@ -125,14 +127,17 @@ def test_empty_dependencies() -> None:
         pass
 
     provider = providers.Callable(factory)
-    assert provider.dependencies == tuple()
+    assert provider.dependencies == ()
 
 
 def test_dependencies() -> None:
     def factory(
-        a: int,
-        service: Annotated[dict[str, int], Inject(defaultdict)],
-        string: Annotated[str, Inject(cache=False)],
+        a: int,  # noqa: ARG001
+        service: Annotated[  # noqa: ARG001
+            dict[str, int],
+            Inject(defaultdict),
+        ],
+        string: Annotated[str, Inject(cache=False)],  # noqa: ARG001
     ) -> None:
         pass
 
@@ -151,7 +156,10 @@ def test_dependencies() -> None:
             use_cache=True,
         ),
         Dependency(
-            name="string", type=str, implementation=None, use_cache=False
+            name="string",
+            type=str,
+            implementation=None,
+            use_cache=False,
         ),
     )
     assert provider.dependencies == expected

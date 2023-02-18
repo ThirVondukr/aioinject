@@ -21,8 +21,7 @@ def inject(function: _T) -> _T:
         function,
         inject_method=InjectMethod.context,
     )
-    wrapper = utils.clear_wrapper(wrapper)
-    return wrapper
+    return utils.clear_wrapper(wrapper)
 
 
 class InjectMiddleware(BaseHTTPMiddleware):
@@ -36,7 +35,9 @@ class InjectMiddleware(BaseHTTPMiddleware):
         self.container = container
 
     async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
+        self,
+        request: Request,
+        call_next: RequestResponseEndpoint,
     ) -> Response:
         async with self.container.context():
             return await call_next(request)

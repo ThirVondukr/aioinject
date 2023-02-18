@@ -2,7 +2,7 @@ from typing import Annotated
 
 import pytest
 
-from aioinject import Inject, Container
+from aioinject import Container, Inject
 from aioinject.providers import collect_dependencies
 
 from .conftest import _A, _C

@@ -17,7 +17,7 @@ class _B:
 
 
 def dependant(
-    arg: int,
+    arg: int,  # noqa: ARG001
     a: Annotated[_A, Inject],
     b: Annotated[_B, Inject],
 ) -> tuple[_A, _B]:
@@ -30,7 +30,9 @@ def test_should_remove_parameters_from_signature() -> None:
     assert len(signature.parameters) == 1
     expected = {
         "arg": Parameter(
-            name="arg", annotation=int, kind=Parameter.POSITIONAL_OR_KEYWORD
-        )
+            name="arg",
+            annotation=int,
+            kind=Parameter.POSITIONAL_OR_KEYWORD,
+        ),
     }
     assert signature.parameters == expected
