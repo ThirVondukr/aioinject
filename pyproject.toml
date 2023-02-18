@@ -100,3 +100,7 @@ lint = {composite = [
 #    "ruff .",
     "mypy .",
 ]}
+test = {composite = [
+    "coverage run",
+    "coverage report",
+]}

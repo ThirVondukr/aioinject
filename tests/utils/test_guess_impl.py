@@ -1,4 +1,5 @@
-from collections.abc import AsyncGenerator, AsyncIterable, Generator, Iterable
+from collections.abc import AsyncGenerator, AsyncIterable, Generator, Iterable, AsyncIterator, Iterator
+from typing import TypeAlias
 
 import pytest
 
@@ -31,20 +32,31 @@ def test_function_with_no_return_annotation() -> None:
         _guess_impl(factory)
 
 
-def test_iterables() -> None:
-    def iterable() -> Iterable[int]:
-        yield 42
+@pytest.mark.parametrize(
+    "return_type",
+    [
+        Iterable[int],
+        Iterator[int],
+        Generator[int, None, None],
+    ]
+)
+def test_sync_iterables(return_type: TypeAlias) -> None:
+    def iterable() -> return_type:
+        ...
 
-    async def async_iterable() -> AsyncIterable[int]:
-        yield 42
+    assert _guess_impl(iterable) is int
 
-    def generator() -> Generator[int, None, None]:
-        yield 42
 
-    async def async_generator() -> AsyncGenerator[int, None]:
-        yield 42
+@pytest.mark.parametrize(
+    "return_type",
+    [
+        AsyncIterable[int],
+        AsyncIterator[int],
+        AsyncGenerator[int, None],
+    ]
+)
+def test_async_iterables(return_type: TypeAlias):
+    async def iterable() -> return_type:
+        ...
 
-    factories = [iterable, async_iterable, generator, async_generator]
-
-    for factory in factories:
-        assert _guess_impl(factory) is int
+    assert _guess_impl(iterable) is int
