@@ -1,4 +1,4 @@
-from typing import AsyncGenerator, AsyncIterable, Generator, Iterable
+from collections.abc import AsyncGenerator, AsyncIterable, Generator, Iterable
 
 import pytest
 

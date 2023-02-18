@@ -1,11 +1,6 @@
 from collections import defaultdict
-from typing import (
-    Annotated,
-    AsyncGenerator,
-    AsyncIterable,
-    Generator,
-    Iterable,
-)
+from collections.abc import AsyncGenerator, AsyncIterable, Generator, Iterable
+from typing import Annotated
 from unittest.mock import patch
 
 import pytest

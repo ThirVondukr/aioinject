@@ -54,6 +54,7 @@ line_length = 79
 
 
 [tool.ruff]
+target-version = "py310"
 src = ["aioinject", "tests"]
 select = ["ALL"]
 ignore = [

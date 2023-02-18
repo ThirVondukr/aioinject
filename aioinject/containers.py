@@ -1,12 +1,13 @@
 import contextlib
 from collections import defaultdict
-from typing import Any, Generator, Optional, Type, TypeVar
+from collections.abc import Generator
+from typing import Any, TypeVar
 
 from .context import InjectionContext, SyncInjectionContext
 from .providers import Provider
 
 _T = TypeVar("_T")
-_Providers = dict[Type[_T], list[Provider[_T]]]
+_Providers = dict[type[_T], list[Provider[_T]]]
 
 
 class Container:
@@ -26,9 +27,9 @@ class Container:
     @staticmethod
     def _get_provider(
         providers: _Providers,
-        type_: Type[_T],
-        impl: Optional[Any] = None,
-    ) -> Optional[Provider[_T]]:
+        type_: type[_T],
+        impl: Any | None = None,
+    ) -> Provider[_T] | None:
         type_providers = providers[type_]
         if not type_providers:
             return None
@@ -46,8 +47,8 @@ class Container:
 
     def get_provider(
         self,
-        type_: Type[_T],
-        impl: Optional[Any] = None,
+        type_: type[_T],
+        impl: Any | None = None,
     ) -> Provider[_T]:
         overridden_provider = self._get_provider(self._overrides, type_, impl)
         if overridden_provider is not None:
@@ -68,10 +69,9 @@ class Container:
     def override(
         self,
         provider: Provider[_T],
-        type_: Optional[Type[_T]] = None,
-        impl: Optional[Any] = None,
+        type_: type[_T] | None = None,
+        impl: Any | None = None,
     ) -> Generator[None, None, None]:
-        provider_type = type_ or provider.type
         impl = impl or provider.impl
 
         self._overrides[provider.type].append(provider)

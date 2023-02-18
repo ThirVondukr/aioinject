@@ -3,18 +3,9 @@ from __future__ import annotations
 import contextlib
 import contextvars
 import inspect
+from collections.abc import Callable, Iterable
 from contextvars import ContextVar
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Iterable,
-    Optional,
-    Protocol,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, Union
 
 from .providers import Dependency
 
@@ -26,7 +17,7 @@ _T = TypeVar("_T")
 _AnyCtx = Union["InjectionContext", "SyncInjectionContext"]
 context_var: ContextVar[_AnyCtx] = ContextVar("aioinject_context")
 
-container_var: ContextVar["Container"] = ContextVar("aioinject_container")
+container_var: ContextVar[Container] = ContextVar("aioinject_container")
 
 
 TypeAndImpl = tuple[type[_T], _T | None]
@@ -44,7 +35,7 @@ class DiCache(Protocol):
 
 
 class _BaseInjectionContext:
-    _token: Optional[contextvars.Token]
+    _token: contextvars.Token | None
 
     def __init__(self, container: Container):
         self.container = container
@@ -59,8 +50,8 @@ class InjectionContext(_BaseInjectionContext):
 
     async def resolve(
         self,
-        type_: Type[_T],
-        impl: Optional[Any] = None,
+        type_: type[_T],
+        impl: Any | None = None,
         use_cache: bool = True,
     ) -> _T:
         if use_cache and (type_, impl) in self.cache:
@@ -122,8 +113,8 @@ class SyncInjectionContext(_BaseInjectionContext):
 
     def resolve(
         self,
-        type_: Type[_T],
-        impl: Optional[Any] = None,
+        type_: type[_T],
+        impl: Any | None = None,
         use_cache: bool = True,
     ) -> _T:
         if use_cache and (type_, impl) in self.cache:

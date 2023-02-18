@@ -1,5 +1,4 @@
 import contextvars
-from typing import Type
 
 from strawberry.extensions import Extension
 from strawberry.utils.await_maybe import AwaitableOrValue
@@ -20,7 +19,7 @@ def inject(function):
     return wrapper
 
 
-def make_container_ext(container: Container) -> Type[Extension]:
+def make_container_ext(container: Container) -> type[Extension]:
     class ContainerExtension(Extension):
         token: contextvars.Token
 

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import Request
 from starlette.middleware.base import (
     BaseHTTPMiddleware,
@@ -28,7 +26,7 @@ class InjectMiddleware(BaseHTTPMiddleware):
         self,
         app: ASGIApp,
         container: Container,
-        dispatch: Optional[DispatchFunction] = None,
+        dispatch: DispatchFunction | None = None,
     ) -> None:
         super().__init__(app, dispatch)
         self.container = container

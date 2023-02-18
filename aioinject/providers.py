@@ -9,17 +9,9 @@ import inspect
 import threading
 import typing
 import typing as t
+from collections.abc import Iterable, Sequence
 from inspect import isclass
-from typing import (
-    Annotated,
-    Any,
-    Generic,
-    Iterable,
-    Optional,
-    Sequence,
-    Type,
-    Union,
-)
+from typing import Annotated, Any, Generic
 
 from aioinject.markers import Inject
 
@@ -29,12 +21,12 @@ _T = t.TypeVar("_T")
 @dataclasses.dataclass
 class Dependency(Generic[_T]):
     name: str
-    type: Type[_T]
+    type: type[_T]
     implementation: Any
     use_cache: bool
 
 
-def _get_annotation_args(type_hint: Any) -> tuple[Type, tuple[Any, ...]]:
+def _get_annotation_args(type_hint: Any) -> tuple[type, tuple[Any, ...]]:
     try:
         dep_type, *args = typing.get_args(type_hint)
     except ValueError:
@@ -119,7 +111,7 @@ def _guess_impl(factory) -> type:
 
 
 class Provider(t.Generic[_T], abc.ABC):
-    def __init__(self, type_: Type[_T], impl: Any):
+    def __init__(self, type_: type[_T], impl: Any):
         self.type = type_
         self.impl = impl
 
@@ -147,8 +139,8 @@ class Provider(t.Generic[_T], abc.ABC):
 class Callable(Provider):
     def __init__(
         self,
-        factory: Union[t.Callable[..., _T], Type[_T]],
-        type_: Optional[Type[_T]] = None,
+        factory: t.Callable[..., _T] | type[_T],
+        type_: type[_T] | None = None,
     ):
         super().__init__(
             type_=type_ or _guess_impl(factory),
@@ -178,11 +170,11 @@ class Callable(Provider):
 class Singleton(Callable, Generic[_T]):
     def __init__(
         self,
-        factory: Union[t.Callable[..., _T], Type[_T]],
-        type_: Optional[Type[_T]] = None,
+        factory: t.Callable[..., _T] | type[_T],
+        type_: type[_T] | None = None,
     ) -> None:
         super().__init__(factory=factory, type_=type_)
-        self.cache: Optional[_T] = None
+        self.cache: _T | None = None
         self._lock = threading.Lock()
         self._async_lock = asyncio.Lock()
 
@@ -208,7 +200,7 @@ class Object(Provider):
     def __init__(
         self,
         object_: _T,
-        type_: Optional[type] = None,
+        type_: type | None = None,
     ):
         super().__init__(
             type_=type_ or type(object_),
