@@ -1,3 +1,5 @@
+from typing import TypeVar
+
 from fastapi import Request
 from starlette.middleware.base import (
     BaseHTTPMiddleware,
@@ -11,8 +13,10 @@ import aioinject
 from aioinject import Container, utils
 from aioinject.decorators import InjectMethod
 
+_T = TypeVar("_T")
 
-def inject(function):
+
+def inject(function: _T) -> _T:
     wrapper = aioinject.decorators.inject(
         function,
         inject_method=InjectMethod.context,

@@ -64,6 +64,8 @@ ignore = [
     "PD",  # pandas-vet
     "I",  # Isort
     "INP",
+    "ANN101",
+    "ANN401",
     "TCH001",
     "TCH002",
     "TCH003",

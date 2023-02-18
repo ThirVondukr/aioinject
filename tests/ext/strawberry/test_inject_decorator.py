@@ -20,11 +20,11 @@ def dependant(
     arg: int,
     a: Annotated[_A, Inject],
     b: Annotated[_B, Inject],
-):
+) -> tuple[_A, _B]:
     return a, b
 
 
-def test_should_remove_parameters_from_signature():
+def test_should_remove_parameters_from_signature() -> None:
     wrapped = inject(dependant)
     signature = inspect.signature(wrapped)
     assert len(signature.parameters) == 1

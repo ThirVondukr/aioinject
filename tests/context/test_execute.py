@@ -2,7 +2,7 @@ from typing import Annotated
 
 import pytest
 
-from aioinject import Inject
+from aioinject import Inject, Container
 from aioinject.providers import collect_dependencies
 
 from .conftest import _A, _C
@@ -11,15 +11,18 @@ from .conftest import _A, _C
 def _dependant(
     a: Annotated[_A, Inject],
     c: Annotated[_C, Inject],
-):
+) -> tuple[_A, _C]:
     return a, c
 
 
-async def _async_dependant(a: Annotated[_A, Inject], c: Annotated[_C, Inject]):
+async def _async_dependant(
+    a: Annotated[_A, Inject],
+    c: Annotated[_C, Inject],
+) -> tuple[_A, _C]:
     return a, c
 
 
-def test_execute_sync(container):
+def test_execute_sync(container: Container) -> None:
     dependencies = list(collect_dependencies(_dependant))
     with container.sync_context() as ctx:
         a, c = ctx.execute(_dependant, dependencies)
@@ -27,7 +30,7 @@ def test_execute_sync(container):
         assert isinstance(c, _C)
 
 
-def test_execute_sync_with_kwargs(container):
+def test_execute_sync_with_kwargs(container: Container) -> None:
     dependencies = list(collect_dependencies(_dependant))
     provided_a = _A()
     with container.sync_context() as ctx:
@@ -37,7 +40,7 @@ def test_execute_sync_with_kwargs(container):
 
 
 @pytest.mark.anyio
-async def test_execute_async(container):
+async def test_execute_async(container: Container) -> None:
     dependencies = list(collect_dependencies(_dependant))
     async with container.context() as ctx:
         a, c = await ctx.execute(_dependant, dependencies)
@@ -46,7 +49,7 @@ async def test_execute_async(container):
 
 
 @pytest.mark.anyio
-async def test_execute_async_with_kwargs(container):
+async def test_execute_async_with_kwargs(container: Container) -> None:
     dependencies = list(collect_dependencies(_dependant))
     provided_a = _A()
     async with container.context() as ctx:
@@ -56,7 +59,7 @@ async def test_execute_async_with_kwargs(container):
 
 
 @pytest.mark.anyio
-async def test_execute_async_coroutine(container):
+async def test_execute_async_coroutine(container: Container) -> None:
     dependencies = list(collect_dependencies(_async_dependant))
     async with container.context() as ctx:
         a, c = await ctx.execute(_async_dependant, dependencies)

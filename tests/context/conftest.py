@@ -21,7 +21,7 @@ class _C:
 
 
 @pytest.fixture
-def container():
+def container() -> Container:
     container = Container()
     container.register(Callable(_A))
     container.register(Callable(_B))

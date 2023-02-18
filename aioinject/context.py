@@ -3,9 +3,11 @@ from __future__ import annotations
 import contextlib
 import contextvars
 import inspect
-from collections.abc import Callable, Iterable
+import typing
+from collections.abc import Callable, Iterable, Coroutine
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar, Union
+from types import TracebackType
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, Union, Awaitable
 
 from .providers import Dependency
 
@@ -37,15 +39,15 @@ class DiCache(Protocol):
 class _BaseInjectionContext:
     _token: contextvars.Token | None
 
-    def __init__(self, container: Container):
+    def __init__(self, container: Container) -> None:
         self.container = container
         self.cache: DiCache = {}
         self._token = None
 
 
 class InjectionContext(_BaseInjectionContext):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, container: Container) -> None:
+        super().__init__(container=container)
         self.exit_stack = contextlib.AsyncExitStack()
 
     async def resolve(
@@ -68,18 +70,38 @@ class InjectionContext(_BaseInjectionContext):
 
         resolved = await provider.provide(**dependencies)
         if isinstance(resolved, contextlib.ContextDecorator):
-            resolved = self.exit_stack.enter_context(resolved)
+            resolved = self.exit_stack.enter_context(resolved)  # type: ignore[arg-type]
 
         if isinstance(resolved, contextlib.AsyncContextDecorator):
-            resolved = await self.exit_stack.enter_async_context(resolved)
+            resolved = await self.exit_stack.enter_async_context(resolved)  # type: ignore[arg-type]
 
         if use_cache:
             self.cache[type_, impl] = resolved
         return resolved
 
+    @typing.overload
     async def execute(
         self,
-        function: Callable[[Any], _T],
+        function: Callable[..., Coroutine[Any, Any, _T]],
+        dependencies: Iterable[Dependency],
+        *args: Any,
+        **kwargs: Any,
+    ) -> _T:
+        ...
+    @typing.overload
+    async def execute(
+        self,
+        function: Callable[..., _T],
+        dependencies: Iterable[Dependency],
+        *args: Any,
+        **kwargs: Any,
+    ) -> _T:
+        ...
+
+
+    async def execute(
+        self,
+        function: Callable[..., Coroutine[Any, Any, _T] | _T],
         dependencies: Iterable[Dependency],
         *args: Any,
         **kwargs: Any,
@@ -95,20 +117,25 @@ class InjectionContext(_BaseInjectionContext):
             )
         if inspect.iscoroutinefunction(function):
             return await function(*args, **kwargs, **resolved)
-        return function(*args, **kwargs, **resolved)
+        return function(*args, **kwargs, **resolved)  # type: ignore[return-value]
 
     async def __aenter__(self) -> InjectionContext:
         self._token = context_var.set(self)
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        context_var.reset(self._token)
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        context_var.reset(self._token)  # type: ignore[arg-type]
         await self.exit_stack.__aexit__(exc_type, exc_val, exc_tb)
 
 
 class SyncInjectionContext(_BaseInjectionContext):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, container: Container) -> None:
+        super().__init__(container=container)
         self.exit_stack = contextlib.ExitStack()
 
     def resolve(
@@ -132,7 +159,7 @@ class SyncInjectionContext(_BaseInjectionContext):
 
         resolved = provider.provide_sync(**dependencies)
         if isinstance(resolved, contextlib.ContextDecorator):
-            resolved = self.exit_stack.enter_context(resolved)
+            resolved = self.exit_stack.enter_context(resolved)  # type: ignore[arg-type]
 
         if use_cache:
             self.cache[type_, impl] = resolved
@@ -140,9 +167,9 @@ class SyncInjectionContext(_BaseInjectionContext):
 
     def execute(
         self,
-        function: Callable[[Any], _T],
+        function: Callable[..., _T],
         dependencies: Iterable[Dependency],
-        *args,
+        *args: Any,
         **kwargs: Any,
     ) -> _T:
         resolved = {}
@@ -160,6 +187,11 @@ class SyncInjectionContext(_BaseInjectionContext):
         self._token = context_var.set(self)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        context_var.reset(self._token)
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        context_var.reset(self._token)  # type: ignore[arg-type]
         self.exit_stack.__exit__(exc_type, exc_val, exc_tb)

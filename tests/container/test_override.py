@@ -5,7 +5,7 @@ class _A:
     pass
 
 
-def test_provider_override():
+def test_provider_override() -> None:
     a = _A()
     container = Container()
     container.register(Object(a))

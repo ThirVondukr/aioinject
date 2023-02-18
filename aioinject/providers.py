@@ -11,7 +11,7 @@ import typing
 import typing as t
 from collections.abc import Iterable, Sequence
 from inspect import isclass
-from typing import Annotated, Any, Generic
+from typing import Annotated, Any, Generic, TypeAlias
 
 from aioinject.markers import Inject
 
@@ -67,7 +67,7 @@ def collect_dependencies(
         )
 
 
-def _get_hints(provider: Provider):
+def _get_hints(provider: Provider) -> dict[str, Any]:
     source = provider.impl
     if inspect.isclass(source):
         source = source.__init__
@@ -87,12 +87,14 @@ def _get_hints(provider: Provider):
 _ITERABLES = {
     collections.abc.Generator,
     collections.abc.AsyncGenerator,
+    collections.abc.Iterator,
+    collections.abc.AsyncIterator,
     collections.abc.Iterable,
     collections.abc.AsyncIterable,
 }
 
 
-def _guess_impl(factory) -> type:
+def _guess_impl(factory: t.Callable[..., Any]) -> type:
     if isclass(factory):
         return factory
     type_hints = typing.get_type_hints(factory)
@@ -111,16 +113,16 @@ def _guess_impl(factory) -> type:
 
 
 class Provider(t.Generic[_T], abc.ABC):
-    def __init__(self, type_: type[_T], impl: Any):
+    def __init__(self, type_: type[_T], impl: Any) -> None:
         self.type = type_
         self.impl = impl
 
     @abc.abstractmethod
-    def provide_sync(self, **kwargs):
+    def provide_sync(self, **kwargs: Any) -> _T:
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def provide(self, **kwargs):
+    async def provide(self, **kwargs: Any) -> _T:
         raise NotImplementedError
 
     @property
@@ -136,27 +138,27 @@ class Provider(t.Generic[_T], abc.ABC):
         return tuple(collect_dependencies(self.type_hints))
 
 
-class Callable(Provider):
+class Callable(Provider[_T]):
     def __init__(
         self,
         factory: t.Callable[..., _T] | type[_T],
         type_: type[_T] | None = None,
-    ):
+    ) -> None:
         super().__init__(
             type_=type_ or _guess_impl(factory),
             impl=factory,
         )
 
-    def provide_sync(self, **kwargs):
+    def provide_sync(self, **kwargs: Any) -> _T:
         return self.impl(**kwargs)
 
-    async def provide(self, **kwargs):
+    async def provide(self, **kwargs: Any) -> _T:
         if self.is_async:
             return await self.impl(**kwargs)
         return self.provide_sync(**kwargs)
 
     @functools.cached_property
-    def type_hints(self):
+    def type_hints(self) -> dict[str, Any]:
         type_hints = _get_hints(self)
         if "return" in type_hints:
             del type_hints["return"]
@@ -193,22 +195,22 @@ class Singleton(Callable, Generic[_T]):
         return self.cache
 
 
-class Object(Provider):
+class Object(Provider[_T]):
     is_async = False
     type_hints: dict[str, Any] = {}
 
     def __init__(
         self,
         object_: _T,
-        type_: type | None = None,
-    ):
+        type_: type | TypeAlias | None = None,
+    ) -> None:
         super().__init__(
             type_=type_ or type(object_),
             impl=object_,
         )
 
-    def provide_sync(self, **kwargs):
+    def provide_sync(self, **kwargs: Any) -> _T:
         return self.impl
 
-    async def provide(self, **kwargs):
+    async def provide(self, **kwargs: Any) -> _T:
         return self.impl

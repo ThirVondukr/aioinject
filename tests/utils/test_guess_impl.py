@@ -5,14 +5,14 @@ import pytest
 from aioinject.providers import _guess_impl
 
 
-def test_class():
+def test_class() -> None:
     class A:
         pass
 
     assert _guess_impl(A) is A
 
 
-def test_function():
+def test_function() -> None:
     def factory() -> int:
         return 42
 
@@ -23,15 +23,15 @@ def test_function():
     assert _guess_impl(async_factory) is int
 
 
-def test_function_with_no_return_annotation():
-    def factory():
+def test_function_with_no_return_annotation() -> None:
+    def factory():  # noqa: ANN202
         pass
 
     with pytest.raises(ValueError):
         _guess_impl(factory)
 
 
-def test_iterables():
+def test_iterables() -> None:
     def iterable() -> Iterable[int]:
         yield 42
 

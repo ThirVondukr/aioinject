@@ -1,5 +1,7 @@
 import contextlib
 from collections.abc import AsyncIterable, Generator, Iterable
+from types import TracebackType
+from typing import Iterator, AsyncIterator
 from unittest.mock import MagicMock
 
 import pytest
@@ -7,12 +9,34 @@ import pytest
 from aioinject import Callable, Container, providers
 from tests.context.test_context import _Session
 
+class _SyncContextManager:
+    def __init__(self) -> None:
+        self.mock = MagicMock()
 
-def test_shutdowns_context_manager():
+    def __enter__(self) -> None:
+        self.mock.open()
+
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None,
+                  exc_tb: TracebackType | None) -> None:
+        self.mock.close()
+
+
+class _AsyncContextManager:
+    def __init__(self) -> None:
+        self.mock = MagicMock()
+
+    async def __aenter__(self) -> None:
+        self.mock.open()
+
+    async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None,
+                  exc_tb: TracebackType | None) -> None:
+        self.mock.close()
+
+def test_shutdowns_context_manager() -> None:
     mock = MagicMock()
 
     @contextlib.contextmanager
-    def get_session() -> Iterable[_Session]:
+    def get_session() -> Iterator[_Session]:
         yield _Session()
         mock.close()
 
@@ -27,31 +51,22 @@ def test_shutdowns_context_manager():
     mock.close.assert_called()
 
 
-def test_should_not_use_resolved_class_as_context_manager():
-    mock = MagicMock()
-
-    class _Test:
-        def __enter__(self):
-            mock.open()
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            mock.close()
-
+def test_should_not_use_resolved_class_as_context_manager() -> None:
     container = Container()
-    container.register(providers.Callable(_Test))
+    container.register(providers.Callable(_SyncContextManager))
 
     with container.sync_context() as ctx:
-        ctx.resolve(_Test)
-        mock.open.assert_not_called()
-    mock.close.assert_not_called()
+        resolved = ctx.resolve(_SyncContextManager)
+        resolved.mock.open.assert_not_called()
+    resolved.mock.close.assert_not_called()
 
 
 @pytest.mark.anyio
-async def test_async_context_manager():
+async def test_async_context_manager() -> None:
     mock = MagicMock()
 
     @contextlib.asynccontextmanager
-    async def get_session() -> AsyncIterable[_Session]:
+    async def get_session() -> AsyncIterator[_Session]:
         mock.open()
         yield _Session()
         mock.close()
@@ -67,7 +82,7 @@ async def test_async_context_manager():
 
 
 @pytest.mark.anyio
-async def test_async_context_would_use_sync_context_managers():
+async def test_async_context_would_use_sync_context_managers() -> None:
     mock = MagicMock()
 
     @contextlib.contextmanager
@@ -82,34 +97,26 @@ async def test_async_context_would_use_sync_context_managers():
         mock.open.assert_not_called()
         await ctx.resolve(_Session)
         mock.open.assert_called_once()
+        mock.close.assert_not_called()
     mock.close.assert_called_once()
 
 
 @pytest.mark.anyio
-async def test_should_not_use_resolved_class_as_async_context_manager():
-    mock = MagicMock()
-
-    class Test:
-        def __aenter__(self):
-            mock.open()
-
-        def __aexit__(self, exc_type, exc_val, exc_tb):
-            mock.close()
-
+async def test_should_not_use_resolved_class_as_async_context_manager() -> None:
     container = Container()
-    container.register(Callable(Test))
+    container.register(Callable(_AsyncContextManager))
     async with container.context() as ctx:
-        instance = await ctx.resolve(Test)
-        assert isinstance(instance, Test)
-    mock.open.assert_not_called()
-    mock.close.assert_not_called()
+        instance = await ctx.resolve(_AsyncContextManager)
+        assert isinstance(instance, _AsyncContextManager)
+    instance.mock.open.assert_not_called()
+    instance.mock.close.assert_not_called()
 
 
-def test_sync_context_manager_should_receive_exception():
+def test_sync_context_manager_should_receive_exception() -> None:
     mock = MagicMock()
 
     @contextlib.contextmanager
-    def get_session() -> Iterable[_Session]:
+    def get_session() -> Iterator[_Session]:
         try:
             yield _Session()
         except Exception:

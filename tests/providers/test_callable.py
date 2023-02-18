@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from aioinject import Inject, providers
+from aioinject import Inject, providers, Provider
 from aioinject.providers import Dependency
 
 
@@ -14,22 +14,22 @@ class _Test:
 
 
 @pytest.fixture
-def provider():
+def provider() -> Provider:
     return providers.Callable(_Test)
 
 
-def test_can_provide(provider):
+def test_can_provide(provider: Provider) -> None:
     instance = provider.provide_sync()
     assert isinstance(instance, _Test)
 
 
-def test_provided_instances_are_unique(provider):
+def test_provided_instances_are_unique(provider: Provider) -> None:
     first = provider.provide_sync()
     second = provider.provide_sync()
     assert first is not second
 
 
-def test_would_pass_kwargs_into_impl(provider):
+def test_would_pass_kwargs_into_impl(provider: Provider) -> None:
     with patch.object(provider, "impl") as factory_mock:
         provider.provide_sync()
         factory_mock.assert_called_once_with()
@@ -40,7 +40,7 @@ def test_would_pass_kwargs_into_impl(provider):
         factory_mock.assert_called_once_with(**kwargs)
 
 
-def test_would_return_factory_result(provider):
+def test_would_return_factory_result(provider: Provider) -> None:
     instance = object()
     with patch.object(provider, "impl") as factory_mock:
         factory_mock.return_value = instance
@@ -48,7 +48,7 @@ def test_would_return_factory_result(provider):
 
 
 @pytest.mark.anyio
-async def test_provide_async():
+async def test_provide_async() -> None:
     async def factory() -> int:
         return 42
 
@@ -56,7 +56,7 @@ async def test_provide_async():
     assert await provider.provide() == 42
 
 
-def test_type_hints_on_function():
+def test_type_hints_on_function() -> None:
     def factory(a: int, b: str) -> None:
         pass
 
@@ -68,9 +68,9 @@ def test_type_hints_on_function():
     assert provider.type_hints == expected
 
 
-def test_type_hints_on_class():
+def test_type_hints_on_class() -> None:
     class Test:
-        def __init__(self, a: int, b: str):
+        def __init__(self, a: int, b: str) -> None:
             pass
 
     provider = providers.Callable(Test)
@@ -81,7 +81,7 @@ def test_type_hints_on_class():
     assert provider.type_hints == expected
 
 
-def test_annotated_type_hint():
+def test_annotated_type_hint() -> None:
     def factory(
         a: Annotated[int, Inject(cache=False)],
     ) -> None:
@@ -91,8 +91,8 @@ def test_annotated_type_hint():
     assert provider.type_hints == {"a": Annotated[int, Inject(cache=False)]}
 
 
-def test_should_specify_return_type():
-    def factory():
+def test_should_specify_return_type() -> None:
+    def factory():  # noqa: ANN202
         pass
 
     with pytest.raises(ValueError):
@@ -104,7 +104,7 @@ def test_should_specify_return_type():
     providers.Callable(factory_with_return)
 
 
-def test_is_async_on_sync():
+def test_is_async_on_sync() -> None:
     def factory() -> None:
         pass
 
@@ -112,7 +112,7 @@ def test_is_async_on_sync():
     assert not provider.is_async
 
 
-def test_is_async_on_async():
+def test_is_async_on_async() -> None:
     async def factory() -> None:
         pass
 
@@ -120,7 +120,7 @@ def test_is_async_on_async():
     assert provider.is_async
 
 
-def test_empty_dependencies():
+def test_empty_dependencies() -> None:
     def factory() -> None:
         pass
 
@@ -128,7 +128,7 @@ def test_empty_dependencies():
     assert provider.dependencies == tuple()
 
 
-def test_dependencies():
+def test_dependencies() -> None:
     def factory(
         a: int,
         service: Annotated[dict[str, int], Inject(defaultdict)],
@@ -157,7 +157,7 @@ def test_dependencies():
     assert provider.dependencies == expected
 
 
-def test_generator_return_types():
+def test_generator_return_types() -> None:
     def iterable() -> Iterable[int]:
         yield 42
 

@@ -12,17 +12,17 @@ class _Session:
 
 
 class _Repository:
-    def __init__(self, session: Annotated[_Session, Inject]):
+    def __init__(self, session: Annotated[_Session, Inject]) -> None:
         self.session = session
 
 
 class _Service:
-    def __init__(self, repository: Annotated[_Repository, Inject]):
+    def __init__(self, repository: Annotated[_Repository, Inject]) -> None:
         self.repository = repository
 
 
 @pytest.fixture
-def container():
+def container() -> Container:
     container = Container()
     container.register(providers.Callable(_Session))
     container.register(providers.Callable(_Repository))
@@ -30,11 +30,11 @@ def container():
     return container
 
 
-def test_can_instantiate_context(container):
+def test_can_instantiate_context(container: Container) -> None:
     assert container.context()
 
 
-def test_can_retrieve_service(container):
+def test_can_retrieve_service(container: Container) -> None:
     with container.sync_context() as ctx:
         service = ctx.resolve(_Service)
         assert isinstance(service, _Service)
@@ -42,7 +42,7 @@ def test_can_retrieve_service(container):
         assert isinstance(service.repository.session, _Session)
 
 
-def test_uses_cache(container):
+def test_uses_cache(container: Container) -> None:
     with container.sync_context() as ctx:
         service = ctx.resolve(_Service)
         a, b, c = service, service.repository, service.repository.session
@@ -53,7 +53,7 @@ def test_uses_cache(container):
         assert c is service.repository.session
 
 
-def test_does_not_preserve_cache_if_recreated(container):
+def test_does_not_preserve_cache_if_recreated(container: Container) -> None:
     with container.sync_context() as ctx:
         service = ctx.resolve(_Service)
 
@@ -62,7 +62,7 @@ def test_does_not_preserve_cache_if_recreated(container):
 
 
 @pytest.mark.anyio
-async def test_provide_async():
+async def test_provide_async() -> None:
     class Test:
         pass
 

@@ -6,7 +6,7 @@ from aioinject import Inject, Object
 
 
 @pytest.mark.anyio
-async def test_would_provide_same_object():
+async def test_would_provide_same_object() -> None:
     obj = object()
     provider = Object(object_=obj, type_=Any)
 
@@ -15,24 +15,24 @@ async def test_would_provide_same_object():
 
 
 @pytest.fixture
-def dependencies_test_data():
+def dependencies_test_data() -> tuple[Any, ...]:
     class Test:
-        def __init__(self, a: Annotated[int, Inject]):
+        def __init__(self, a: Annotated[int, Inject]) -> None:
             pass
 
-    def test(a: Annotated[int, Inject], b: Annotated[Test, Inject]):
+    def test(a: Annotated[int, Inject], b: Annotated[Test, Inject]) -> None:
         pass
 
     return object(), Test, test
 
 
-def test_should_have_no_dependencies(dependencies_test_data):
+def test_should_have_no_dependencies(dependencies_test_data: tuple[Any, ...]) -> None:
     for obj in dependencies_test_data:
         provider = Object(object_=obj, type_=Any)
         assert not provider.dependencies
 
 
-def test_should_have_empty_type_hints(dependencies_test_data):
+def test_should_have_empty_type_hints(dependencies_test_data: tuple[Any, ...]) -> None:
     for obj in dependencies_test_data:
         provider = Object(object_=obj, type_=Any)
         assert not provider.type_hints
