@@ -6,3 +6,5 @@ __pychache__/
 dist
 htmlcov/
 .coverage
+
+.pdm.toml
