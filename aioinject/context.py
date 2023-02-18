@@ -10,6 +10,7 @@ from typing import (
     Callable,
     Iterable,
     Optional,
+    Protocol,
     Type,
     TypeVar,
     Union,
@@ -28,12 +29,26 @@ context_var: ContextVar[_AnyCtx] = ContextVar("aioinject_context")
 container_var: ContextVar["Container"] = ContextVar("aioinject_container")
 
 
+TypeAndImpl = tuple[type[_T], _T | None]
+
+
+class DiCache(Protocol):
+    def __setitem__(self, key: TypeAndImpl[_T], value: _T) -> None:
+        ...
+
+    def __getitem__(self, item: TypeAndImpl[_T]) -> _T:
+        ...
+
+    def __contains__(self, item: TypeAndImpl) -> bool:
+        ...
+
+
 class _BaseInjectionContext:
     _token: Optional[contextvars.Token]
 
     def __init__(self, container: Container):
         self.container = container
-        self.cache: dict[tuple[Type[_T], Optional[Any]], _T] = {}
+        self.cache: DiCache = {}
         self._token = None
 
 
@@ -45,7 +60,7 @@ class InjectionContext(_BaseInjectionContext):
     async def resolve(
         self,
         type_: Type[_T],
-        impl: Optional[Type] = None,
+        impl: Optional[Any] = None,
         use_cache: bool = True,
     ) -> _T:
         if use_cache and (type_, impl) in self.cache:

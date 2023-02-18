@@ -14,10 +14,10 @@ def test_class():
 
 def test_function():
     def factory() -> int:
-        pass
+        return 42
 
     async def async_factory() -> int:
-        pass
+        return 42
 
     assert _guess_impl(factory) is int
     assert _guess_impl(async_factory) is int
@@ -33,16 +33,16 @@ def test_function_with_no_return_annotation():
 
 def test_iterables():
     def iterable() -> Iterable[int]:
-        pass
+        yield 42
 
-    def async_iterable() -> AsyncIterable[int]:
-        pass
+    async def async_iterable() -> AsyncIterable[int]:
+        yield 42
 
     def generator() -> Generator[int, None, None]:
-        pass
+        yield 42
 
-    def async_generator() -> AsyncGenerator[int, None]:
-        pass
+    async def async_generator() -> AsyncGenerator[int, None]:
+        yield 42
 
     factories = [iterable, async_iterable, generator, async_generator]
 

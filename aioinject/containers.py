@@ -10,7 +10,7 @@ _Providers = dict[Type[_T], list[Provider[_T]]]
 
 
 class Container:
-    def __init__(self):
+    def __init__(self) -> None:
         self.providers: _Providers = defaultdict(list)
         self._overrides: _Providers = defaultdict(list)
 

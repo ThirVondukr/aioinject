@@ -175,9 +175,13 @@ class Callable(Provider):
         return inspect.iscoroutinefunction(self.impl)
 
 
-class Singleton(Callable):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class Singleton(Callable, Generic[_T]):
+    def __init__(
+        self,
+        factory: Union[t.Callable[..., _T], Type[_T]],
+        type_: Optional[Type[_T]] = None,
+    ) -> None:
+        super().__init__(factory=factory, type_=type_)
         self.cache: Optional[_T] = None
         self._lock = threading.Lock()
         self._async_lock = asyncio.Lock()
