@@ -1,4 +1,11 @@
-from collections.abc import AsyncGenerator, AsyncIterable, Generator, Iterable, AsyncIterator, Iterator
+from collections.abc import (
+    AsyncGenerator,
+    AsyncIterable,
+    AsyncIterator,
+    Generator,
+    Iterable,
+    Iterator,
+)
 from typing import TypeAlias
 
 import pytest
@@ -38,7 +45,7 @@ def test_function_with_no_return_annotation() -> None:
         Iterable[int],
         Iterator[int],
         Generator[int, None, None],
-    ]
+    ],
 )
 def test_sync_iterables(return_type: TypeAlias) -> None:
     def iterable() -> return_type:
@@ -53,7 +60,7 @@ def test_sync_iterables(return_type: TypeAlias) -> None:
         AsyncIterable[int],
         AsyncIterator[int],
         AsyncGenerator[int, None],
-    ]
+    ],
 )
 def test_async_iterables(return_type: TypeAlias):
     async def iterable() -> return_type:
