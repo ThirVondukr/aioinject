@@ -1,14 +1,15 @@
 import inspect
 import typing
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 from aioinject.markers import Inject
 
-_T = TypeVar("_T", bound=Callable[..., None])
+_T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
-def clear_wrapper(wrapper: _T) -> _T:
+def clear_wrapper(wrapper: Callable[_P, _T]) -> Callable[_P, _T]:
     inject_annotations = get_inject_annotations(wrapper)
     signature = inspect.signature(wrapper)
     new_params = tuple(

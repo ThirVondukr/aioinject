@@ -62,7 +62,7 @@ class InjectionContext(_BaseInjectionContext):
         provider = self.container.get_provider(type_, impl)
         dependencies = {
             dep.name: await self.resolve(
-                type_=dep.type,
+                type_=dep.type_,
                 impl=dep.implementation,
                 use_cache=dep.use_cache,
             )
@@ -112,7 +112,7 @@ class InjectionContext(_BaseInjectionContext):
             if dependency.name in kwargs:
                 continue
             resolved[dependency.name] = await self.resolve(
-                type_=dependency.type,
+                type_=dependency.type_,
                 impl=dependency.implementation,
                 use_cache=dependency.use_cache,
             )
@@ -152,7 +152,7 @@ class SyncInjectionContext(_BaseInjectionContext):
         provider = self.container.get_provider(type_, impl)
         dependencies = {
             dep.name: self.resolve(
-                type_=dep.type,
+                type_=dep.type_,
                 impl=dep.implementation,
                 use_cache=dep.use_cache,
             )
@@ -179,7 +179,7 @@ class SyncInjectionContext(_BaseInjectionContext):
             if dependency.name in kwargs:
                 continue
             resolved[dependency.name] = self.resolve(
-                type_=dependency.type,
+                type_=dependency.type_,
                 impl=dependency.implementation,
                 use_cache=dependency.use_cache,
             )

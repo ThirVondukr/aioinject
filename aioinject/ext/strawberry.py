@@ -1,5 +1,6 @@
 import contextvars
-from typing import TypeVar
+from collections.abc import Callable
+from typing import ParamSpec, TypeVar
 
 from strawberry.extensions import Extension
 from strawberry.utils.await_maybe import AwaitableOrValue
@@ -11,9 +12,10 @@ from aioinject.context import container_var
 from aioinject.decorators import InjectMethod
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
-def inject(function: _T) -> _T:
+def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
     wrapper = aioinject.decorators.inject(
         function,
         inject_method=InjectMethod.container,

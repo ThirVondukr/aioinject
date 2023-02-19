@@ -39,9 +39,9 @@ class Container:
 
         if impl is None:
             err_msg = (
-                f"Multiple providers for type {type_} were found,"
-                f"you have to specify implementation using Impl"
-                f"argument: Annotated[IService, Inject(Service)]"
+                f"Multiple providers for type {type_.__qualname__} were found, "
+                f"you have to specify implementation using 'impl' parameter: "
+                f"Annotated[IService, Inject(impl=Service)]"
             )
             raise ValueError(err_msg)
         return next((p for p in type_providers if p.impl == impl), None)
@@ -57,7 +57,7 @@ class Container:
 
         provider = self._get_provider(self.providers, type_, impl)
         if provider is None:
-            err_msg = f"Provider for type {type_} not found"
+            err_msg = f"Provider for type {type_.__qualname__} not found"
             raise ValueError(err_msg)
         return provider
 

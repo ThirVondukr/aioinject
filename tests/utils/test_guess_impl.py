@@ -35,8 +35,11 @@ def test_function_with_no_return_annotation() -> None:
     def factory():  # noqa: ANN202
         pass
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc_info:  # noqa: PT011
         _guess_impl(factory)
+
+    msg = f"factory {factory.__qualname__} does not specify return type."
+    assert str(exc_info.value) == msg
 
 
 @pytest.mark.parametrize(
@@ -62,7 +65,7 @@ def test_sync_iterables(return_type: TypeAlias) -> None:
         AsyncGenerator[int, None],
     ],
 )
-def test_async_iterables(return_type: TypeAlias):
+def test_async_iterables(return_type: TypeAlias) -> None:
     async def iterable() -> return_type:
         ...
 

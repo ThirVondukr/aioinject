@@ -21,7 +21,7 @@ _T = t.TypeVar("_T")
 @dataclasses.dataclass
 class Dependency(Generic[_T]):
     name: str
-    type: type[_T]
+    type_: type[_T]
     implementation: Any
     use_cache: bool
 
@@ -34,8 +34,23 @@ def _get_annotation_args(type_hint: Any) -> tuple[type, tuple[Any, ...]]:
     return dep_type, tuple(args)
 
 
+def _find_inject_marker_in_annotation_args(
+    args: tuple[Any, ...],
+) -> Inject | None:
+    for arg in args:
+        try:
+            if issubclass(arg, Inject):
+                return Inject()
+        except TypeError:
+            pass
+
+        if isinstance(arg, Inject):
+            return arg
+    return None
+
+
 def collect_dependencies(
-    dependant: t.Callable | dict[str, Any]
+    dependant: t.Callable | dict[str, Any],
 ) -> Iterable[Dependency]:
     if not isinstance(dependant, dict):
         type_hints = typing.get_type_hints(dependant, include_extras=True)
@@ -44,26 +59,15 @@ def collect_dependencies(
 
     for name, hint in type_hints.items():
         dep_type, args = _get_annotation_args(hint)
-        inject = None
-        for arg in args:
-            try:
-                if issubclass(arg, Inject):
-                    inject = Inject()
-            except TypeError:
-                pass
-
-            if isinstance(arg, Inject):
-                inject = arg
-                break
-
-        if inject is None:
+        inject_marker = _find_inject_marker_in_annotation_args(args)
+        if inject_marker is None:
             continue
 
         yield Dependency(
             name=name,
-            type=dep_type,
-            implementation=inject.impl,
-            use_cache=inject.cache,
+            type_=dep_type,
+            implementation=inject_marker.impl,
+            use_cache=inject_marker.cache,
         )
 
 
@@ -101,9 +105,10 @@ def _guess_impl(factory: t.Callable[..., Any]) -> type:
     try:
         return_type = type_hints["return"]
     except KeyError as e:
-        raise ValueError(
+        err_msg = (
             f"factory {factory.__qualname__} does not specify return type."
-        ) from e
+        )
+        raise ValueError(err_msg) from e
 
     if origin := typing.get_origin(return_type):
         args = typing.get_args(return_type)
@@ -209,8 +214,8 @@ class Object(Provider[_T]):
             impl=object_,
         )
 
-    def provide_sync(self, **kwargs: Any) -> _T:
+    def provide_sync(self, **kwargs: Any) -> _T:  # noqa: ARG002
         return self.impl
 
-    async def provide(self, **kwargs: Any) -> _T:
+    async def provide(self, **kwargs: Any) -> _T:  # noqa: ARG002
         return self.impl

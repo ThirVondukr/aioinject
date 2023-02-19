@@ -93,19 +93,6 @@ def test_annotated_type_hint() -> None:
     assert provider.type_hints == {"a": Annotated[int, Inject(cache=False)]}
 
 
-def test_should_specify_return_type() -> None:
-    def factory():  # noqa: ANN202
-        pass
-
-    with pytest.raises(ValueError):
-        providers.Callable(factory)
-
-    def factory_with_return() -> None:
-        pass
-
-    providers.Callable(factory_with_return)
-
-
 def test_is_async_on_sync() -> None:
     def factory() -> None:
         pass
@@ -145,19 +132,19 @@ def test_dependencies() -> None:
     expected = (
         Dependency(
             name="a",
-            type=int,
+            type_=int,
             implementation=None,
             use_cache=True,
         ),
         Dependency(
             name="service",
-            type=dict[str, int],
+            type_=dict[str, int],
             implementation=defaultdict,
             use_cache=True,
         ),
         Dependency(
             name="string",
-            type=str,
+            type_=str,
             implementation=None,
             use_cache=False,
         ),

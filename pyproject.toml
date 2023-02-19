@@ -57,11 +57,11 @@ line_length = 79
 target-version = "py310"
 src = ["aioinject", "tests"]
 select = ["ALL"]
+fixable = ["F", "UP", "COM"]
 ignore = [
-    "D", # pydocstyle
+    "D",
     "PD",  # pandas-vet
     "I",  # Isort
-    "INP",
     "E501",
     "ANN101",
     "ANN102",
@@ -70,9 +70,6 @@ ignore = [
     "TCH002",
     "TCH003",
     "EXE",
-    "RUF001",
-    "RUF002",
-    "RUF003",
 ]
 
 [tool.ruff.per-file-ignores]
@@ -97,7 +94,7 @@ staticmethod-decorators = ["staticmethod"]
 lint = {composite = [
     "black .",
     "isort .",
-#    "ruff .",
+    "ruff . --fix",
     "mypy .",
 ]}
 test = {composite = [

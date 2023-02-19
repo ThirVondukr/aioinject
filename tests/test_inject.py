@@ -62,7 +62,7 @@ def _injectee(
 
 def test_would_fail_without_active_context() -> None:
     with pytest.raises(LookupError):
-        _injectee()
+        _injectee()  # type: ignore[call-arg]
 
 
 def test_would_not_inject_without_inject_marker(container: Container) -> None:
@@ -71,19 +71,19 @@ def test_would_not_inject_without_inject_marker(container: Container) -> None:
         return session
 
     with container.sync_context(), pytest.raises(TypeError):
-        injectee()
+        injectee()  # type: ignore[call-arg]
 
 
 def test_simple_inject(container: Container) -> None:
     with container.sync_context():
-        session, *_ = _injectee()
+        session, *_ = _injectee()  # type: ignore[call-arg]
         assert isinstance(session, _Session)
 
 
 def test_no_cache_marker(container: Container) -> None:
     with container.sync_context():
-        test_first, no_cache_first = _injectee()
-        test_second, no_cache_second = _injectee()
+        test_first, no_cache_first = _injectee()  # type: ignore[call-arg]
+        test_second, no_cache_second = _injectee()  # type: ignore[call-arg]
 
     assert test_second is test_second
     assert test_first is not no_cache_first

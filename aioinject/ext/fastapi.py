@@ -1,4 +1,5 @@
-from typing import TypeVar
+from collections.abc import Callable
+from typing import ParamSpec, TypeVar
 
 from fastapi import Request
 from starlette.middleware.base import (
@@ -14,9 +15,10 @@ from aioinject import Container, utils
 from aioinject.decorators import InjectMethod
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
-def inject(function: _T) -> _T:
+def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
     wrapper = aioinject.decorators.inject(
         function,
         inject_method=InjectMethod.context,

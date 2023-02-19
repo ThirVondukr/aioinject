@@ -1,11 +1,5 @@
 import contextlib
-from collections.abc import (
-    AsyncIterable,
-    AsyncIterator,
-    Generator,
-    Iterable,
-    Iterator,
-)
+from collections.abc import AsyncIterator, Generator, Iterator
 from types import TracebackType
 from unittest.mock import MagicMock
 
@@ -140,10 +134,13 @@ def test_sync_context_manager_should_receive_exception() -> None:
     container = Container()
     container.register(Callable(get_session))
 
-    with pytest.raises(Exception), container.sync_context() as ctx:
+    with (  # noqa: PT012
+        pytest.raises(Exception),  # noqa: PT011
+        container.sync_context() as ctx,
+    ):
         session = ctx.resolve(_Session)
         assert isinstance(session, _Session)
         mock.exception_happened.assert_not_called()
-        raise Exception
+        raise Exception  # noqa: TRY002
 
     mock.exception_happened.asssert_called_once()

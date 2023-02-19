@@ -67,8 +67,15 @@ def multi_provider_container(container: Container) -> Container:
 def test_get_provider_raises_error_if_multiple_providers(
     multi_provider_container: Container,
 ) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc_info:  # noqa: PT011
         assert multi_provider_container.get_provider(_AbstractService)
+
+    msg = (
+        f"Multiple providers for type {_AbstractService.__qualname__} were found, "
+        f"you have to specify implementation using 'impl' parameter: "
+        f"Annotated[IService, Inject(impl=Service)]"
+    )
+    assert str(exc_info.value) == msg
 
 
 def test_can_get_multi_provider_if__specified(
@@ -80,5 +87,8 @@ def test_can_get_multi_provider_if__specified(
 
 def test_missing_provider() -> None:
     container = Container()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc_info:  # noqa: PT011
         assert container.get_provider(_ServiceA)
+
+    msg = f"Provider for type {_ServiceA.__qualname__} not found"
+    assert str(exc_info.value) == msg
