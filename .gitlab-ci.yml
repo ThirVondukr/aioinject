@@ -8,15 +8,14 @@ stages:
   cache:
     - key:
         files:
-          - poetry.lock
+          - pdm.lock
       paths:
         - .venv
         - .cache/pip
 
   before_script:
-    - pip install poetry
-    - poetry config virtualenvs.in-project true
-    - poetry install
+    - pip install pdm
+    - pdm install
   variables:
     GIT_STRATEGY: clone
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -24,22 +23,22 @@ stages:
 mypy:
   <<: *lint_job
   script:
-    - poetry run mypy .
+    - pdm run mypy .
 
 black:
   <<: *lint_job
   script:
-    - poetry run black . --check
+    - pdm run black . --check
 
 isort:
   <<: *lint_job
   script:
-    - poetry run isort . --check
+    - pdm run isort . --check
 
-flake8:
+ruff:
   <<: *lint_job
   script:
-    - poetry run flake8
+    - pdm run ruff .
 
 pytest:
   <<: *lint_job
