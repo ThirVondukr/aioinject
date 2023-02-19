@@ -43,9 +43,9 @@ ruff:
 pytest:
   <<: *lint_job
   script:
-    - poetry run coverage run
-    - poetry run coverage report -m
-    - poetry run coverage xml
+    - pdm run coverage run
+    - pdm run coverage report -m
+    - pdm run coverage xml
   coverage: "/^TOTAL.*\\s(\\d*)/"
   artifacts:
     reports:
