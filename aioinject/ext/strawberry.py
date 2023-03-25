@@ -1,9 +1,7 @@
-import contextvars
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import ParamSpec, TypeVar
 
-from strawberry.extensions import Extension
-from strawberry.utils.await_maybe import AwaitableOrValue
+from strawberry.extensions import SchemaExtension
 
 import aioinject
 from aioinject import utils
@@ -23,16 +21,13 @@ def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
     return utils.clear_wrapper(wrapper)
 
 
-def make_container_ext(container: Container) -> type[Extension]:
-    class ContainerExtension(Extension):
-        token: contextvars.Token
+class ContainerExtension(SchemaExtension):
+    def __init__(self, container: Container) -> None:
+        self.container = container
 
-        def on_request_start(self) -> AwaitableOrValue[None]:
-            self.token = container_var.set(container)
-            return None  # noqa: RET501
-
-        def on_request_end(self) -> AwaitableOrValue[None]:
-            container_var.reset(self.token)
-            return None  # noqa: RET501
-
-    return ContainerExtension
+    def on_operation(
+        self,
+    ) -> Iterator[None]:
+        token = container_var.set(self.container)
+        yield
+        container_var.reset(token)
