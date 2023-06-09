@@ -1,6 +1,9 @@
+import contextlib
+from collections.abc import AsyncIterator
+
 import pytest
 
-from aioinject import providers
+from aioinject import Singleton, providers
 from aioinject.containers import Container
 from aioinject.context import InjectionContext
 
@@ -92,3 +95,26 @@ def test_missing_provider() -> None:
 
     msg = f"Provider for type {_ServiceA.__qualname__} not found"
     assert str(exc_info.value) == msg
+
+
+@pytest.mark.anyio
+async def test_should_close_singletons() -> None:
+    shutdown = False
+
+    @contextlib.asynccontextmanager
+    async def dependency() -> AsyncIterator[int]:
+        nonlocal shutdown
+
+        yield 42
+        shutdown = True
+
+    provider = Singleton(dependency)
+
+    container = Container()
+    container.register(provider)
+    async with container.context() as ctx:
+        assert await ctx.resolve(int) == 42  # noqa: PLR2004
+    assert shutdown is False
+
+    await container.aclose()
+    assert shutdown is True

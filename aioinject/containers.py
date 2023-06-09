@@ -1,6 +1,7 @@
 import contextlib
 from collections import defaultdict
 from collections.abc import Generator
+from contextlib import AsyncExitStack
 from typing import Any, TypeVar
 
 from .context import InjectionContext, SyncInjectionContext
@@ -14,6 +15,7 @@ class Container:
     def __init__(self) -> None:
         self.providers: _Providers = defaultdict(list)
         self._overrides: _Providers = defaultdict(list)
+        self._exit_stack = AsyncExitStack()
 
     def register(
         self,
@@ -62,10 +64,16 @@ class Container:
         return provider
 
     def context(self) -> InjectionContext:
-        return InjectionContext(container=self)
+        return InjectionContext(
+            container=self,
+            singleton_exit_stack=self._exit_stack,
+        )
 
     def sync_context(self) -> SyncInjectionContext:
-        return SyncInjectionContext(container=self)
+        return SyncInjectionContext(
+            container=self,
+            singleton_exit_stack=self._exit_stack,
+        )
 
     @contextlib.contextmanager
     def override(
@@ -75,3 +83,6 @@ class Container:
         self._overrides[provider.type].append(provider)
         yield
         self._overrides[provider.type].remove(provider)
+
+    async def aclose(self) -> None:
+        await self._exit_stack.aclose()
