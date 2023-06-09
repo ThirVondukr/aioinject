@@ -124,23 +124,26 @@ async def test_should_not_use_resolved_class_as_async_context_manager() -> None:
 def test_sync_context_manager_should_receive_exception() -> None:
     mock = MagicMock()
 
+    class TestError(Exception):
+        pass
+
     @contextlib.contextmanager
     def get_session() -> Iterator[_Session]:
         try:
             yield _Session()
-        except Exception:  # noqa: BLE001
+        except TestError:
             mock.exception_happened()
 
     container = Container()
     container.register(Callable(get_session))
 
     with (  # noqa: PT012
-        pytest.raises(Exception),  # noqa: PT011
+        pytest.raises(TestError),
         container.sync_context() as ctx,
     ):
         session = ctx.resolve(_Session)
         assert isinstance(session, _Session)
         mock.exception_happened.assert_not_called()
-        raise Exception  # noqa: TRY002
+        raise TestError
 
     mock.exception_happened.asssert_called_once()
