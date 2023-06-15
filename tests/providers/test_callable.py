@@ -1,7 +1,6 @@
 from collections import defaultdict
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, AsyncIterator, Generator, Iterator
 from typing import Annotated
-from collections.abc import AsyncIterator, Iterator
 from unittest.mock import patch
 
 import pytest

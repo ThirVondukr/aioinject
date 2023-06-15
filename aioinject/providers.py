@@ -114,7 +114,9 @@ def _guess_impl(factory: t.Callable[..., Any]) -> type:
         args = typing.get_args(return_type)
 
         maybe_wrapped = getattr(  # @functools.wraps
-            factory, "__wrapped__", factory,
+            factory,
+            "__wrapped__",
+            factory,
         )
         if origin in _ASYNC_GENERATORS and inspect.isasyncgenfunction(
             maybe_wrapped,

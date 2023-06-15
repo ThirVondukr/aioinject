@@ -1,10 +1,5 @@
 import contextlib
-from collections.abc import (
-    AsyncGenerator,
-    AsyncIterator,
-    Generator,
-    Iterator,
-)
+from collections.abc import AsyncGenerator, AsyncIterator, Generator, Iterator
 from typing import TypeAlias
 
 import pytest
