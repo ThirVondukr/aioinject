@@ -17,7 +17,9 @@ def clear_wrapper(wrapper: Callable[_P, _T]) -> Callable[_P, _T]:
         for p in signature.parameters.values()
         if p.name not in inject_annotations
     )
-    wrapper.__signature__ = signature.replace(parameters=new_params)  # type: ignore[attr-defined]
+    wrapper.__signature__ = signature.replace(  # type: ignore[attr-defined]
+        parameters=new_params,
+    )
     for name in inject_annotations:
         del wrapper.__annotations__[name]
     return wrapper

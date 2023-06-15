@@ -26,7 +26,7 @@ TypeAndImpl = tuple[type[_T], _T | None]
 TExitStack = TypeVar("TExitStack")
 
 
-class DiCache(Protocol):
+class DICache(Protocol):
     def __setitem__(self, key: TypeAndImpl[_T], value: _T) -> None:
         ...  # pragma: no cover
 
@@ -49,7 +49,7 @@ class _BaseInjectionContext(Generic[TExitStack]):
         self.container = container
         self.singleton_exit_stack = singleton_exit_stack
         self.exit_stack = self._exit_stack_type()
-        self.cache: DiCache = {}
+        self.cache: DICache = {}
         self._token = None
 
     def __class_getitem__(
@@ -69,6 +69,15 @@ class _BaseInjectionContext(Generic[TExitStack]):
         if isinstance(provider, Singleton):
             return self.singleton_exit_stack
         return self.exit_stack
+
+    def _update_singleton_cache(
+        self,
+        provider: Provider,
+        resolved_value: Any,
+    ) -> None:
+        if not isinstance(provider, Singleton):
+            return
+        provider.cache = resolved_value
 
 
 class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
@@ -102,7 +111,10 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
             resolved = await stack.enter_async_context(
                 resolved,  # type: ignore[arg-type]
             )
-
+        self._update_singleton_cache(
+            provider=provider,
+            resolved_value=resolved,
+        )
         if use_cache:
             self.cache[type_, impl] = resolved
         return resolved
@@ -185,7 +197,10 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
         resolved = provider.provide_sync(**dependencies)
         if isinstance(resolved, contextlib.ContextDecorator):
             resolved = self.exit_stack.enter_context(resolved)  # type: ignore[arg-type]
-
+        self._update_singleton_cache(
+            provider=provider,
+            resolved_value=resolved,
+        )
         if use_cache:
             self.cache[type_, impl] = resolved
         return resolved

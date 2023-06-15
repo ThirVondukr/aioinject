@@ -1,9 +1,8 @@
+import contextlib
 from collections.abc import (
     AsyncGenerator,
-    AsyncIterable,
     AsyncIterator,
     Generator,
-    Iterable,
     Iterator,
 )
 from typing import TypeAlias
@@ -45,28 +44,28 @@ def test_function_with_no_return_annotation() -> None:
 @pytest.mark.parametrize(
     "return_type",
     [
-        Iterable[int],
         Iterator[int],
         Generator[int, None, None],
     ],
 )
 def test_sync_iterables(return_type: TypeAlias) -> None:
     def iterable() -> return_type:
-        ...
+        yield None
 
     assert _guess_impl(iterable) is int
+    assert _guess_impl(contextlib.contextmanager(iterable)) is int
 
 
 @pytest.mark.parametrize(
     "return_type",
     [
-        AsyncIterable[int],
         AsyncIterator[int],
         AsyncGenerator[int, None],
     ],
 )
 def test_async_iterables(return_type: TypeAlias) -> None:
     async def iterable() -> return_type:
-        ...
+        yield None
 
     assert _guess_impl(iterable) is int
+    assert _guess_impl(contextlib.asynccontextmanager(iterable)) is int

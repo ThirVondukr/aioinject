@@ -88,13 +88,13 @@ def _get_hints(provider: Provider) -> dict[str, Any]:
     return type_hints
 
 
-_ITERABLES = {
+_GENERATORS = {
     collections.abc.Generator,
-    collections.abc.AsyncGenerator,
     collections.abc.Iterator,
+}
+_ASYNC_GENERATORS = {
+    collections.abc.AsyncGenerator,
     collections.abc.AsyncIterator,
-    collections.abc.Iterable,
-    collections.abc.AsyncIterable,
 }
 
 
@@ -112,7 +112,17 @@ def _guess_impl(factory: t.Callable[..., Any]) -> type:
 
     if origin := typing.get_origin(return_type):
         args = typing.get_args(return_type)
-        if origin in _ITERABLES:
+
+        maybe_wrapped = getattr(  # @functools.wraps
+            factory, "__wrapped__", factory,
+        )
+        if origin in _ASYNC_GENERATORS and inspect.isasyncgenfunction(
+            maybe_wrapped,
+        ):
+            return args[0]
+        if origin in _GENERATORS and inspect.isgeneratorfunction(
+            maybe_wrapped,
+        ):
             return args[0]
     return return_type
 

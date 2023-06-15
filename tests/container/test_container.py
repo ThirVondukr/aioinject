@@ -112,8 +112,9 @@ async def test_should_close_singletons() -> None:
 
     container = Container()
     container.register(provider)
-    async with container.context() as ctx:
-        assert await ctx.resolve(int) == 42  # noqa: PLR2004
+    for _ in range(2):
+        async with container.context() as ctx:
+            assert await ctx.resolve(int) == 42  # noqa: PLR2004
     assert shutdown is False
 
     await container.aclose()
