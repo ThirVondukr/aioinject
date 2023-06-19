@@ -8,14 +8,16 @@ import functools
 import inspect
 import threading
 import typing
-import typing as t
 from collections.abc import Iterable, Sequence
+from contextlib import AsyncExitStack
 from inspect import isclass
 from typing import Annotated, Any, Generic, TypeAlias
 
 from aioinject.markers import Inject
 
-_T = t.TypeVar("_T")
+from . import utils
+
+_T = typing.TypeVar("_T")
 
 
 @dataclasses.dataclass
@@ -50,7 +52,7 @@ def _find_inject_marker_in_annotation_args(
 
 
 def collect_dependencies(
-    dependant: t.Callable | dict[str, Any],
+    dependant: typing.Callable | dict[str, Any],
 ) -> Iterable[Dependency]:
     if not isinstance(dependant, dict):
         type_hints = typing.get_type_hints(dependant, include_extras=True)
@@ -98,7 +100,7 @@ _ASYNC_GENERATORS = {
 }
 
 
-def _guess_impl(factory: t.Callable[..., Any]) -> type:
+def _guess_impl(factory: typing.Callable[..., Any]) -> type:
     if isclass(factory):
         return factory
     type_hints = typing.get_type_hints(factory)
@@ -129,7 +131,7 @@ def _guess_impl(factory: t.Callable[..., Any]) -> type:
     return return_type
 
 
-class Provider(t.Generic[_T], abc.ABC):
+class Provider(Generic[_T], abc.ABC):
     def __init__(self, type_: type[_T], impl: Any) -> None:
         self.type = type_
         self.impl = impl
@@ -158,7 +160,7 @@ class Provider(t.Generic[_T], abc.ABC):
 class Callable(Provider[_T]):
     def __init__(
         self,
-        factory: t.Callable[..., _T] | type[_T],
+        factory: typing.Callable[..., _T] | type[_T],
         type_: type[_T] | None = None,
     ) -> None:
         super().__init__(
@@ -189,13 +191,14 @@ class Callable(Provider[_T]):
 class Singleton(Callable, Generic[_T]):
     def __init__(
         self,
-        factory: t.Callable[..., _T] | type[_T],
+        factory: typing.Callable[..., _T] | type[_T],
         type_: type[_T] | None = None,
     ) -> None:
         super().__init__(factory=factory, type_=type_)
         self.cache: _T | None = None
         self._lock = threading.Lock()
         self._async_lock = asyncio.Lock()
+        self._exit_stack = AsyncExitStack()
 
     def provide_sync(self, **kwargs: Any) -> _T:
         if self.cache is None:
@@ -208,8 +211,15 @@ class Singleton(Callable, Generic[_T]):
         if self.cache is None:
             async with self._async_lock:
                 if self.cache is None:
-                    self.cache = await super().provide(**kwargs)
-        return self.cache
+                    awaitable = utils.enter_context_maybe(
+                        await super().provide(**kwargs),
+                        self._exit_stack,
+                    )
+                    self.cache = await utils.await_maybe(awaitable)
+        return self.cache  # type: ignore[return-value]
+
+    async def aclose(self) -> None:
+        await self._exit_stack.aclose()
 
 
 class Object(Provider[_T]):
