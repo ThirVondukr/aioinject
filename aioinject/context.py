@@ -10,7 +10,8 @@ from contextvars import ContextVar
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar, Union
 
-from .providers import Dependency, Provider, Singleton
+from . import utils
+from .providers import Dependency
 
 if TYPE_CHECKING:
     from .containers import Container
@@ -44,10 +45,8 @@ class _BaseInjectionContext(Generic[TExitStack]):
     def __init__(
         self,
         container: Container,
-        singleton_exit_stack: AsyncExitStack,
     ) -> None:
         self.container = container
-        self.singleton_exit_stack = singleton_exit_stack
         self.exit_stack = self._exit_stack_type()
         self.cache: DICache = {}
         self._token = None
@@ -61,23 +60,6 @@ class _BaseInjectionContext(Generic[TExitStack]):
             (cls,),
             {"_exit_stack_type": item},
         )
-
-    def _get_exit_stack(
-        self,
-        provider: Provider,
-    ) -> TExitStack | AsyncExitStack:
-        if isinstance(provider, Singleton):
-            return self.singleton_exit_stack
-        return self.exit_stack
-
-    def _update_singleton_cache(
-        self,
-        provider: Provider,
-        resolved_value: Any,
-    ) -> None:
-        if not isinstance(provider, Singleton):
-            return
-        provider.cache = resolved_value
 
 
 class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
@@ -101,20 +83,11 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
             for dep in provider.dependencies
         }
 
-        resolved = await provider.provide(**dependencies)
-        stack = self._get_exit_stack(provider=provider)
-
-        if isinstance(resolved, contextlib.ContextDecorator):
-            resolved = stack.enter_context(resolved)  # type: ignore[arg-type]
-
-        if isinstance(resolved, contextlib.AsyncContextDecorator):
-            resolved = await stack.enter_async_context(
-                resolved,  # type: ignore[arg-type]
-            )
-        self._update_singleton_cache(
-            provider=provider,
-            resolved_value=resolved,
+        resolved = utils.enter_context_maybe(
+            resolved=await provider.provide(**dependencies),
+            stack=self.exit_stack,
         )
+        resolved = await utils.await_maybe(resolved)
         if use_cache:
             self.cache[type_, impl] = resolved
         return resolved
@@ -197,10 +170,6 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
         resolved = provider.provide_sync(**dependencies)
         if isinstance(resolved, contextlib.ContextDecorator):
             resolved = self.exit_stack.enter_context(resolved)  # type: ignore[arg-type]
-        self._update_singleton_cache(
-            provider=provider,
-            resolved_value=resolved,
-        )
         if use_cache:
             self.cache[type_, impl] = resolved
         return resolved

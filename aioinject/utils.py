@@ -1,7 +1,13 @@
+import contextlib
 import inspect
 import typing
-from collections.abc import Callable
-from typing import Any, ParamSpec, TypeVar
+from collections.abc import Awaitable, Callable
+from contextlib import (
+    AbstractAsyncContextManager,
+    AbstractContextManager,
+    AsyncExitStack,
+)
+from typing import Any, ParamSpec, TypeVar, cast
 
 from aioinject.markers import Inject
 
@@ -37,3 +43,25 @@ def get_inject_annotations(function: Callable[..., Any]) -> dict[str, Any]:
             for arg in typing.get_args(annotation)
         )
     }
+
+
+def enter_context_maybe(
+    resolved: AbstractContextManager[_T]
+    | AbstractAsyncContextManager[_T]
+    | _T,
+    stack: AsyncExitStack,
+) -> _T | Awaitable[_T]:
+    if isinstance(resolved, contextlib.ContextDecorator):
+        return stack.enter_context(resolved)  # type: ignore[arg-type]
+
+    if isinstance(resolved, contextlib.AsyncContextDecorator):
+        return stack.enter_async_context(
+            resolved,  # type: ignore[arg-type]
+        )
+    return resolved  # type: ignore[return-value]
+
+
+async def await_maybe(value: _T | Awaitable[_T]) -> _T:
+    if inspect.isawaitable(value):
+        return await value
+    return cast(_T, value)
