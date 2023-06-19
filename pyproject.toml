@@ -16,7 +16,7 @@ dev = [
 
 [project]
 name = "aioinject"
-version = "0.7.0"
+version = "0.8.0"
 description = ""
 authors = [
     {name = "Doctor", email = "thirvondukr@gmail.com"},
@@ -33,7 +33,7 @@ build-backend = "pdm.pep517.api"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.7.0"
+version = "0.8.0"
 version_files = [
     "aioinject/__init__.py",
     "pyproject.toml:version"
