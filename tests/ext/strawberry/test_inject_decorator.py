@@ -36,3 +36,10 @@ def test_should_remove_parameters_from_signature() -> None:
         ),
     }
     assert signature.parameters == expected
+
+
+def test_decorate_method_referencing_cls() -> None:
+    class Class:
+        @inject
+        def method(self) -> "Class":
+            return Class()

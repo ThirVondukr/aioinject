@@ -1,7 +1,7 @@
 import contextlib
 import inspect
 import typing
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterator
 from contextlib import (
     AbstractAsyncContextManager,
     AbstractContextManager,
@@ -13,6 +13,8 @@ from aioinject.markers import Inject
 
 _T = TypeVar("_T")
 _P = ParamSpec("_P")
+
+_sentinel = object()
 
 
 def clear_wrapper(wrapper: Callable[_P, _T]) -> Callable[_P, _T]:
@@ -32,17 +34,18 @@ def clear_wrapper(wrapper: Callable[_P, _T]) -> Callable[_P, _T]:
 
 
 def get_inject_annotations(function: Callable[..., Any]) -> dict[str, Any]:
-    return {
-        name: annotation
-        for name, annotation in typing.get_type_hints(
-            function,
-            include_extras=True,
-        ).items()
-        if any(
-            isinstance(arg, Inject) or arg is Inject
-            for arg in typing.get_args(annotation)
-        )
-    }
+    with remove_annotation(function.__annotations__, "return"):
+        return {
+            name: annotation
+            for name, annotation in typing.get_type_hints(
+                function,
+                include_extras=True,
+            ).items()
+            if any(
+                isinstance(arg, Inject) or arg is Inject
+                for arg in typing.get_args(annotation)
+            )
+        }
 
 
 def enter_context_maybe(
@@ -65,3 +68,14 @@ async def await_maybe(value: _T | Awaitable[_T]) -> _T:
     if inspect.isawaitable(value):
         return await value
     return cast(_T, value)
+
+
+@contextlib.contextmanager
+def remove_annotation(
+    annotations: dict[str, Any],
+    name: str,
+) -> Iterator[None]:
+    annotation = annotations.pop(name, _sentinel)
+    yield
+    if annotations is not _sentinel:
+        annotations[name] = annotation

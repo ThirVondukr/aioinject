@@ -16,6 +16,7 @@ from typing import Annotated, Any, Generic, TypeAlias
 from aioinject.markers import Inject
 
 from . import utils
+from .utils import remove_annotation
 
 _T = typing.TypeVar("_T")
 
@@ -55,7 +56,8 @@ def collect_dependencies(
     dependant: typing.Callable | dict[str, Any],
 ) -> Iterable[Dependency]:
     if not isinstance(dependant, dict):
-        type_hints = typing.get_type_hints(dependant, include_extras=True)
+        with remove_annotation(dependant.__annotations__, "return"):
+            type_hints = typing.get_type_hints(dependant, include_extras=True)
     else:
         type_hints = dependant
 
