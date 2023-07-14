@@ -77,5 +77,5 @@ def remove_annotation(
 ) -> Iterator[None]:
     annotation = annotations.pop(name, _sentinel)
     yield
-    if annotations is not _sentinel:
+    if annotation is not _sentinel:
         annotations[name] = annotation
