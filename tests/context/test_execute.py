@@ -1,7 +1,9 @@
+import functools
 from typing import Annotated
 
 import pytest
 
+import aioinject
 from aioinject import Container, Inject
 from aioinject.providers import collect_dependencies
 
@@ -65,3 +67,13 @@ async def test_execute_async_coroutine(container: Container) -> None:
         a, c = await ctx.execute(_async_dependant, dependencies)
         assert isinstance(a, _A)
         assert isinstance(c, _C)
+
+
+@pytest.mark.anyio
+async def test_provide_functools_partial() -> None:
+    container = Container()
+    container.register(
+        aioinject.Callable(functools.partial(str, 42), type_=str),
+    )
+    async with container.context() as ctx:
+        assert await ctx.resolve(str) == "42"

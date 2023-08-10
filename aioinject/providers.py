@@ -75,10 +75,13 @@ def collect_dependencies(
         )
 
 
-def _get_hints(provider: Provider) -> dict[str, Any]:
+def _get_provider_type_hints(provider: Provider) -> dict[str, Any]:
     source = provider.impl
     if inspect.isclass(source):
         source = source.__init__
+
+    if isinstance(source, functools.partial):
+        return {}
 
     type_hints = typing.get_type_hints(source, include_extras=True)
     for key, value in type_hints.items():
@@ -180,7 +183,7 @@ class Callable(Provider[_T]):
 
     @functools.cached_property
     def type_hints(self) -> dict[str, Any]:
-        type_hints = _get_hints(self)
+        type_hints = _get_provider_type_hints(self)
         if "return" in type_hints:
             del type_hints["return"]
         return type_hints
