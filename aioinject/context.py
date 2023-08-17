@@ -10,6 +10,8 @@ from contextvars import ContextVar
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar, Union
 
+from typing_extensions import Self
+
 from . import utils
 from .providers import Dependency
 
@@ -132,7 +134,7 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
             return await function(*args, **kwargs, **resolved)
         return function(*args, **kwargs, **resolved)  # type: ignore[return-value]
 
-    async def __aenter__(self) -> InjectionContext:
+    async def __aenter__(self) -> Self:
         self._token = context_var.set(self)
         return self
 
@@ -192,7 +194,7 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
             )
         return function(*args, **kwargs, **resolved)
 
-    def __enter__(self) -> SyncInjectionContext:
+    def __enter__(self) -> Self:
         self._token = context_var.set(self)
         return self
 

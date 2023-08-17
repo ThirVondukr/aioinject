@@ -1,7 +1,5 @@
 import dataclasses
-from typing import Any, TypeVar
-
-_T = TypeVar("_T")
+from typing import Any
 
 
 @dataclasses.dataclass

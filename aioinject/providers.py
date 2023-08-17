@@ -11,7 +11,7 @@ import typing
 from collections.abc import Iterable, Sequence
 from contextlib import AsyncExitStack
 from inspect import isclass
-from typing import Annotated, Any, Generic, TypeAlias
+from typing import Annotated, Any, ClassVar, Generic, TypeAlias
 
 from aioinject.markers import Inject
 
@@ -229,7 +229,7 @@ class Singleton(Callable, Generic[_T]):
 
 class Object(Provider[_T]):
     is_async = False
-    type_hints: dict[str, Any] = {}
+    type_hints: ClassVar[dict[str, Any]] = {}
 
     def __init__(
         self,

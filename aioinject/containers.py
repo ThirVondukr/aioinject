@@ -81,7 +81,7 @@ class Container:
         self._overrides[provider.type].remove(provider)
 
     async def aclose(self) -> None:
-        for _, providers in self.providers.items():
+        for providers in self.providers.values():
             for provider in providers:
                 if isinstance(provider, Singleton):
                     await provider.aclose()

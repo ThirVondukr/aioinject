@@ -85,7 +85,7 @@ def test_no_cache_marker(container: Container) -> None:
         test_first, no_cache_first = _injectee()  # type: ignore[call-arg]
         test_second, no_cache_second = _injectee()  # type: ignore[call-arg]
 
-    assert test_second is test_second
+    assert test_first is test_second
     assert test_first is not no_cache_first
     assert test_second is not no_cache_second
     assert no_cache_first is not no_cache_second
