@@ -1,5 +1,12 @@
 Async-first dependency injection library based on python type hints
 
+
+## Framework integrations:
+- [FastAPI](/examples/fastapi)
+- [Litestar](/examples/litestar)
+- [Strawberry-Graphql](/examples/strawberry-graphql)
+
+
 ## Quickstart
 
 First let's create a class we would be injecting:
