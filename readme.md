@@ -48,7 +48,7 @@ Complete example (should run as-is):
 ```python
 from typing import Annotated
 
-from aioinject import Container, Inject, inject, providers
+from aioinject import Callable, Container, Inject, inject
 
 
 class Service:
@@ -56,12 +56,12 @@ class Service:
 
 
 container = Container()
-container.register(providers.Callable(Service))
+container.register(Callable(Service))
 
 
 @inject
 def awesome_function(
-    service: Service,
+    service: Annotated[Service, Inject],
 ):
     print(service)
 
@@ -72,34 +72,36 @@ with container.sync_context() as ctx:
 
 ```
 
-## Specifying Dependencies
+## Sub dependencies
 
-To mark parameters for injection we can use `typing.Annotated`
-and `Inject` marker
+If one of your dependencies has any sub dependencies
+they would be automatically provided based on class `__init__`
+or function annotations
 
 ```python
-from typing import Annotated
-from aioinject import Callable, Container, Inject
+from aioinject import Callable, Container
 
 
-class Session:
+class SubDependency:
     pass
 
 
-class Service:
-    def __init__(self, session: Session):
-        self.session = session
+class Dependency:
+    def __init__(self, sub_dependency: SubDependency):
+        self.sub_dependency = sub_dependency
 
 
 container = Container()
-container.register(Callable(Session))
-container.register(Callable(Service))
+container.register(Callable(SubDependency))
+container.register(Callable(Dependency))
 
 with container.sync_context() as ctx:
-    service = ctx.resolve(Service)
+    dependency = ctx.resolve(Dependency)
+    print(dependency.sub_dependency)
+
 ```
 
-If you have multiple dependencies with same type you can specify concrete implementation in `Inject`:
+If you have multiple implementations for the same dependency you can specify concrete implementation in `Inject`:
 
 ```python
 import dataclasses
@@ -130,22 +132,19 @@ container.register(providers.Callable(get_gitlab_client))
 def injectee(
     github_client: Annotated[Client, Inject(get_github_client)],
     gitlab_client: Annotated[Client, Inject(get_gitlab_client)],
-):
+) -> None:
     print(github_client, gitlab_client)
 
 
 with container.sync_context() as ctx:
-    # Manually resolving client
-    client = ctx.resolve(Client, impl=get_github_client)
-    print(client)
     injectee()
+
 ```
 
 ## Working with Resources
 
-Often you need to initialize and close a resource (file, database session, etc...),
-you can do that by using a `contextmanager` that would return your resource.  
-We would use custom `Session` class that defines `__exit__` and `__enter__` methods:
+Often you need to initialize and close a resource (file, database connection, etc...),
+you can do that by using a `contextlib.(async)contextmanager` that would return your resource.
 
 ```python
 import contextlib
@@ -154,29 +153,22 @@ from aioinject import Container, providers
 
 
 class Session:
-    def __init__(self):
-        self.closed = False
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.closed = True
-
+    pass
 
 @contextlib.contextmanager
 def get_session() -> Session:
-    with Session() as session:
-        yield session
+    print("Startup")
+    yield Session()
+    print("Shutdown")
 
 
 container = Container()
 container.register(providers.Callable(get_session))
 
 with container.sync_context() as ctx:
-    session = ctx.resolve(Session)
-    print(session.closed)
-print(session.closed)  # <- Session.__exit__ would be called when context closes
+    session = ctx.resolve(Session) # Startup
+    session = ctx.resolve(Session) # Nothing is printed, Session is cached
+# Shutdown
 ```
 
 ## Async Dependencies
@@ -198,7 +190,7 @@ async def get_service() -> Service:
     return Service()
 
 
-async def main():
+async def main() -> None:
     container = Container()
     container.register(providers.Callable(get_service))
 
@@ -207,7 +199,7 @@ async def main():
         print(service)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
 ```
 
