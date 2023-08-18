@@ -15,4 +15,4 @@ __all__ = [
     "Singleton",
     "Object",
 ]
-__version__ = "0.11.0"
+__version__ = "0.11.1"
