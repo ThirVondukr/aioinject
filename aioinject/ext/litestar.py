@@ -1,4 +1,6 @@
-from collections.abc import Callable
+import contextlib
+from collections.abc import AsyncIterator, Callable
+from contextlib import aclosing
 from typing import ParamSpec, TypeVar
 
 from litestar import Litestar
@@ -45,8 +47,16 @@ class AioInjectPlugin(InitPluginProtocol):
     def __init__(self, container: aioinject.Container) -> None:
         self.container = container
 
+    @contextlib.asynccontextmanager
+    async def _lifespan(
+        self,
+        _: Litestar,
+    ) -> AsyncIterator[None]:
+        async with aclosing(self.container):
+            yield
+
     def on_app_init(self, app_config: AppConfig) -> AppConfig:
         app_config.state[_STATE_KEY] = self.container
-        app_config.on_shutdown.append(self.container.aclose)
         app_config.middleware.append(AioInjectMiddleware)
+        app_config.lifespan.append(self._lifespan)
         return app_config

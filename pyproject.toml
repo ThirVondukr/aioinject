@@ -102,6 +102,7 @@ dev = [
     "commitizen>=2.42.1",
     "litestar>=2.0.0rc1",
     "uvicorn>=0.23.2",
+    "asgi-lifespan>=2.1.0",
 ]
 
 [tool.pdm.scripts]
