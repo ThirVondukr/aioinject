@@ -1,7 +1,6 @@
 from typing import Annotated
 
 import pytest
-
 from aioinject import Container, Inject, inject, providers
 
 
@@ -41,7 +40,7 @@ class _NeedsMultipleImplementations:
         self.b = b
 
 
-@pytest.fixture
+@pytest.fixture()
 def container() -> Container:
     container = Container()
     container.register(providers.Callable(_Session))
@@ -91,7 +90,7 @@ def test_no_cache_marker(container: Container) -> None:
     assert no_cache_first is not no_cache_second
 
 
-@pytest.mark.anyio
+@pytest.mark.anyio()
 async def test_simple_service(container: Container) -> None:
     with container.sync_context() as ctx:
         session = ctx.resolve(_Session)
@@ -102,7 +101,7 @@ async def test_simple_service(container: Container) -> None:
         assert isinstance(session, _Session)
 
 
-@pytest.mark.anyio
+@pytest.mark.anyio()
 async def test_retrieve_service_with_dependencies(
     container: Container,
 ) -> None:
@@ -117,7 +116,7 @@ async def test_retrieve_service_with_dependencies(
         assert isinstance(service.session, _Session)
 
 
-@pytest.mark.anyio
+@pytest.mark.anyio()
 async def test_service_with_multiple_dependencies_with_same_type(
     container: Container,
 ) -> None:

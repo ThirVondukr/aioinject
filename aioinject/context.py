@@ -3,60 +3,53 @@ from __future__ import annotations
 import contextlib
 import contextvars
 import inspect
-import typing
 from collections.abc import Callable, Coroutine, Iterable
 from contextlib import AsyncExitStack, ExitStack
 from contextvars import ContextVar
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    TypeAlias,
+    TypeVar,
+    Union,
+    overload,
+)
 
 from typing_extensions import Self
 
-from . import utils
-from .providers import Dependency
+from aioinject.providers import Dependency
+from aioinject.utils import await_maybe, enter_context_maybe
+
 
 if TYPE_CHECKING:
-    from .containers import Container
+    from aioinject.containers import Container
 
 _T = TypeVar("_T")
 
-_AnyCtx = Union["InjectionContext", "SyncInjectionContext"]
-context_var: ContextVar[_AnyCtx] = ContextVar("aioinject_context")
+_AnyCtx: TypeAlias = Union["InjectionContext", "SyncInjectionContext"]
+_TypeAndImpl: TypeAlias = tuple[type[_T], _T | None]
+_ExitStackT = TypeVar("_ExitStackT")
 
+context_var: ContextVar[_AnyCtx] = ContextVar("aioinject_context")
 container_var: ContextVar[Container] = ContextVar("aioinject_container")
 
-TypeAndImpl = tuple[type[_T], _T | None]
-TExitStack = TypeVar("TExitStack")
 
+class _BaseInjectionContext(Generic[_ExitStackT]):
+    _token: contextvars.Token[_AnyCtx] | None
+    _exit_stack_type: type[_ExitStackT]
 
-class DICache(Protocol):
-    def __setitem__(self, key: TypeAndImpl[_T], value: _T) -> None:
-        ...  # pragma: no cover
-
-    def __getitem__(self, item: TypeAndImpl[_T]) -> _T:
-        ...  # pragma: no cover
-
-    def __contains__(self, item: TypeAndImpl) -> bool:
-        ...  # pragma: no cover
-
-
-class _BaseInjectionContext(Generic[TExitStack]):
-    _token: contextvars.Token | None
-    _exit_stack_type: type[TExitStack]
-
-    def __init__(
-        self,
-        container: Container,
-    ) -> None:
-        self.container = container
-        self.exit_stack = self._exit_stack_type()
-        self.cache: DICache = {}
+    def __init__(self, container: Container) -> None:
+        self._container = container
+        self._exit_stack = self._exit_stack_type()
+        self._cache: dict[_TypeAndImpl[Any], Any] = {}
         self._token = None
 
     def __class_getitem__(
         cls,
-        item: type[TExitStack],
-    ) -> _BaseInjectionContext[TExitStack]:
+        item: type[_ExitStackT],
+    ) -> _BaseInjectionContext[type[_ExitStackT]]:
         return type(  # type: ignore[return-value]
             f"_BaseInjectionContext[{item.__class__.__name__}]",
             (cls,),
@@ -72,10 +65,10 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
         *,
         use_cache: bool = True,
     ) -> _T:
-        if use_cache and (type_, impl) in self.cache:
-            return self.cache[type_, impl]
+        if use_cache and (type_, impl) in self._cache:
+            return self._cache[type_, impl]
 
-        provider = self.container.get_provider(type_, impl)
+        provider = self._container.get_provider(type_, impl)
         dependencies = {
             dep.name: await self.resolve(
                 type_=dep.type_,
@@ -85,39 +78,39 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
             for dep in provider.dependencies
         }
 
-        resolved = utils.enter_context_maybe(
+        resolved = enter_context_maybe(
             resolved=await provider.provide(**dependencies),
-            stack=self.exit_stack,
+            stack=self._exit_stack,
         )
-        resolved = await utils.await_maybe(resolved)
+        resolved = await await_maybe(resolved)
         if use_cache:
-            self.cache[type_, impl] = resolved
+            self._cache[type_, impl] = resolved
         return resolved
 
-    @typing.overload
+    @overload
     async def execute(
         self,
         function: Callable[..., Coroutine[Any, Any, _T]],
-        dependencies: Iterable[Dependency],
+        dependencies: Iterable[Dependency[object]],
         *args: Any,
         **kwargs: Any,
     ) -> _T:
-        ...  # pragma: no cover
+        ...
 
-    @typing.overload
+    @overload
     async def execute(
         self,
         function: Callable[..., _T],
-        dependencies: Iterable[Dependency],
+        dependencies: Iterable[Dependency[object]],
         *args: Any,
         **kwargs: Any,
     ) -> _T:
-        ...  # pragma: no cover
+        ...
 
     async def execute(
         self,
         function: Callable[..., Coroutine[Any, Any, _T] | _T],
-        dependencies: Iterable[Dependency],
+        dependencies: Iterable[Dependency[object]],
         *args: Any,
         **kwargs: Any,
     ) -> _T:
@@ -145,7 +138,7 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
         exc_tb: TracebackType | None,
     ) -> None:
         context_var.reset(self._token)  # type: ignore[arg-type]
-        await self.exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+        await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
 
 
 class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
@@ -156,10 +149,10 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
         *,
         use_cache: bool = True,
     ) -> _T:
-        if use_cache and (type_, impl) in self.cache:
-            return self.cache[type_, impl]
+        if use_cache and (type_, impl) in self._cache:
+            return self._cache[type_, impl]
 
-        provider = self.container.get_provider(type_, impl)
+        provider = self._container.get_provider(type_, impl)
         dependencies = {
             dep.name: self.resolve(
                 type_=dep.type_,
@@ -171,15 +164,15 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
 
         resolved = provider.provide_sync(**dependencies)
         if isinstance(resolved, contextlib.ContextDecorator):
-            resolved = self.exit_stack.enter_context(resolved)  # type: ignore[arg-type]
+            resolved = self._exit_stack.enter_context(resolved)  # type: ignore[arg-type]
         if use_cache:
-            self.cache[type_, impl] = resolved
+            self._cache[type_, impl] = resolved
         return resolved
 
     def execute(
         self,
         function: Callable[..., _T],
-        dependencies: Iterable[Dependency],
+        dependencies: Iterable[Dependency[object]],
         *args: Any,
         **kwargs: Any,
     ) -> _T:
@@ -205,4 +198,4 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
         exc_tb: TracebackType | None,
     ) -> None:
         context_var.reset(self._token)  # type: ignore[arg-type]
-        self.exit_stack.__exit__(exc_type, exc_val, exc_tb)
+        self._exit_stack.__exit__(exc_type, exc_val, exc_tb)

@@ -1,16 +1,14 @@
 import contextlib
 from collections.abc import AsyncIterator
 
-import pytest
-from litestar import Litestar
-
 import aioinject
+import pytest
 from aioinject import Container
 from aioinject.ext.litestar import AioInjectPlugin
+from litestar import Litestar
 
-pytestmark = pytest.mark.anyio
 
-
+@pytest.mark.anyio()
 async def test_lifespan() -> None:
     number = 42
 

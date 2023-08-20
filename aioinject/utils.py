@@ -1,23 +1,24 @@
 import contextlib
 import inspect
 import typing
-from collections.abc import Awaitable, Callable, Iterator
+from collections.abc import Awaitable, Iterator
 from contextlib import (
     AbstractAsyncContextManager,
     AbstractContextManager,
     AsyncExitStack,
 )
-from typing import Any, ParamSpec, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from aioinject.markers import Inject
 
+
 _T = TypeVar("_T")
-_P = ParamSpec("_P")
+_F = TypeVar("_F", bound=typing.Callable[..., Any])
 
 _sentinel = object()
 
 
-def clear_wrapper(wrapper: Callable[_P, _T]) -> Callable[_P, _T]:
+def clear_wrapper(wrapper: _F) -> _F:
     inject_annotations = get_inject_annotations(wrapper)
     signature = inspect.signature(wrapper)
     new_params = tuple(
@@ -33,7 +34,9 @@ def clear_wrapper(wrapper: Callable[_P, _T]) -> Callable[_P, _T]:
     return wrapper
 
 
-def get_inject_annotations(function: Callable[..., Any]) -> dict[str, Any]:
+def get_inject_annotations(
+    function: typing.Callable[..., Any],
+) -> dict[str, Any]:
     with remove_annotation(function.__annotations__, "return"):
         return {
             name: annotation
@@ -49,9 +52,9 @@ def get_inject_annotations(function: Callable[..., Any]) -> dict[str, Any]:
 
 
 def enter_context_maybe(
-    resolved: AbstractContextManager[_T]
-    | AbstractAsyncContextManager[_T]
-    | _T,
+    resolved: (
+        _T | AbstractContextManager[_T] | AbstractAsyncContextManager[_T]
+    ),
     stack: AsyncExitStack,
 ) -> _T | Awaitable[_T]:
     if isinstance(resolved, contextlib.ContextDecorator):

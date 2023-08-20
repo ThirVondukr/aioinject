@@ -2,7 +2,6 @@ import dataclasses
 from typing import Annotated
 
 import pytest
-
 from aioinject import Callable, Container, Inject
 
 
@@ -20,7 +19,7 @@ class _C:
     b: Annotated[_B, Inject]
 
 
-@pytest.fixture
+@pytest.fixture()
 def container() -> Container:
     container = Container()
     container.register(Callable(_A))

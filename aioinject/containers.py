@@ -1,32 +1,30 @@
 import contextlib
 from collections import defaultdict
-from collections.abc import Generator
-from typing import Any, TypeVar
+from collections.abc import Iterator
+from typing import Any, TypeAlias, TypeVar
 
-from .context import InjectionContext, SyncInjectionContext
-from .providers import Provider, Singleton
+from aioinject.context import InjectionContext, SyncInjectionContext
+from aioinject.providers import Provider, Singleton
+
 
 _T = TypeVar("_T")
-_Providers = dict[type[_T], list[Provider[_T]]]
+_Providers: TypeAlias = dict[type[_T], list[Provider[_T]]]
 
 
 class Container:
     def __init__(self) -> None:
-        self.providers: _Providers = defaultdict(list)
-        self._overrides: _Providers = defaultdict(list)
+        self.providers: _Providers[Any] = defaultdict(list)
+        self._overrides: _Providers[Any] = defaultdict(list)
 
     def register(
         self,
-        provider: Provider[_T],
+        provider: Provider[Any],
     ) -> None:
-        if provider.type not in self.providers:
-            self.providers[provider.type] = []
-
         self.providers[provider.type].append(provider)
 
     @staticmethod
     def _get_provider(
-        providers: _Providers,
+        providers: _Providers[_T],
         type_: type[_T],
         impl: Any | None = None,
     ) -> Provider[_T] | None:
@@ -44,7 +42,7 @@ class Container:
                 f"Annotated[IService, Inject(impl=Service)]"
             )
             raise ValueError(err_msg)
-        return next((p for p in type_providers if p.impl == impl), None)
+        return next((p for p in type_providers if p.impl is impl), None)
 
     def get_provider(
         self,
@@ -62,20 +60,16 @@ class Container:
         return provider
 
     def context(self) -> InjectionContext:
-        return InjectionContext(
-            container=self,
-        )
+        return InjectionContext(container=self)
 
     def sync_context(self) -> SyncInjectionContext:
-        return SyncInjectionContext(
-            container=self,
-        )
+        return SyncInjectionContext(container=self)
 
     @contextlib.contextmanager
     def override(
         self,
-        provider: Provider[_T],
-    ) -> Generator[None, None, None]:
+        provider: Provider[Any],
+    ) -> Iterator[None]:
         self._overrides[provider.type].append(provider)
         yield
         self._overrides[provider.type].remove(provider)

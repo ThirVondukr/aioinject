@@ -1,22 +1,25 @@
+from __future__ import annotations
+
 from collections.abc import Callable, Iterator
-from typing import ParamSpec, TypeVar
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from strawberry.extensions import SchemaExtension
 
-import aioinject
-from aioinject import utils
-from aioinject.containers import Container
+from aioinject import decorators, utils
 from aioinject.context import container_var
-from aioinject.decorators import InjectMethod
+
+
+if TYPE_CHECKING:
+    from aioinject.containers import Container
 
 _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
 def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
-    wrapper = aioinject.decorators.inject(
+    wrapper = decorators.inject(
         function,
-        inject_method=InjectMethod.container,
+        inject_method=decorators.InjectMethod.container,
     )
     return utils.clear_wrapper(wrapper)
 

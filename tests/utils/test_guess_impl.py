@@ -3,7 +3,6 @@ from collections.abc import AsyncGenerator, AsyncIterator, Generator, Iterator
 from typing import TypeAlias
 
 import pytest
-
 from aioinject.providers import _guess_impl
 
 
@@ -22,7 +21,7 @@ def test_function() -> None:
         return 42
 
     assert _guess_impl(factory) is int
-    assert _guess_impl(async_factory) is int
+    assert _guess_impl(async_factory) is int  # type: ignore[arg-type]
 
 
 def test_function_with_no_return_annotation() -> None:
@@ -48,7 +47,7 @@ def test_sync_iterables(return_type: TypeAlias) -> None:
         yield None
 
     assert _guess_impl(iterable) is int
-    assert _guess_impl(contextlib.contextmanager(iterable)) is int
+    assert _guess_impl(contextlib.contextmanager(iterable)) is int  # type: ignore[comparison-overlap]
 
 
 @pytest.mark.parametrize(
@@ -63,4 +62,4 @@ def test_async_iterables(return_type: TypeAlias) -> None:
         yield None
 
     assert _guess_impl(iterable) is int
-    assert _guess_impl(contextlib.asynccontextmanager(iterable)) is int
+    assert _guess_impl(contextlib.asynccontextmanager(iterable)) is int  # type: ignore[comparison-overlap]

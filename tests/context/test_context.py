@@ -1,7 +1,6 @@
 from typing import Annotated
 
 import pytest
-
 from aioinject import Callable, providers
 from aioinject.containers import Container
 from aioinject.markers import Inject
@@ -21,7 +20,7 @@ class _Service:
         self.repository = repository
 
 
-@pytest.fixture
+@pytest.fixture()
 def container() -> Container:
     container = Container()
     container.register(providers.Callable(_Session))
@@ -61,7 +60,7 @@ def test_does_not_preserve_cache_if_recreated(container: Container) -> None:
         assert ctx.resolve(_Service) is not service
 
 
-@pytest.mark.anyio
+@pytest.mark.anyio()
 async def test_provide_async() -> None:
     class Test:
         pass

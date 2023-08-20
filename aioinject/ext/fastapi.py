@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from collections.abc import Callable
-from typing import ParamSpec, TypeVar
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from fastapi import Request
 from starlette.middleware.base import (
@@ -10,18 +12,20 @@ from starlette.middleware.base import (
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
-import aioinject
-from aioinject import Container, utils
-from aioinject.decorators import InjectMethod
+from aioinject import decorators, utils
+
+
+if TYPE_CHECKING:
+    from aioinject.containers import Container
 
 _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
 def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
-    wrapper = aioinject.decorators.inject(
+    wrapper = decorators.inject(
         function,
-        inject_method=InjectMethod.context,
+        inject_method=decorators.InjectMethod.context,
     )
     return utils.clear_wrapper(wrapper)
 

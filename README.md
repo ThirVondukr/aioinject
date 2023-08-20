@@ -217,7 +217,7 @@ return type:
 
 ### Callable
 
-`Callable` provider would create instance of a class each time:
+`Callable` (or `Factory` for convenience) provider would create instance of a class each time:
 
 ```python
 from aioinject import Callable

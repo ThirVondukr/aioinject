@@ -5,8 +5,8 @@ import aioinject
 import httpx
 import pytest
 from aioinject import Inject
-from aioinject.ext.litestar import AioInjectPlugin, inject
-from litestar import Litestar, get
+from aioinject.ext.fastapi import InjectMiddleware, inject
+from fastapi import FastAPI
 
 
 @pytest.fixture(scope="session")
@@ -22,22 +22,21 @@ def container(provided_value: int) -> aioinject.Container:
 
 
 @pytest.fixture()
-def app(container: aioinject.Container) -> Litestar:
-    @get("/function-route")
+def app(container: aioinject.Container) -> FastAPI:
+    app_ = FastAPI()
+    app_.add_middleware(InjectMiddleware, container=container)
+
+    @app_.get("/function-route")
     @inject
     async def function_route(
         provided: Annotated[int, Inject],
     ) -> dict[str, str | int]:
         return {"value": provided}
 
-    return Litestar(
-        [function_route],
-        plugins=[AioInjectPlugin(container=container)],
-        debug=True,
-    )
+    return app_
 
 
 @pytest.fixture()
-async def http_client(app: Litestar) -> AsyncIterator[httpx.AsyncClient]:
+async def http_client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
     async with httpx.AsyncClient(app=app, base_url="http://test") as client:
         yield client
