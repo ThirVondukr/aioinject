@@ -22,7 +22,6 @@ def app(container: aioinject.Container) -> Litestar:
     return Litestar(
         [function_route],
         plugins=[AioInjectPlugin(container=container)],
-        debug=True,
     )
 
 
