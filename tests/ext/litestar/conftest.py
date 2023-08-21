@@ -10,18 +10,6 @@ from aioinject import Inject
 from aioinject.ext.litestar import AioInjectPlugin, inject
 
 
-@pytest.fixture(scope="session")
-def provided_value() -> int:
-    return 42
-
-
-@pytest.fixture(scope="session")
-def container(provided_value: int) -> aioinject.Container:
-    container = aioinject.Container()
-    container.register(aioinject.Object(provided_value))
-    return container
-
-
 @pytest.fixture
 def app(container: aioinject.Container) -> Litestar:
     @get("/function-route")

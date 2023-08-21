@@ -64,6 +64,7 @@ exclude_lines = [
     "class .*\\(.*\\bProtocol\\b.*\\):",
     "@(?:typing\\.)?overload",
     "if TYPE_CHECKING:",
+    "raise NotImplementedError",
 ]
 ignore_errors = false
 show_missing = true
@@ -95,6 +96,7 @@ fixable = [
     "I",
     "PT",
     "TID",
+    "COM",
 ]
 ignore = [
     "D",
