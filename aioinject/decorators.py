@@ -1,17 +1,17 @@
 import enum
 import functools
 import inspect
-import typing
 from collections.abc import Callable, Coroutine
-from typing import Any, ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeVar, overload
 
 from aioinject import InjectionContext, SyncInjectionContext
 from aioinject.context import container_var, context_var
 from aioinject.providers import collect_dependencies
 
+
 _T = TypeVar("_T")
 _P = ParamSpec("_P")
-_TContext = TypeVar("_TContext", InjectionContext, SyncInjectionContext)
+_ContextT = TypeVar("_ContextT", InjectionContext, SyncInjectionContext)
 
 
 class InjectMethod(enum.Enum):
@@ -22,8 +22,8 @@ class InjectMethod(enum.Enum):
 def _get_context(
     inject_method: InjectMethod,
     *,
-    context_type: type[_TContext],
-) -> _TContext:
+    context_type: type[_ContextT],
+) -> _ContextT:
     if inject_method is InjectMethod.container:
         container = container_var.get()
         if issubclass(context_type, InjectionContext):
@@ -86,7 +86,7 @@ def _wrap_sync(
     return wrapper
 
 
-@typing.overload
+@overload
 def inject(
     func: Callable[_P, _T],
     *,
@@ -95,7 +95,7 @@ def inject(
     ...
 
 
-@typing.overload
+@overload
 def inject(
     *,
     inject_method: InjectMethod = InjectMethod.container,
@@ -110,7 +110,10 @@ def inject(
 ) -> Callable[_P, _T] | Callable[[Callable[_P, _T]], Callable[_P, _T]]:
     def wrap(function: Callable[_P, _T]) -> Callable[_P, _T]:
         if inspect.iscoroutinefunction(function):
-            return _wrap_async(function, inject_method=inject_method)  # type: ignore[return-value]
+            return _wrap_async(
+                function,
+                inject_method=inject_method,
+            )  # type: ignore[return-value]
         return _wrap_sync(function, inject_method=inject_method)
 
     if func is None:

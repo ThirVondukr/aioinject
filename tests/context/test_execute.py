@@ -6,8 +6,7 @@ import pytest
 import aioinject
 from aioinject import Container, Inject
 from aioinject.providers import collect_dependencies
-
-from .conftest import _A, _C
+from tests.context.conftest import _A, _C
 
 
 def _dependant(

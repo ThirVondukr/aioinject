@@ -1,10 +1,19 @@
-__pychache__/
-
-.idea
-
-.pytest_cache/
-dist
-htmlcov/
-.coverage
+.idea/
+.vscode/
 
 .pdm-python
+
+# Build
+dist/
+
+# Coverage
+.coverage
+
+# Cache
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# virtualenv
+.venv
+venv*/

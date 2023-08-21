@@ -3,25 +3,30 @@ from __future__ import annotations
 import abc
 import asyncio
 import collections.abc
-import dataclasses
 import functools
 import inspect
 import threading
 import typing
-from collections.abc import Iterable, Sequence
 from contextlib import AsyncExitStack
+from dataclasses import dataclass
 from inspect import isclass
-from typing import Annotated, Any, ClassVar, Generic, TypeAlias
+from typing import (
+    Annotated,
+    Any,
+    ClassVar,
+    Generic,
+    TypeAlias,
+    TypeVar,
+)
 
 from aioinject.markers import Inject
-
-from . import utils
-from .utils import remove_annotation
-
-_T = typing.TypeVar("_T")
+from aioinject.utils import await_maybe, enter_context_maybe, remove_annotation
 
 
-@dataclasses.dataclass
+_T = TypeVar("_T")
+
+
+@dataclass(slots=True)
 class Dependency(Generic[_T]):
     name: str
     type_: type[_T]
@@ -53,8 +58,8 @@ def _find_inject_marker_in_annotation_args(
 
 
 def collect_dependencies(
-    dependant: typing.Callable | dict[str, Any],
-) -> Iterable[Dependency]:
+    dependant: typing.Callable[..., object] | dict[str, Any],
+) -> typing.Iterable[Dependency[object]]:
     if not isinstance(dependant, dict):
         with remove_annotation(dependant.__annotations__, "return"):
             type_hints = typing.get_type_hints(dependant, include_extras=True)
@@ -75,7 +80,7 @@ def collect_dependencies(
         )
 
 
-def _get_provider_type_hints(provider: Provider) -> dict[str, Any]:
+def _get_provider_type_hints(provider: Provider[Any]) -> dict[str, Any]:
     source = provider.impl
     if inspect.isclass(source):
         source = source.__init__
@@ -85,7 +90,7 @@ def _get_provider_type_hints(provider: Provider) -> dict[str, Any]:
 
     type_hints = typing.get_type_hints(source, include_extras=True)
     for key, value in type_hints.items():
-        dep_type, args = _get_annotation_args(value)
+        _, args = _get_annotation_args(value)
         for arg in args:
             if isinstance(arg, Inject):
                 break
@@ -104,10 +109,19 @@ _ASYNC_GENERATORS = {
     collections.abc.AsyncIterator,
 }
 
+_FactoryType: TypeAlias = (
+    type[_T]
+    | typing.Callable[..., _T]
+    | typing.Callable[..., collections.abc.Awaitable[_T]]
+    | typing.Callable[..., collections.abc.Coroutine[Any, Any, _T]]
+    | typing.Callable[..., collections.abc.Iterator[_T]]
+    | typing.Callable[..., collections.abc.AsyncIterator[_T]]
+)
 
-def _guess_impl(factory: typing.Callable[..., Any]) -> type:
+
+def _guess_impl(factory: _FactoryType[_T]) -> type[_T]:
     if isclass(factory):
-        return factory
+        return typing.cast(type[_T], factory)
     type_hints = typing.get_type_hints(factory)
     try:
         return_type = type_hints["return"]
@@ -136,7 +150,7 @@ def _guess_impl(factory: typing.Callable[..., Any]) -> type:
     return return_type
 
 
-class Provider(Generic[_T], abc.ABC):
+class Provider(Generic[_T], metaclass=abc.ABCMeta):
     def __init__(self, type_: type[_T], impl: Any) -> None:
         self.type = type_
         self.impl = impl
@@ -149,23 +163,23 @@ class Provider(Generic[_T], abc.ABC):
     async def provide(self, **kwargs: Any) -> _T:
         raise NotImplementedError
 
-    @property
+    @functools.cached_property
     def type_hints(self) -> dict[str, Any]:
         raise NotImplementedError
 
-    @property
+    @functools.cached_property
     def is_async(self) -> bool:
         raise NotImplementedError
 
     @functools.cached_property
-    def dependencies(self) -> Sequence[Dependency]:
+    def dependencies(self) -> tuple[Dependency[object], ...]:
         return tuple(collect_dependencies(self.type_hints))
 
 
 class Callable(Provider[_T]):
     def __init__(
         self,
-        factory: typing.Callable[..., _T] | type[_T],
+        factory: _FactoryType[_T],
         type_: type[_T] | None = None,
     ) -> None:
         super().__init__(
@@ -193,10 +207,13 @@ class Callable(Provider[_T]):
         return inspect.iscoroutinefunction(self.impl)
 
 
-class Singleton(Callable, Generic[_T]):
+Factory = Callable
+
+
+class Singleton(Callable[_T]):
     def __init__(
         self,
-        factory: typing.Callable[..., _T] | type[_T],
+        factory: _FactoryType[_T],
         type_: type[_T] | None = None,
     ) -> None:
         super().__init__(factory=factory, type_=type_)
@@ -216,25 +233,26 @@ class Singleton(Callable, Generic[_T]):
         if self.cache is None:
             async with self._async_lock:
                 if self.cache is None:
-                    awaitable = utils.enter_context_maybe(
+                    awaitable = enter_context_maybe(
                         await super().provide(**kwargs),
                         self._exit_stack,
                     )
-                    self.cache = await utils.await_maybe(awaitable)
-        return self.cache  # type: ignore[return-value]
+                    self.cache = await await_maybe(awaitable)
+        return self.cache
 
     async def aclose(self) -> None:
         await self._exit_stack.aclose()
 
 
 class Object(Provider[_T]):
-    is_async = False
     type_hints: ClassVar[dict[str, Any]] = {}
+    is_async = False
+    impl: _T
 
     def __init__(
         self,
         object_: _T,
-        type_: type | TypeAlias | None = None,
+        type_: type[_T] | None = None,
     ) -> None:
         super().__init__(
             type_=type_ or type(object_),

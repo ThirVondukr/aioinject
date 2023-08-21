@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import contextlib
 from collections.abc import AsyncIterator, Callable
 from contextlib import aclosing
-from typing import ParamSpec, TypeVar
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from litestar import Litestar
 from litestar.config.app import AppConfig
@@ -9,9 +11,11 @@ from litestar.middleware import MiddlewareProtocol
 from litestar.plugins import InitPluginProtocol
 from litestar.types import ASGIApp, Receive, Scope, Send
 
-import aioinject
-from aioinject import utils
-from aioinject.decorators import InjectMethod
+from aioinject import decorators, utils
+
+
+if TYPE_CHECKING:
+    from aioinject.containers import Container
 
 _T = TypeVar("_T")
 _P = ParamSpec("_P")
@@ -20,9 +24,9 @@ _STATE_KEY = "__aioinject_container__"
 
 
 def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
-    wrapper = aioinject.decorators.inject(
+    wrapper = decorators.inject(
         function,
-        inject_method=InjectMethod.context,
+        inject_method=decorators.InjectMethod.context,
     )
     return utils.clear_wrapper(wrapper)
 
@@ -38,13 +42,13 @@ class AioInjectMiddleware(MiddlewareProtocol):
         send: Send,
     ) -> None:
         app: Litestar = scope["app"]
-        container: aioinject.Container = app.state[_STATE_KEY]
+        container: Container = app.state[_STATE_KEY]
         async with container.context():
             await self.app(scope, receive, send)
 
 
 class AioInjectPlugin(InitPluginProtocol):
-    def __init__(self, container: aioinject.Container) -> None:
+    def __init__(self, container: Container) -> None:
         self.container = container
 
     @contextlib.asynccontextmanager

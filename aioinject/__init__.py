@@ -1,8 +1,9 @@
-from .containers import Container
-from .context import InjectionContext, SyncInjectionContext
-from .decorators import inject
-from .markers import Inject
-from .providers import Callable, Object, Provider, Singleton
+from aioinject.containers import Container
+from aioinject.context import InjectionContext, SyncInjectionContext
+from aioinject.decorators import inject
+from aioinject.markers import Inject
+from aioinject.providers import Callable, Object, Provider, Singleton
+
 
 __all__ = [
     "Container",
@@ -15,4 +16,5 @@ __all__ = [
     "Singleton",
     "Object",
 ]
+
 __version__ = "0.11.3"

@@ -8,9 +8,8 @@ import aioinject
 from aioinject import Container
 from aioinject.ext.litestar import AioInjectPlugin
 
-pytestmark = pytest.mark.anyio
 
-
+@pytest.mark.anyio
 async def test_lifespan() -> None:
     number = 42
 
