@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator, AsyncIterator, Generator, Iterator
 from typing import TypeAlias
 
 import pytest
+
 from aioinject.providers import _guess_impl
 
 
@@ -25,7 +26,7 @@ def test_function() -> None:
 
 
 def test_function_with_no_return_annotation() -> None:
-    def factory():  # noqa: ANN202
+    def factory():  # type: ignore[no-untyped-def] # noqa: ANN202
         pass
 
     with pytest.raises(ValueError) as exc_info:  # noqa: PT011

@@ -4,8 +4,8 @@ from types import TracebackType
 from unittest.mock import MagicMock
 
 import pytest
-from aioinject import Callable, Container, providers
 
+from aioinject import Callable, Container, providers
 from tests.context.test_context import _Session
 
 
@@ -70,7 +70,7 @@ def test_should_not_use_resolved_class_as_context_manager() -> None:
     resolved.mock.close.assert_not_called()
 
 
-@pytest.mark.anyio()
+@pytest.mark.anyio
 async def test_async_context_manager() -> None:
     mock = MagicMock()
 
@@ -90,7 +90,7 @@ async def test_async_context_manager() -> None:
     mock.close.assert_called_once()
 
 
-@pytest.mark.anyio()
+@pytest.mark.anyio
 async def test_async_context_would_use_sync_context_managers() -> None:
     mock = MagicMock()
 
@@ -110,7 +110,7 @@ async def test_async_context_would_use_sync_context_managers() -> None:
     mock.close.assert_called_once()
 
 
-@pytest.mark.anyio()
+@pytest.mark.anyio
 async def test_should_not_use_resolved_class_as_async_context_manager() -> None:
     container = Container()
     container.register(Callable(_AsyncContextManager))

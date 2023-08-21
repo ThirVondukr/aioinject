@@ -7,13 +7,13 @@ authors = [
     { name = "Doctor", email = "thirvondukr@gmail.com" },
     { name = "dexofan", email = "fadeddexofan@gmail.com" },
 ]
-dependencies = [
-    "typing-extensions>=4.0.0",
-]
 readme = "README.md"
 license = { text = "MIT" }
 classifiers = [
     "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "typing-extensions>=4.0.0",
 ]
 
 [project.urls]
@@ -22,6 +22,54 @@ classifiers = [
 [build-system]
 requires = ["pdm-pep517>=1.0"]
 build-backend = "pdm.pep517.api"
+
+
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = [
+    "black>=23.1.0",
+    "mypy>=1.0.1",
+    "anyio>=3.6.2",
+    "trio>=0.22.0",
+    "pytest>=7.2.1",
+    "coverage[toml]>=7.1.0",
+    "strawberry-graphql>=0.156.4",
+    "fastapi>=0.92.0",
+    "ruff>=0.0.247",
+    "commitizen>=2.42.1",
+    "litestar>=2.0.0rc1",
+    "uvicorn>=0.23.2",
+    "asgi-lifespan>=2.1.0",
+]
+
+[tool.pdm.scripts]
+lint = { composite = [
+    "black .",
+    "ruff check --fix .",
+    "mypy .",
+    "black --check .",
+] }
+test = { composite = [
+    "coverage run",
+    "coverage report",
+] }
+
+[tool.coverage.run]
+source = ["aioinject"]
+command_line = "-m pytest -vvv"
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "class .*\\(.*\\bProtocol\\b.*\\):",
+    "@(?:typing\\.)?overload",
+    "if TYPE_CHECKING:",
+]
+ignore_errors = false
+show_missing = true
+skip_covered = true
+skip_empty = true
+precision = 2
 
 
 [tool.commitizen]
@@ -36,14 +84,17 @@ version_files = [
 [tool.black]
 line_length = 79
 
-
 [tool.ruff]
 target-version = "py310"
 src = ["aioinject", "tests"]
 select = ["ALL"]
-unfixable = [
-    "B", # Avoid trying to fix flake8-bugbear violations.
-    "ERA", # Avoid deleting commented-out code
+fixable = [
+    "F",
+    "B",
+    "UP",
+    "I",
+    "PT",
+    "TID",
 ]
 ignore = [
     "D",
@@ -68,9 +119,7 @@ max-complexity = 6
 
 [tool.ruff.isort]
 lines-after-imports = 2
-
-[tool.ruff.flake8-bugbear]
-extend-immutable-calls = []
+known-first-party = ["aioinject"]
 
 [tool.ruff.flake8-quotes]
 inline-quotes = "double"
@@ -79,67 +128,30 @@ inline-quotes = "double"
 classmethod-decorators = ["classmethod"]
 staticmethod-decorators = ["staticmethod"]
 
+[tool.ruff.flake8-pytest-style]
+fixture-parentheses = false
+mark-parentheses = false
+
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "all"
+
 
 [tool.mypy]
-allow_redefinition = false
-check_untyped_defs = true
-disallow_untyped_decorators = true
-disallow_any_explicit = false
-disallow_any_generics = true
-disallow_incomplete_defs = true
-disallow_untyped_calls = true
-ignore_errors = false
-ignore_missing_imports = true
-implicit_reexport = true
-local_partial_types = true
-strict_optional = true
-strict_equality = true
-no_implicit_optional = true
-warn_unused_ignores = true
-warn_redundant_casts = true
-warn_unused_configs = true
-warn_unreachable = true
-warn_no_return = true
+strict = true
 follow_imports = "normal"
+ignore_missing_imports = false
+
+allow_redefinition = false
+disallow_any_explicit = false
+ignore_errors = false
+local_partial_types = true
+no_implicit_optional = true
+strict_optional = true
+warn_no_return = true
+warn_return_any = false
+warn_unreachable = true
+
 pretty = true
-show_error_codes = true
 show_column_numbers = true
+show_error_codes = true
 
-
-[tool.pyright]
-include = ["aioinject"]
-typeCheckingMode = "strict"
-
-
-[tool.pdm]
-[tool.pdm.dev-dependencies]
-dev = [
-    "black>=23.1.0",
-    "mypy>=1.0.1",
-    "anyio>=3.6.2",
-    "trio>=0.22.0",
-    "pytest>=7.2.1",
-    "pytest-cov>=4.1.0",
-    "coverage[toml]>=7.1.0",
-    "strawberry-graphql>=0.156.4",
-    "fastapi>=0.92.0",
-    "ruff>=0.0.247",
-    "commitizen>=2.42.1",
-    "litestar>=2.0.0rc1",
-    "uvicorn>=0.23.2",
-    "asgi-lifespan>=2.1.0",
-]
-
-[tool.pdm.scripts]
-lint = { composite = [
-    "mypy .",
-    "ruff check .",
-    "black --check .",
-] }
-fmt = { composite = [
-    "ruff check --fix --exit-zero .",
-    "black ."
-] }
-test = { composite = [
-    "pytest --cov-report term-missing --cov=aioinject"
-] }

@@ -1,7 +1,7 @@
 stages:
   - lint
 
-.lint-job: &lint_job
+.lint-job:
   image: python:3.10-slim
   stage: lint
   interruptible: true
@@ -21,27 +21,29 @@ stages:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 mypy:
-  <<: *lint_job
+  extends: .lint-job
   script:
     - pdm run mypy .
 
 black:
-  <<: *lint_job
+  extends: .lint-job
   script:
     - pdm run black --check .
 
 ruff:
-  <<: *lint_job
+  extends: .lint-job
   script:
     - pdm run ruff check .
 
 pytest:
-  <<: *lint_job
+  extends: .lint-job
   script:
-    - pdm run test --cov-report xml:./tmp/coverage.xml
+    - pdm run coverage run
+    - pdm run coverage report -m
+    - pdm run coverage xml
   coverage: "/^TOTAL.*\\s(\\d*)/"
   artifacts:
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: ./tmp/coverage.xml
+        path: coverage.xml

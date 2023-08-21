@@ -1,12 +1,13 @@
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-import aioinject
 import httpx
 import pytest
+from litestar import Litestar, get
+
+import aioinject
 from aioinject import Inject
 from aioinject.ext.litestar import AioInjectPlugin, inject
-from litestar import Litestar, get
 
 
 @pytest.fixture(scope="session")
@@ -21,7 +22,7 @@ def container(provided_value: int) -> aioinject.Container:
     return container
 
 
-@pytest.fixture()
+@pytest.fixture
 def app(container: aioinject.Container) -> Litestar:
     @get("/function-route")
     @inject
@@ -37,7 +38,7 @@ def app(container: aioinject.Container) -> Litestar:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 async def http_client(app: Litestar) -> AsyncIterator[httpx.AsyncClient]:
     async with httpx.AsyncClient(app=app, base_url="http://test") as client:
         yield client

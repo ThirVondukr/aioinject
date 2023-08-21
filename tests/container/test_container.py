@@ -2,6 +2,7 @@ import contextlib
 from collections.abc import AsyncIterator
 
 import pytest
+
 from aioinject import Singleton, providers
 from aioinject.containers import Container
 from aioinject.context import InjectionContext
@@ -19,7 +20,7 @@ class _ServiceB(_AbstractService):
     pass
 
 
-@pytest.fixture()
+@pytest.fixture
 def container() -> Container:
     return Container()
 
@@ -57,7 +58,7 @@ def test_can_retrieve_single_provider(container: Container) -> None:
     assert container.get_provider(int)
 
 
-@pytest.fixture()
+@pytest.fixture
 def multi_provider_container(container: Container) -> Container:
     a_provider = providers.Callable(_ServiceA, type_=_AbstractService)
     b_provider = providers.Callable(_ServiceB, type_=_AbstractService)
@@ -96,7 +97,7 @@ def test_missing_provider() -> None:
     assert str(exc_info.value) == msg
 
 
-@pytest.mark.anyio()
+@pytest.mark.anyio
 async def test_should_close_singletons() -> None:
     shutdown = False
 

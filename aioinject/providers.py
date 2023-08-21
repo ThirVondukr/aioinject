@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import asyncio
 import collections.abc
 import functools
@@ -10,7 +9,15 @@ import typing
 from contextlib import AsyncExitStack
 from dataclasses import dataclass
 from inspect import isclass
-from typing import Annotated, Any, Generic, TypeAlias, TypeVar
+from typing import (
+    Annotated,
+    Any,
+    ClassVar,
+    Generic,
+    Protocol,
+    TypeAlias,
+    TypeVar,
+)
 
 from aioinject.markers import Inject
 from aioinject.utils import await_maybe, enter_context_maybe, remove_annotation
@@ -143,26 +150,31 @@ def _guess_impl(factory: _FactoryType[_T]) -> type[_T]:
     return return_type
 
 
-class Provider(Generic[_T], metaclass=abc.ABCMeta):
-    def __init__(self, type_: type[_T], impl: Any) -> None:
+class Provider(Protocol[_T]):
+    type: type[_T]  # noqa: A003
+    impl: Any
+
+    def __init__(
+        self,
+        type_: typing.Type[_T],  # noqa: UP006
+        impl: Any,
+    ) -> None:
         self.type = type_
         self.impl = impl
 
-    @abc.abstractmethod
     def provide_sync(self, **kwargs: Any) -> _T:
-        raise NotImplementedError
+        ...
 
-    @abc.abstractmethod
     async def provide(self, **kwargs: Any) -> _T:
-        raise NotImplementedError
+        ...
 
-    @functools.cached_property
+    @property
     def type_hints(self) -> dict[str, Any]:
-        raise NotImplementedError
+        ...
 
-    @functools.cached_property
+    @property
     def is_async(self) -> bool:
-        raise NotImplementedError
+        ...
 
     @functools.cached_property
     def dependencies(self) -> tuple[Dependency[object], ...]:
@@ -200,7 +212,7 @@ class Callable(Provider[_T]):
         return inspect.iscoroutinefunction(self.impl)
 
 
-Factory: TypeAlias = Callable[_T]
+Factory = Callable
 
 
 class Singleton(Callable[_T]):
@@ -238,6 +250,8 @@ class Singleton(Callable[_T]):
 
 
 class Object(Provider[_T]):
+    type_hints: ClassVar[dict[str, Any]] = {}
+    is_async = False
     impl: _T
 
     def __init__(
@@ -255,11 +269,3 @@ class Object(Provider[_T]):
 
     async def provide(self, **kwargs: Any) -> _T:  # noqa: ARG002
         return self.impl
-
-    @functools.cached_property
-    def type_hints(self) -> dict[str, Any]:
-        return {}
-
-    @functools.cached_property
-    def is_async(self) -> bool:
-        return False

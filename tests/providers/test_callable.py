@@ -4,6 +4,7 @@ from typing import Annotated
 from unittest.mock import patch
 
 import pytest
+
 from aioinject import Inject, Provider, providers
 from aioinject.providers import Dependency
 
@@ -12,7 +13,7 @@ class _Test:
     pass
 
 
-@pytest.fixture()
+@pytest.fixture
 def provider() -> Provider[_Test]:
     return providers.Callable(_Test)
 
@@ -46,7 +47,7 @@ def test_would_return_factory_result(provider: Provider[_Test]) -> None:
         assert provider.provide_sync() is instance
 
 
-@pytest.mark.anyio()
+@pytest.mark.anyio
 async def test_provide_async() -> None:
     return_value = 42
 

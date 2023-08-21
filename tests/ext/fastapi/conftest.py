@@ -1,12 +1,13 @@
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-import aioinject
 import httpx
 import pytest
+from fastapi import FastAPI
+
+import aioinject
 from aioinject import Inject
 from aioinject.ext.fastapi import InjectMiddleware, inject
-from fastapi import FastAPI
 
 
 @pytest.fixture(scope="session")
@@ -21,7 +22,7 @@ def container(provided_value: int) -> aioinject.Container:
     return container
 
 
-@pytest.fixture()
+@pytest.fixture
 def app(container: aioinject.Container) -> FastAPI:
     app_ = FastAPI()
     app_.add_middleware(InjectMiddleware, container=container)
@@ -36,7 +37,7 @@ def app(container: aioinject.Container) -> FastAPI:
     return app_
 
 
-@pytest.fixture()
+@pytest.fixture
 async def http_client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
     async with httpx.AsyncClient(app=app, base_url="http://test") as client:
         yield client
