@@ -6,8 +6,7 @@ from litestar import Litestar, get
 
 import aioinject
 from aioinject import Inject
-from aioinject.ext.fastapi import inject
-from aioinject.ext.litestar import AioInjectPlugin
+from aioinject.ext.litestar import AioInjectPlugin, inject
 
 container = aioinject.Container()
 container.register(aioinject.Object(42))
