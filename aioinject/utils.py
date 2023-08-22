@@ -15,7 +15,7 @@ from aioinject.markers import Inject
 _T = TypeVar("_T")
 _F = TypeVar("_F", bound=typing.Callable[..., Any])
 
-_sentinel = object()
+sentinel = object()
 
 
 def clear_wrapper(wrapper: _F) -> _F:
@@ -78,7 +78,7 @@ def remove_annotation(
     annotations: dict[str, Any],
     name: str,
 ) -> Iterator[None]:
-    annotation = annotations.pop(name, _sentinel)
+    annotation = annotations.pop(name, sentinel)
     yield
-    if annotation is not _sentinel:
+    if annotation is not sentinel:
         annotations[name] = annotation

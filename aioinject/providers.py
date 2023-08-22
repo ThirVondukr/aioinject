@@ -20,7 +20,12 @@ from typing import (
 )
 
 from aioinject.markers import Inject
-from aioinject.utils import await_maybe, enter_context_maybe, remove_annotation
+from aioinject.utils import (
+    await_maybe,
+    enter_context_maybe,
+    remove_annotation,
+    sentinel,
+)
 
 
 _T = TypeVar("_T")
@@ -217,22 +222,22 @@ class Singleton(Callable[_T]):
         type_: type[_T] | None = None,
     ) -> None:
         super().__init__(factory=factory, type_=type_)
-        self.cache: _T | None = None
+        self.cache: _T = sentinel  # type: ignore[assignment]
         self._lock = threading.Lock()
         self._async_lock = asyncio.Lock()
         self._exit_stack = AsyncExitStack()
 
     def provide_sync(self, **kwargs: Any) -> _T:
-        if self.cache is None:
+        if self.cache is sentinel:
             with self._lock:
-                if self.cache is None:
+                if self.cache is sentinel:
                     self.cache = super().provide_sync(**kwargs)
         return self.cache
 
     async def provide(self, **kwargs: Any) -> _T:
-        if self.cache is None:
+        if self.cache is sentinel:
             async with self._async_lock:
-                if self.cache is None:
+                if self.cache is sentinel:
                     awaitable = enter_context_maybe(
                         await super().provide(**kwargs),
                         self._exit_stack,

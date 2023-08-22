@@ -1,6 +1,6 @@
 import pytest
 
-from aioinject import Singleton
+from aioinject import Provider, Singleton
 
 
 class _Test:
@@ -28,3 +28,17 @@ async def test_async_function() -> None:
     provider = Singleton[_Test](factory=create_test)
     instance = await provider.provide()
     assert instance is await provider.provide()
+
+
+@pytest.mark.anyio
+async def test_should_not_provide_none_twice() -> None:
+    count = 0
+
+    async def func() -> None:
+        nonlocal count
+        count += 1
+
+    provider: Provider[None] = Singleton(func)
+    for _ in range(5):
+        assert await provider.provide() is None  # type: ignore[func-returns-value]
+        assert count == 1
