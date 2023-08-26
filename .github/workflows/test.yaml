@@ -19,7 +19,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: pip-${{ matrix.pyton-version }}-${{ hashFiles('pdm.lock') }}
+          key: pip-${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
       - name: Install PDM
         run: |
           pip install pdm
