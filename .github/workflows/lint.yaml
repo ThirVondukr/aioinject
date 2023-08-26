@@ -7,14 +7,14 @@ jobs:
       matrix:
         python-version:
           - 3.11.4
-#        job:
-#          - mypy .
-#          - black --check .
-#          - ruff check .
-#          - |
-#            pdm run coverage run
-#            pdm run coverage report -m
-#            pdm run coverage xml
+        job:
+          - mypy .
+          - black --check .
+          - ruff check .
+          - |
+            pdm run coverage run
+            pdm run coverage report -m
+            pdm run coverage xml
 
     steps:
       - uses: actions/checkout@v3
