@@ -71,6 +71,7 @@ show_missing = true
 skip_covered = true
 skip_empty = true
 precision = 2
+fail_under = 100
 
 
 [tool.commitizen]
