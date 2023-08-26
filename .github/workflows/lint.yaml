@@ -25,7 +25,9 @@ jobs:
       - name: Cache PIP
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
+          path: |
+            ~/.cache/pip
+            .venv
           key: pip-${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
       - name: Install PDM
         run: |
