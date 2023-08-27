@@ -31,3 +31,20 @@ async def test_async_resolver(
     assert response.json() == {
         "data": {"value": f"{argument}-{provided_value}"},
     }
+
+
+async def test_dataloader(
+    http_client: httpx.AsyncClient,
+) -> None:
+    query = """
+    query {
+        numbers: dataloader
+    }
+    """
+    str(uuid.uuid4())
+    response = await http_client.post("", json={"query": query})
+    assert response.status_code == httpx.codes.OK.value
+
+    assert response.json() == {
+        "data": {"numbers": list(range(100))},
+    }
