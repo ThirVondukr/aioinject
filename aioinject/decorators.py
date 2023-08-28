@@ -1,7 +1,7 @@
 import enum
 import functools
 import inspect
-from collections.abc import Callable, Coroutine
+from collections.abc import AsyncIterable, AsyncIterator, Callable, Coroutine
 from typing import Any, ParamSpec, TypeVar, overload
 
 from aioinject import InjectionContext, SyncInjectionContext
@@ -53,6 +53,23 @@ def _wrap_async(
                 return await execute
 
         return await execute
+
+    return wrapper
+
+
+def _wrap_async_gen(
+    function: Callable[_P, Coroutine[Any, Any, AsyncIterable[_T]]],
+    inject_method: InjectMethod,
+) -> Callable[_P, AsyncIterable[_T]]:
+    wrapped = _wrap_async(function, inject_method)
+
+    @functools.wraps(function)
+    async def wrapper(
+        *args: _P.args,
+        **kwargs: _P.kwargs,
+    ) -> AsyncIterator[_T]:
+        async for eleement in await wrapped(*args, **kwargs):
+            yield eleement
 
     return wrapper
 
@@ -114,6 +131,12 @@ def inject(
                 function,
                 inject_method=inject_method,
             )  # type: ignore[return-value]
+
+        if inspect.isasyncgenfunction(function):
+            return _wrap_async_gen(  # type: ignore[return-value]
+                function,  # type: ignore[arg-type]
+                inject_method=inject_method,
+            )
         return _wrap_sync(function, inject_method=inject_method)
 
     if func is None:

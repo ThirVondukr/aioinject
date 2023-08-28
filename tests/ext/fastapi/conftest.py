@@ -3,11 +3,16 @@ from typing import Annotated
 
 import httpx
 import pytest
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 import aioinject
 from aioinject import Inject
 from aioinject.ext.fastapi import InjectMiddleware, inject
+
+
+@inject
+async def dependency(number: Annotated[int, Inject]) -> AsyncIterator[int]:
+    yield number
 
 
 @pytest.fixture
@@ -21,6 +26,13 @@ def app(container: aioinject.Container) -> FastAPI:
         provided: Annotated[int, Inject],
     ) -> dict[str, str | int]:
         return {"value": provided}
+
+    @app_.get("/depends")
+    @inject
+    async def route_with_depends(
+        number: Annotated[int, Depends(dependency)],
+    ) -> dict[str, str | int]:
+        return {"value": number}
 
     return app_
 
