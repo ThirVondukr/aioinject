@@ -68,8 +68,8 @@ def _wrap_async_gen(
         *args: _P.args,
         **kwargs: _P.kwargs,
     ) -> AsyncIterator[_T]:
-        async for eleement in await wrapped(*args, **kwargs):
-            yield eleement
+        async for element in await wrapped(*args, **kwargs):
+            yield element
 
     return wrapper
 
