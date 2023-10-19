@@ -168,4 +168,4 @@ def test_generator_return_types() -> None:
     factories = [iterable, gen, async_iterable, async_gen]
     for factory in factories:
         provider = providers.Callable(factory)
-        assert provider.type is int
+        assert provider.type_ is int

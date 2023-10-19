@@ -20,7 +20,7 @@ class Container:
         self,
         provider: Provider[Any],
     ) -> None:
-        self.providers[provider.type].append(provider)
+        self.providers[provider.type_].append(provider)
 
     @staticmethod
     def _get_provider(
@@ -70,9 +70,9 @@ class Container:
         self,
         provider: Provider[Any],
     ) -> Iterator[None]:
-        self._overrides[provider.type].append(provider)
+        self._overrides[provider.type_].append(provider)
         yield
-        self._overrides[provider.type].remove(provider)
+        self._overrides[provider.type_].remove(provider)
 
     async def aclose(self) -> None:
         for providers in self.providers.values():

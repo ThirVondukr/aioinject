@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import asyncio
 import collections.abc
 import functools
@@ -15,6 +14,7 @@ from typing import (
     Any,
     ClassVar,
     Generic,
+    Protocol,
     TypeAlias,
     TypeVar,
 )
@@ -155,26 +155,27 @@ def _guess_impl(factory: _FactoryType[_T]) -> type[_T]:
     return return_type
 
 
-class Provider(Generic[_T], metaclass=abc.ABCMeta):
+class Provider(Protocol[_T]):
+    type_: type[_T]
+    impl: Any
+
     def __init__(self, type_: type[_T], impl: Any) -> None:
-        self.type = type_
+        self.type_ = type_
         self.impl = impl
 
-    @abc.abstractmethod
     def provide_sync(self, **kwargs: Any) -> _T:
-        raise NotImplementedError
+        ...
 
-    @abc.abstractmethod
     async def provide(self, **kwargs: Any) -> _T:
-        raise NotImplementedError
+        ...
 
-    @functools.cached_property
+    @property
     def type_hints(self) -> dict[str, Any]:
-        raise NotImplementedError
+        ...
 
-    @functools.cached_property
+    @property
     def is_async(self) -> bool:
-        raise NotImplementedError
+        ...
 
     @functools.cached_property
     def dependencies(self) -> tuple[Dependency[object], ...]:
