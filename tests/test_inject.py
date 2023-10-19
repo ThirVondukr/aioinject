@@ -3,6 +3,8 @@ from typing import Annotated
 import pytest
 
 from aioinject import Container, Inject, inject, providers
+from aioinject.context import container_var
+from aioinject.decorators import InjectMethod
 
 
 class _Session:
@@ -130,3 +132,18 @@ async def test_service_with_multiple_dependencies_with_same_type(
         service = await ctx.resolve(_NeedsMultipleImplementations)
         assert isinstance(service.a, _ImplementationA)
         assert isinstance(service.b, _ImplementationB)
+
+
+@pytest.mark.anyio
+async def test_inject_using_container(
+    container: Container,
+) -> None:
+    @inject(inject_method=InjectMethod.container)
+    async def injectee(service: Annotated[_Service, Inject]) -> _Service:
+        return service
+
+    token = container_var.set(container)
+    # This is fine
+    coro = injectee()  # type: ignore[call-arg]
+    assert isinstance(await coro, _Service)
+    container_var.reset(token)

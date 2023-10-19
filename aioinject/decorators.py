@@ -140,6 +140,6 @@ def inject(
         return _wrap_sync(function, inject_method=inject_method)
 
     if func is None:
-        return wrap  # pragma: no cover
+        return wrap
 
     return wrap(func)
