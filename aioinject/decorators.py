@@ -107,7 +107,7 @@ def _wrap_sync(
 def inject(
     func: Callable[_P, _T],
     *,
-    inject_method: InjectMethod = InjectMethod.container,
+    inject_method: InjectMethod = InjectMethod.context,
 ) -> Callable[_P, _T]:
     ...
 
@@ -115,7 +115,7 @@ def inject(
 @overload
 def inject(
     *,
-    inject_method: InjectMethod = InjectMethod.container,
+    inject_method: InjectMethod = InjectMethod.context,
 ) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]:
     ...
 
