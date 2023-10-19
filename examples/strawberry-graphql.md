@@ -8,7 +8,7 @@ from strawberry.asgi import GraphQL
 
 import aioinject
 from aioinject import Inject
-from aioinject.ext.strawberry import ContainerExtension, inject
+from aioinject.ext.strawberry import AioInjectExtension, inject
 
 container = aioinject.Container()
 container.register(aioinject.Object(42))
@@ -26,7 +26,7 @@ def create_app() -> GraphQL:
     schema = Schema(
         query=Query,
         extensions=[
-            ContainerExtension(container=container),
+            AioInjectExtension(container=container),
         ],
     )
     return GraphQL(schema=schema)

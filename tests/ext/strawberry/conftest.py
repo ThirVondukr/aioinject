@@ -7,7 +7,7 @@ from strawberry import Schema
 from strawberry.asgi import GraphQL
 
 import aioinject
-from aioinject.ext.strawberry import ContainerExtension
+from aioinject.ext.strawberry import AioInjectExtension
 from tests.ext.strawberry.app import StrawberryApp, _Query
 
 
@@ -20,7 +20,7 @@ def anyio_backend() -> str:
 async def app(container: aioinject.Container) -> GraphQL[Any, Any]:
     schema = Schema(
         query=_Query,
-        extensions=[ContainerExtension(container=container)],
+        extensions=[AioInjectExtension(container=container)],
     )
     return StrawberryApp(schema=schema)
 

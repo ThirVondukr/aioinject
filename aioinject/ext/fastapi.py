@@ -30,7 +30,7 @@ def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
     return utils.clear_wrapper(wrapper)
 
 
-class InjectMiddleware(BaseHTTPMiddleware):
+class AioInjectMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,

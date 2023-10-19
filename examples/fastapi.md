@@ -8,7 +8,7 @@ from fastapi import FastAPI
 
 import aioinject
 from aioinject import Inject
-from aioinject.ext.fastapi import InjectMiddleware, inject
+from aioinject.ext.fastapi import AioInjectMiddleware, inject
 
 container = aioinject.Container()
 container.register(aioinject.Object(42))
@@ -28,7 +28,7 @@ def create_app() -> FastAPI:
     async def root(number: Annotated[int, Inject]) -> int:
         return number
 
-    app.add_middleware(InjectMiddleware, container=container)
+    app.add_middleware(AioInjectMiddleware, container=container)
 
     return app
 

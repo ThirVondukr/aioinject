@@ -24,7 +24,7 @@ def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
     return utils.clear_wrapper(wrapper)
 
 
-class ContainerExtension(SchemaExtension):
+class AioInjectExtension(SchemaExtension):
     def __init__(self, container: Container) -> None:
         self.container = container
 

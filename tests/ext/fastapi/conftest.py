@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI
 
 import aioinject
 from aioinject import Inject
-from aioinject.ext.fastapi import InjectMiddleware, inject
+from aioinject.ext.fastapi import AioInjectMiddleware, inject
 
 
 @inject
@@ -18,7 +18,7 @@ async def dependency(number: Annotated[int, Inject]) -> AsyncIterator[int]:
 @pytest.fixture
 def app(container: aioinject.Container) -> FastAPI:
     app_ = FastAPI()
-    app_.add_middleware(InjectMiddleware, container=container)
+    app_.add_middleware(AioInjectMiddleware, container=container)
 
     @app_.get("/function-route")
     @inject
