@@ -159,10 +159,6 @@ class Provider(Protocol[_T]):
     type_: type[_T]
     impl: Any
 
-    def __init__(self, type_: type[_T], impl: Any) -> None:
-        self.type_ = type_
-        self.impl = impl
-
     def provide_sync(self, **kwargs: Any) -> _T:
         ...
 
@@ -188,17 +184,15 @@ class Callable(Provider[_T]):
         factory: _FactoryType[_T],
         type_: type[_T] | None = None,
     ) -> None:
-        super().__init__(
-            type_=type_ or _guess_impl(factory),
-            impl=factory,
-        )
+        self.type_ = type_ or _guess_impl(factory)
+        self.impl = factory
 
     def provide_sync(self, **kwargs: Any) -> _T:
-        return self.impl(**kwargs)
+        return self.impl(**kwargs)  # type: ignore[return-value]
 
     async def provide(self, **kwargs: Any) -> _T:
         if self.is_async:
-            return await self.impl(**kwargs)
+            return await self.impl(**kwargs)  # type: ignore[misc]
         return self.provide_sync(**kwargs)
 
     @functools.cached_property
@@ -260,10 +254,8 @@ class Object(Provider[_T]):
         object_: _T,
         type_: type[_T] | None = None,
     ) -> None:
-        super().__init__(
-            type_=type_ or type(object_),
-            impl=object_,
-        )
+        self.type_ = type_ or type(object_)
+        self.impl = object_
 
     def provide_sync(self, **kwargs: Any) -> _T:  # noqa: ARG002
         return self.impl
