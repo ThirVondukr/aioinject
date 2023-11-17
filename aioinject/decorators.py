@@ -96,7 +96,7 @@ def _wrap_sync(
 
         if inject_method is InjectMethod.container:
             with context:
-                 return execute()
+                return execute()
 
         return execute()
 
