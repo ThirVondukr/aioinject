@@ -96,9 +96,9 @@ def _wrap_sync(
 
         if inject_method is InjectMethod.container:
             with context:
-                return execute()  # type: ignore[return-value]
+                 return execute()
 
-        return execute()  # type: ignore[return-value]
+        return execute()
 
     return wrapper
 
