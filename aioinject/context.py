@@ -20,7 +20,7 @@ from typing import (
 from typing_extensions import Self
 
 from aioinject.providers import Dependency
-from aioinject.utils import await_maybe, enter_context_maybe
+from aioinject.utils import enter_context_maybe
 
 
 if TYPE_CHECKING:
@@ -78,11 +78,10 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
             for dep in provider.dependencies
         }
 
-        resolved = enter_context_maybe(
+        resolved = await enter_context_maybe(
             resolved=await provider.provide(**dependencies),
             stack=self._exit_stack,
         )
-        resolved = await await_maybe(resolved)
         if use_cache:
             self._cache[type_, impl] = resolved
         return resolved

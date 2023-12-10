@@ -21,7 +21,6 @@ from typing import (
 
 from aioinject.markers import Inject
 from aioinject.utils import (
-    await_maybe,
     enter_context_maybe,
     remove_annotation,
     sentinel,
@@ -233,11 +232,10 @@ class Singleton(Callable[_T]):
         if self.cache is sentinel:
             async with self._async_lock:
                 if self.cache is sentinel:
-                    awaitable = enter_context_maybe(
+                    self.cache = await enter_context_maybe(
                         await super().provide(**kwargs),
                         self._exit_stack,
                     )
-                    self.cache = await await_maybe(awaitable)
         return self.cache
 
     async def aclose(self) -> None:

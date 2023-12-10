@@ -1,8 +1,10 @@
-from typing import Annotated
+from collections.abc import Generator
+from typing import Annotated, Any
 
+import anyio
 import pytest
 
-from aioinject import Callable, providers
+from aioinject import Callable, Provider, Singleton, providers
 from aioinject.containers import Container
 from aioinject.markers import Inject
 
@@ -71,3 +73,42 @@ async def test_provide_async() -> None:
     async with container.context() as ctx:
         instance = await ctx.resolve(Test)
         assert isinstance(instance, Test)
+
+
+class _AwaitableCls:
+    def __init__(self) -> None:
+        self.awaited = False
+
+    def __await__(self) -> Generator[Any, None, None]:
+        self.awaited = True
+        return anyio.sleep(0).__await__()
+
+
+async def _async_awaitable() -> _AwaitableCls:
+    return _AwaitableCls()
+
+
+def _sync_awaitable() -> _AwaitableCls:
+    return _AwaitableCls()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "provider",
+    [
+        Callable(_async_awaitable),  # type: ignore[arg-type]
+        Callable(_sync_awaitable),  # type: ignore[arg-type]
+        Singleton(_async_awaitable),  # type: ignore[arg-type]
+        Singleton(_sync_awaitable),  # type: ignore[arg-type]
+    ],
+)
+async def test_should_not_execute_awaitable_classes(
+    provider: Provider[_AwaitableCls],
+) -> None:
+    container = Container()
+    container.register(provider)
+
+    async with container.context() as ctx:
+        resolved = await ctx.resolve(_AwaitableCls)
+        assert isinstance(resolved, _AwaitableCls)
+        assert not resolved.awaited
