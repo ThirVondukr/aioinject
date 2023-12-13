@@ -41,6 +41,9 @@ dev = [
     "uvicorn>=0.23.2",
     "asgi-lifespan>=2.1.0",
 ]
+[tool.pdm.build]
+includes = ["aioinject"]
+source-includes = ["aioinject"]
 
 [tool.pdm.scripts]
 lint = { composite = [
