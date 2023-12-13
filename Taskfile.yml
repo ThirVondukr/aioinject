@@ -1,0 +1,46 @@
+version: "3"
+
+vars:
+  RUNNER:
+    sh: 'echo {{ .RUNNER | default "" }}'
+  SOURCES: .
+
+tasks:
+  default:
+    cmd:
+      task: all
+
+  lint:
+    desc: Lint python source files
+    cmds:
+      - "{{.RUNNER}} ruff {{.SOURCES}}"
+      - "{{.RUNNER}} black --check --diff {{.SOURCES}}"
+
+  format:
+    desc: Format python source files
+    aliases: ["fmt"]
+    cmds:
+      - "{{.RUNNER}} ruff --fix {{.SOURCES}}"
+      - "{{.RUNNER}} black {{ .SOURCES }}"
+
+  typecheck:
+    desc: Perform type-checking
+    cmd: "{{.RUNNER}} mypy {{.SOURCES}}"
+
+  test:
+    desc: Run tests
+    cmd: "{{.RUNNER}} coverage run"
+
+  testcov:
+    desc: Run tests and generate a coverage report
+    cmds:
+      - task: test
+      - "{{.RUNNER}} coverage report -m"
+      - "{{.RUNNER}} coverage xml"
+
+  all:
+    desc: Run the standard set of checks performed in CI
+    cmds:
+      - task: format
+      - task: typecheck
+      - task: test

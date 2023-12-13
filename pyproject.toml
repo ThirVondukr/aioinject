@@ -99,6 +99,9 @@ fixable = [
     "TID",
     "COM",
 ]
+unfixable = [
+    "F841", # Variable  is assigned to but never used
+]
 ignore = [
     "D",
     "PD", # pandas-vet
@@ -157,4 +160,3 @@ warn_unreachable = true
 pretty = true
 show_column_numbers = true
 show_error_codes = true
-
