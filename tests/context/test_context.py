@@ -1,4 +1,5 @@
-from collections.abc import Generator
+import contextlib
+from collections.abc import AsyncIterator, Generator
 from typing import Annotated, Any
 
 import anyio
@@ -7,6 +8,13 @@ import pytest
 from aioinject import Callable, Provider, Singleton, providers
 from aioinject.containers import Container
 from aioinject.markers import Inject
+
+
+pytestmark = [pytest.mark.anyio]
+
+
+class _TestError(Exception):
+    pass
 
 
 class _Session:
@@ -63,7 +71,6 @@ def test_does_not_preserve_cache_if_recreated(container: Container) -> None:
         assert ctx.resolve(_Service) is not service
 
 
-@pytest.mark.anyio
 async def test_provide_async() -> None:
     class Test:
         pass
@@ -92,7 +99,6 @@ def _sync_awaitable() -> _AwaitableCls:
     return _AwaitableCls()
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize(
     "provider",
     [
@@ -112,3 +118,25 @@ async def test_should_not_execute_awaitable_classes(
         resolved = await ctx.resolve(_AwaitableCls)
         assert isinstance(resolved, _AwaitableCls)
         assert not resolved.awaited
+
+
+async def test_singleton_contextmanager_error() -> None:
+    call_number = 0
+
+    @contextlib.asynccontextmanager
+    async def raises_error() -> AsyncIterator[int]:
+        nonlocal call_number
+        call_number += 1
+        if call_number == 1:
+            raise _TestError
+        yield 42
+
+    container = Container()
+    container.register(Singleton(raises_error))
+
+    with pytest.raises(_TestError):
+        async with container.context() as ctx:
+            await ctx.resolve(int)
+
+    async with container.context() as ctx:
+        await ctx.resolve(int)

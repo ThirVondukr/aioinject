@@ -192,6 +192,9 @@ class Callable(Provider[_T]):
     async def provide(self, **kwargs: Any) -> _T:
         if self.is_async:
             return await self.impl(**kwargs)  # type: ignore[misc]
+
+        if self._is_async_generator:
+            return self.impl(**kwargs)  # type: ignore[return-value]
         return self.provide_sync(**kwargs)
 
     @functools.cached_property
@@ -204,6 +207,13 @@ class Callable(Provider[_T]):
     @functools.cached_property
     def is_async(self) -> bool:
         return inspect.iscoroutinefunction(self.impl)
+
+    @functools.cached_property
+    def _is_async_generator(self) -> bool:
+        target = self.impl
+        while wrapped := getattr(target, "__wrapped__", None):
+            target = wrapped
+        return inspect.isasyncgenfunction(target)
 
 
 Factory = Callable
@@ -232,8 +242,9 @@ class Singleton(Callable[_T]):
         if self.cache is sentinel:
             async with self._async_lock:
                 if self.cache is sentinel:
+                    provided = await super().provide(**kwargs)
                     self.cache = await enter_context_maybe(
-                        await super().provide(**kwargs),
+                        provided,
                         self._exit_stack,
                     )
         return self.cache
