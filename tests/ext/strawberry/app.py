@@ -41,7 +41,7 @@ class _Query:
         return f"{argument}-{provided_value}"
 
     @strawberry.field
-    async def dataloader(self, info: Info[Context, None]) -> Sequence[int]:
+    async def dataloader(self, info: Info[Any, None]) -> Sequence[int]:
         return await info.context.numbers.load_many(list(range(100)))
 
 

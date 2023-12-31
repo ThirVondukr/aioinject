@@ -17,6 +17,7 @@ from typing import (
     Protocol,
     TypeAlias,
     TypeVar,
+    runtime_checkable,
 )
 
 from aioinject.markers import Inject
@@ -154,6 +155,7 @@ def _guess_impl(factory: _FactoryType[_T]) -> type[_T]:
     return return_type
 
 
+@runtime_checkable
 class Provider(Protocol[_T]):
     type_: type[_T]
     impl: Any
@@ -175,6 +177,9 @@ class Provider(Protocol[_T]):
     @functools.cached_property
     def dependencies(self) -> tuple[Dependency[object], ...]:
         return tuple(collect_dependencies(self.type_hints))
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__qualname__}(type={self.type_}, implementation={self.impl})"
 
 
 class Callable(Provider[_T]):
