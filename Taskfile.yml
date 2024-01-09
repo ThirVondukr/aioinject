@@ -43,4 +43,4 @@ tasks:
     cmds:
       - task: format
       - task: typecheck
-      - task: test
+      - task: testcov
