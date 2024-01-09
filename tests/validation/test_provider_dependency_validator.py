@@ -13,7 +13,7 @@ from aioinject.validation.error import (
 _VALIDATORS = [
     ForbidDependency(
         dependant=lambda p: isinstance(p, Singleton),
-        dependency=lambda p: isinstance(p, Callable),
+        dependency=lambda p: isinstance(p, Callable) and not isinstance(p, Singleton),
     ),
 ]
 
@@ -28,6 +28,7 @@ def _str_dependency(number: int) -> str:
         [Callable(int)],
         [Callable(_str_dependency), Callable(int)],
         [Callable(_str_dependency), Singleton(int)],
+        [Singleton(_str_dependency), Singleton(int)],
     ],
 )
 def test_ok(providers: Sequence[Provider[Any]]) -> None:

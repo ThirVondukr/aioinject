@@ -13,7 +13,7 @@ DEFAULT_VALIDATORS: Sequence[ContainerValidator] = [
     all_dependencies_are_present,
     ForbidDependency(
         dependant=lambda p: isinstance(p, Singleton),
-        dependency=lambda p: isinstance(p, Callable),
+        dependency=lambda p: isinstance(p, Callable) and not isinstance(p, Singleton),
     ),
 ]
 
