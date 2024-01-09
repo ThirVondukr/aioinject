@@ -13,7 +13,8 @@ from aioinject.validation.error import (
 _VALIDATORS = [
     ForbidDependency(
         dependant=lambda p: isinstance(p, Singleton),
-        dependency=lambda p: isinstance(p, Callable) and not isinstance(p, Singleton),
+        dependency=lambda p: isinstance(p, Callable)
+        and not isinstance(p, Singleton),
     ),
 ]
 
