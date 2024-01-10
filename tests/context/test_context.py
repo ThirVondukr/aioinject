@@ -5,7 +5,7 @@ from typing import Annotated, Any
 import anyio
 import pytest
 
-from aioinject import Callable, Provider, Singleton, providers
+from aioinject import Provider, Scoped, Singleton, providers
 from aioinject.containers import Container
 from aioinject.markers import Inject
 
@@ -34,9 +34,9 @@ class _Service:
 @pytest.fixture
 def container() -> Container:
     container = Container()
-    container.register(providers.Callable(_Session))
-    container.register(providers.Callable(_Repository))
-    container.register(providers.Callable(_Service))
+    container.register(providers.Scoped(_Session))
+    container.register(providers.Scoped(_Repository))
+    container.register(providers.Scoped(_Service))
     return container
 
 
@@ -76,7 +76,7 @@ async def test_provide_async() -> None:
         pass
 
     container = Container()
-    container.register(Callable(Test))
+    container.register(Scoped(Test))
     async with container.context() as ctx:
         instance = await ctx.resolve(Test)
         assert isinstance(instance, Test)
@@ -102,8 +102,8 @@ def _sync_awaitable() -> _AwaitableCls:
 @pytest.mark.parametrize(
     "provider",
     [
-        Callable(_async_awaitable),  # type: ignore[arg-type]
-        Callable(_sync_awaitable),  # type: ignore[arg-type]
+        Scoped(_async_awaitable),  # type: ignore[arg-type]
+        Scoped(_sync_awaitable),  # type: ignore[arg-type]
         Singleton(_async_awaitable),  # type: ignore[arg-type]
         Singleton(_sync_awaitable),  # type: ignore[arg-type]
     ],

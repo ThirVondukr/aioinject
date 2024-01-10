@@ -20,6 +20,8 @@ from typing import (
     runtime_checkable,
 )
 
+import typing_extensions
+
 from aioinject.markers import Inject
 from aioinject.utils import (
     enter_context_maybe,
@@ -182,7 +184,7 @@ class Provider(Protocol[_T]):
         return f"{self.__class__.__qualname__}(type={self.type_}, implementation={self.impl})"
 
 
-class Callable(Provider[_T]):
+class Scoped(Provider[_T]):
     def __init__(
         self,
         factory: _FactoryType[_T],
@@ -221,10 +223,21 @@ class Callable(Provider[_T]):
         return inspect.isasyncgenfunction(target)
 
 
-Factory = Callable
+@typing_extensions.deprecated(
+    "Callable is deprecated, use aioinject.Scoped instead",
+)
+class Callable(Scoped[_T]):
+    pass
 
 
-class Singleton(Callable[_T]):
+@typing_extensions.deprecated(
+    "Factory is deprecated, use aioinject.Scoped instead",
+)
+class Factory(Scoped[_T]):
+    pass
+
+
+class Singleton(Scoped[_T]):
     def __init__(
         self,
         factory: _FactoryType[_T],

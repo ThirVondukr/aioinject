@@ -17,5 +17,5 @@ class NumberService:
 def container(provided_value: int) -> aioinject.Container:
     container = aioinject.Container()
     container.register(aioinject.Object(provided_value))
-    container.register(aioinject.Callable(NumberService))
+    container.register(aioinject.Scoped(NumberService))
     return container

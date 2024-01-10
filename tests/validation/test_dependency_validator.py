@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from aioinject import Callable, Container, Provider
+from aioinject import Container, Provider, Scoped
 from aioinject.validation import (
     all_dependencies_are_present,
     validate_container,
@@ -24,8 +24,8 @@ def _str_dependency(number: int) -> str:
 @pytest.mark.parametrize(
     "providers",
     [
-        [Callable(int)],
-        [Callable(_str_dependency), Callable(int)],
+        [Scoped(int)],
+        [Scoped(_str_dependency), Scoped(int)],
     ],
 )
 def test_ok(providers: Sequence[Provider[Any]]) -> None:
@@ -38,7 +38,7 @@ def test_ok(providers: Sequence[Provider[Any]]) -> None:
 
 def test_err() -> None:
     container = Container()
-    container.register(Callable(_str_dependency))
+    container.register(Scoped(_str_dependency))
 
     with pytest.raises(ContainerValidationErrorGroup) as exc_info:
         validate_container(container, _VALIDATORS)

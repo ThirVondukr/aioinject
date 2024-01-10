@@ -2,13 +2,21 @@ from aioinject.containers import Container
 from aioinject.context import InjectionContext, SyncInjectionContext
 from aioinject.decorators import inject
 from aioinject.markers import Inject
-from aioinject.providers import Callable, Factory, Object, Provider, Singleton
+from aioinject.providers import (
+    Callable,
+    Factory,
+    Object,
+    Provider,
+    Scoped,
+    Singleton,
+)
 
 
 __all__ = [
+    "Scoped",
+    "Factory",
     "Callable",
     "Container",
-    "Factory",
     "Inject",
     "InjectionContext",
     "Object",

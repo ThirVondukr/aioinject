@@ -3,7 +3,7 @@ from typing import Annotated
 
 import pytest
 
-from aioinject import Callable, Container, Inject
+from aioinject import Container, Inject, Scoped
 
 
 class _A:
@@ -23,7 +23,7 @@ class _C:
 @pytest.fixture
 def container() -> Container:
     container = Container()
-    container.register(Callable(_A))
-    container.register(Callable(_B))
-    container.register(Callable(_C))
+    container.register(Scoped(_A))
+    container.register(Scoped(_B))
+    container.register(Scoped(_C))
     return container

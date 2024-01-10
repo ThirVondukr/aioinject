@@ -35,7 +35,7 @@ def test_can_retrieve_context(container: Container) -> None:
 
 
 def test_can_register_single(container: Container) -> None:
-    provider = providers.Callable(_ServiceA)
+    provider = providers.Scoped(_ServiceA)
     container.register(provider)
 
     expected = {_ServiceA: [provider]}
@@ -43,8 +43,8 @@ def test_can_register_single(container: Container) -> None:
 
 
 def test_can_register_multi(container: Container) -> None:
-    provider_a = providers.Callable(_ServiceA)
-    provider_b = providers.Callable(_ServiceB)
+    provider_a = providers.Scoped(_ServiceA)
+    provider_b = providers.Scoped(_ServiceB)
     container.register(provider_a)
     container.register(provider_b)
 
@@ -53,15 +53,15 @@ def test_can_register_multi(container: Container) -> None:
 
 
 def test_can_retrieve_single_provider(container: Container) -> None:
-    int_provider = providers.Callable(int)
+    int_provider = providers.Scoped(int)
     container.register(int_provider)
     assert container.get_provider(int)
 
 
 @pytest.fixture
 def multi_provider_container(container: Container) -> Container:
-    a_provider = providers.Callable(_ServiceA, type_=_AbstractService)
-    b_provider = providers.Callable(_ServiceB, type_=_AbstractService)
+    a_provider = providers.Scoped(_ServiceA, type_=_AbstractService)
+    b_provider = providers.Scoped(_ServiceB, type_=_AbstractService)
     container.register(a_provider)
     container.register(b_provider)
     return container

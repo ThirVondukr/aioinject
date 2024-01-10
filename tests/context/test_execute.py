@@ -72,7 +72,7 @@ async def test_execute_async_coroutine(container: Container) -> None:
 async def test_provide_functools_partial() -> None:
     container = Container()
     container.register(
-        aioinject.Callable(functools.partial(str, 42), type_=str),
+        aioinject.Scoped(functools.partial(str, 42), type_=str),
     )
     async with container.context() as ctx:
         assert await ctx.resolve(str) == "42"

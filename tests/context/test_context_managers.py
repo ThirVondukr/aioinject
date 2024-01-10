@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from aioinject import Callable, Container, providers
+from aioinject import Container, Scoped, providers
 from tests.context.test_context import _Session
 
 
@@ -50,7 +50,7 @@ def test_shutdowns_context_manager() -> None:
         mock.close()
 
     container = Container()
-    container.register(providers.Callable(get_session))
+    container.register(providers.Scoped(get_session))
 
     with container.sync_context() as ctx:
         session = ctx.resolve(_Session)
@@ -62,7 +62,7 @@ def test_shutdowns_context_manager() -> None:
 
 def test_should_not_use_resolved_class_as_context_manager() -> None:
     container = Container()
-    container.register(providers.Callable(_SyncContextManager))
+    container.register(providers.Scoped(_SyncContextManager))
 
     with container.sync_context() as ctx:
         resolved = ctx.resolve(_SyncContextManager)
@@ -81,7 +81,7 @@ async def test_async_context_manager() -> None:
         mock.close()
 
     container = Container()
-    container.register(Callable(get_session))
+    container.register(Scoped(get_session))
     async with container.context() as ctx:
         mock.open.assert_not_called()
         instance = await ctx.resolve(_Session)
@@ -101,7 +101,7 @@ async def test_async_context_would_use_sync_context_managers() -> None:
         mock.close()
 
     container = Container()
-    container.register(Callable(get_session))
+    container.register(Scoped(get_session))
     async with container.context() as ctx:
         mock.open.assert_not_called()
         await ctx.resolve(_Session)
@@ -113,7 +113,7 @@ async def test_async_context_would_use_sync_context_managers() -> None:
 @pytest.mark.anyio
 async def test_should_not_use_resolved_class_as_async_context_manager() -> None:
     container = Container()
-    container.register(Callable(_AsyncContextManager))
+    container.register(Scoped(_AsyncContextManager))
     async with container.context() as ctx:
         instance = await ctx.resolve(_AsyncContextManager)
         assert isinstance(instance, _AsyncContextManager)
@@ -135,7 +135,7 @@ def test_sync_context_manager_should_receive_exception() -> None:
             mock.exception_happened()
 
     container = Container()
-    container.register(Callable(get_session))
+    container.register(Scoped(get_session))
 
     with (  # noqa: PT012
         pytest.raises(TestError),

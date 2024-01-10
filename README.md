@@ -129,8 +129,8 @@ def get_gitlab_client() -> GitLabClient:
 
 
 container = Container()
-container.register(providers.Callable(get_github_client))
-container.register(providers.Callable(get_gitlab_client))
+container.register(providers.Scoped(get_github_client))
+container.register(providers.Scoped(get_gitlab_client))
 
 with container.sync_context() as ctx:
     github_client = ctx.resolve(GitHubClient)
@@ -155,6 +155,7 @@ from aioinject import Container, providers
 class Session:
     pass
 
+
 @contextlib.contextmanager
 def get_session() -> Session:
     print("Startup")
@@ -163,11 +164,11 @@ def get_session() -> Session:
 
 
 container = Container()
-container.register(providers.Callable(get_session))
+container.register(providers.Scoped(get_session))
 
 with container.sync_context() as ctx:
-    session = ctx.resolve(Session) # Startup
-    session = ctx.resolve(Session) # Nothing is printed, Session is cached
+    session = ctx.resolve(Session)  # Startup
+    session = ctx.resolve(Session)  # Nothing is printed, Session is cached
 # Shutdown
 ```
 
@@ -192,7 +193,7 @@ async def get_service() -> Service:
 
 async def main() -> None:
     container = Container()
-    container.register(providers.Callable(get_service))
+    container.register(providers.Scoped(get_service))
 
     async with container.context() as ctx:
         service = await ctx.resolve(Service)
@@ -208,19 +209,19 @@ if __name__ == "__main__":
 When creating a provider you should specify the type it returns, but it can be inferred from class type or function
 return type:
 
-### Callable
+### Scoped
 
-`Callable` (or `Factory` for convenience) provider would create instance of a class each time:
+`Scoped` (or `Factory` for convenience) provider would create instance of a class each time:
 
 ```python
-from aioinject import Callable
+from aioinject import Scoped
 
 
 class Service:
     pass
 
 
-provider = Callable(Service)
+provider = Scoped(Service)
 service_one = provider.provide_sync()
 service_two = provider.provide_sync()
 print(service_one is service_two)
@@ -229,7 +230,7 @@ print(service_one is service_two)
 
 ### Singleton
 
-`Singleton` works the same way as `Callable` but it caches first created object:
+`Singleton` works the same way as `Scoped` but it caches first created object:
 
 ```python
 from aioinject import Singleton

@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from aioinject import Callable, Container, Provider, Singleton
+from aioinject import Container, Provider, Scoped, Singleton
 from aioinject.validation import ForbidDependency, validate_container
 from aioinject.validation.error import (
     ContainerValidationErrorGroup,
@@ -13,7 +13,7 @@ from aioinject.validation.error import (
 _VALIDATORS = [
     ForbidDependency(
         dependant=lambda p: isinstance(p, Singleton),
-        dependency=lambda p: isinstance(p, Callable)
+        dependency=lambda p: isinstance(p, Scoped)
         and not isinstance(p, Singleton),
     ),
 ]
@@ -26,9 +26,9 @@ def _str_dependency(number: int) -> str:
 @pytest.mark.parametrize(
     "providers",
     [
-        [Callable(int)],
-        [Callable(_str_dependency), Callable(int)],
-        [Callable(_str_dependency), Singleton(int)],
+        [Scoped(int)],
+        [Scoped(_str_dependency), Scoped(int)],
+        [Scoped(_str_dependency), Singleton(int)],
         [Singleton(_str_dependency), Singleton(int)],
     ],
 )
@@ -43,7 +43,7 @@ def test_ok(providers: Sequence[Provider[Any]]) -> None:
 @pytest.mark.parametrize(
     "providers",
     [
-        [Singleton(_str_dependency), Callable(int)],
+        [Singleton(_str_dependency), Scoped(int)],
     ],
 )
 def test_err(providers: Sequence[Provider[Any]]) -> None:

@@ -46,11 +46,11 @@ class _NeedsMultipleImplementations:
 @pytest.fixture
 def container() -> Container:
     container = Container()
-    container.register(providers.Callable(_Session))
-    container.register(providers.Callable(_Service))
-    container.register(providers.Callable(_ImplementationA, type_=_Interface))
-    container.register(providers.Callable(_get_impl_b, type_=_Interface))
-    container.register(providers.Callable(_NeedsMultipleImplementations))
+    container.register(providers.Scoped(_Session))
+    container.register(providers.Scoped(_Service))
+    container.register(providers.Scoped(_ImplementationA, type_=_Interface))
+    container.register(providers.Scoped(_get_impl_b, type_=_Interface))
+    container.register(providers.Scoped(_NeedsMultipleImplementations))
     return container
 
 
