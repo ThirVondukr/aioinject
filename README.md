@@ -7,55 +7,65 @@ Async-first dependency injection library based on python type hints
 - [Strawberry-Graphql](/examples/strawberry-graphql.md)
 
 
-## Quickstart
+## Installation
+Install using pip `pip install aioinject`
 
-First let's create a class we would be injecting:
+## Example
 
 ```python
-class Service:
-    pass
+import aioinject
+
+
+class Database:
+    def __init__(self) -> None:
+        self._storage = {1: "Username"}
+
+    def get(self, id: int) -> str | None:
+        return self._storage.get(id)
+
+
+class UserService:
+    def __init__(self, database: Database) -> None:
+        self._database = database
+
+    def get(self, id: int) -> str:
+        user = self._database.get(id)
+        if user is None:
+            raise ValueError
+        return user
+
+
+container = aioinject.Container()
+container.register(aioinject.Singleton(Database))
+container.register(aioinject.Singleton(UserService))
+
+
+def main() -> None:
+    with container.sync_context() as ctx:
+        service = ctx.resolve(UserService)
+        user = service.get(1)
+        assert user == "Username"
+        print(user)
+
+
+if __name__ == "__main__":
+    main()
 ```
 
-Then we should create instance of container and register `Service` class in it using a provider:
-
-```python
-from aioinject import Container, providers
-
-container = Container()
-container.register(providers.Callable(Service))
-```
-
-Then we can create a context and resolve our `Service` class from it:
-
-```python
-with container.sync_context() as ctx:
-    service = ctx.resolve(Service)
-```
-
-If you need to inject something into a function just annotate it with inject:
-
-```python
-from aioinject import inject
-
-
-@inject
-def awesome_function(service: Service):
-    print(service)
-```
-
-And call it within an active context:
-
-```python
-with container.sync_conext() as ctx:
-    awesome_function()
-```
-
-Complete example (should run as-is):
-
-```python
+## Injecting dependencies into a function
+You can inject dependencies into a function using `@inject` decorator,
+but that's usually only necessary if you're working with a framework:
+```py
+import contextlib
+from collections.abc import AsyncIterator
+from contextlib import aclosing
 from typing import Annotated
 
-from aioinject import Callable, Container, Inject, inject
+import uvicorn
+from fastapi import FastAPI
+
+from aioinject import Container, Inject, Singleton
+from aioinject.ext.fastapi import AioInjectMiddleware, inject
 
 
 class Service:
@@ -63,56 +73,39 @@ class Service:
 
 
 container = Container()
-container.register(Callable(Service))
+container.register(Singleton(Service))
 
 
+@contextlib.asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    async with aclosing(container):
+        yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(AioInjectMiddleware, container=container)
+
+
+@app.get("/")
 @inject
-def awesome_function(
-    service: Annotated[Service, Inject],
-):
-    print(service)
+async def root(service: Annotated[Service, Inject]) -> str:
+    return str(service)
 
 
-with container.sync_context() as ctx:
-    service = ctx.resolve(Service)
-    awesome_function()
-
+if __name__ == "__main__":
+    uvicorn.run("main:app")
 ```
 
-## Sub dependencies
 
-If one of your dependencies has any sub dependencies
-they would be automatically provided based on class `__init__`
-or function annotations
+## Using multiple dependencies with same type
 
-```python
-from aioinject import Callable, Container
-
-
-class SubDependency:
-    pass
-
-
-class Dependency:
-    def __init__(self, sub_dependency: SubDependency):
-        self.sub_dependency = sub_dependency
-
-
-container = Container()
-container.register(Callable(SubDependency))
-container.register(Callable(Dependency))
-
-with container.sync_context() as ctx:
-    dependency = ctx.resolve(Dependency)
-    print(dependency.sub_dependency)
-
-```
-
-If you have multiple implementations for the same dependency you can specify concrete implementation in `Inject`:
+If you have multiple implementations for the same dependency
+you can use `typing.NewType` to differentiate between them:
 
 ```python
 import dataclasses
-from typing import Annotated
+from typing import Annotated, NewType
 
 from aioinject import Container, providers, inject, Inject
 
@@ -122,36 +115,36 @@ class Client:
     name: str
 
 
-def get_github_client() -> Client:
-    return Client(name="GitHub Client")
+GitHubClient = NewType("GitHubClient", Client)
+
+GitLabClient = NewType("GitLabClient", Client)
 
 
-def get_gitlab_client() -> Client:
-    return Client(name="GitLab Client")
+def get_github_client() -> GitHubClient:
+    return GitHubClient(Client(name="GitHub Client"))
+
+
+def get_gitlab_client() -> GitLabClient:
+    return GitLabClient(Client(name="GitLab Client"))
 
 
 container = Container()
 container.register(providers.Callable(get_github_client))
 container.register(providers.Callable(get_gitlab_client))
 
-
-@inject
-def injectee(
-    github_client: Annotated[Client, Inject(get_github_client)],
-    gitlab_client: Annotated[Client, Inject(get_gitlab_client)],
-) -> None:
-    print(github_client, gitlab_client)
-
-
 with container.sync_context() as ctx:
-    injectee()
+    github_client = ctx.resolve(GitHubClient)
+    gitlab_client = ctx.resolve(GitLabClient)
 
+    print(github_client, gitlab_client)
 ```
 
 ## Working with Resources
 
 Often you need to initialize and close a resource (file, database connection, etc...),
-you can do that by using a `contextlib.(async)contextmanager` that would return your resource.
+you can do that by using a `contextlib.(async)contextmanager` that would return your resource. 
+Aioinject would automatically close them when `context` is closed,
+or when you call `container.aclose()` if your dependency is a `Singleton`.
 
 ```python
 import contextlib
