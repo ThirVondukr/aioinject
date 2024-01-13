@@ -29,7 +29,6 @@ if TYPE_CHECKING:
 _T = TypeVar("_T")
 
 _AnyCtx: TypeAlias = Union["InjectionContext", "SyncInjectionContext"]
-_TypeAndImpl: TypeAlias = tuple[type[_T], _T | None]
 _ExitStackT = TypeVar("_ExitStackT")
 
 context_var: ContextVar[_AnyCtx] = ContextVar("aioinject_context")
@@ -43,7 +42,7 @@ class _BaseInjectionContext(Generic[_ExitStackT]):
     def __init__(self, container: Container) -> None:
         self._container = container
         self._exit_stack = self._exit_stack_type()
-        self._cache: dict[_TypeAndImpl[Any], Any] = {}
+        self._cache: dict[type[Any], Any] = {}
         self._token = None
 
     def __class_getitem__(
@@ -61,20 +60,15 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
     async def resolve(
         self,
         type_: type[_T],
-        impl: Any | None = None,
-        *,
-        use_cache: bool = True,
     ) -> _T:
-        if use_cache and (type_, impl) in self._cache:
-            return self._cache[type_, impl]
+        provider = self._container.get_provider(type_)
+        use_cache = True
 
-        provider = self._container.get_provider(type_, impl)
+        if use_cache and type_ in self._cache:
+            return self._cache[type_]
+
         dependencies = {
-            dep.name: await self.resolve(
-                type_=dep.type_,
-                impl=dep.implementation,
-                use_cache=dep.use_cache,
-            )
+            dep.name: await self.resolve(type_=dep.type_)
             for dep in provider.dependencies
         }
 
@@ -83,7 +77,7 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
             stack=self._exit_stack,
         )
         if use_cache:
-            self._cache[type_, impl] = resolved
+            self._cache[type_] = resolved
         return resolved
 
     @overload
@@ -117,10 +111,9 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
         for dependency in dependencies:
             if dependency.name in kwargs:
                 continue
+
             resolved[dependency.name] = await self.resolve(
                 type_=dependency.type_,
-                impl=dependency.implementation,
-                use_cache=dependency.use_cache,
             )
         if inspect.iscoroutinefunction(function):
             return await function(*args, **kwargs, **resolved)
@@ -144,20 +137,14 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
     def resolve(
         self,
         type_: type[_T],
-        impl: Any | None = None,
-        *,
-        use_cache: bool = True,
     ) -> _T:
-        if use_cache and (type_, impl) in self._cache:
-            return self._cache[type_, impl]
+        use_cache = True
+        if use_cache and type_ in self._cache:
+            return self._cache[type_]
 
-        provider = self._container.get_provider(type_, impl)
+        provider = self._container.get_provider(type_)
         dependencies = {
-            dep.name: self.resolve(
-                type_=dep.type_,
-                impl=dep.implementation,
-                use_cache=dep.use_cache,
-            )
+            dep.name: self.resolve(type_=dep.type_)
             for dep in provider.dependencies
         }
 
@@ -165,7 +152,7 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
         if isinstance(resolved, contextlib.ContextDecorator):
             resolved = self._exit_stack.enter_context(resolved)  # type: ignore[arg-type]
         if use_cache:
-            self._cache[type_, impl] = resolved
+            self._cache[type_] = resolved
         return resolved
 
     def execute(
@@ -179,11 +166,7 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
         for dependency in dependencies:
             if dependency.name in kwargs:
                 continue
-            resolved[dependency.name] = self.resolve(
-                type_=dependency.type_,
-                impl=dependency.implementation,
-                use_cache=dependency.use_cache,
-            )
+            resolved[dependency.name] = self.resolve(type_=dependency.type_)
         return function(*args, **kwargs, **resolved)
 
     def __enter__(self) -> Self:

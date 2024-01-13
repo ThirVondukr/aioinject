@@ -37,8 +37,6 @@ _T = TypeVar("_T")
 class Dependency(Generic[_T]):
     name: str
     type_: type[_T]
-    implementation: Any
-    use_cache: bool
 
 
 def _get_annotation_args(type_hint: Any) -> tuple[type, tuple[Any, ...]]:
@@ -82,8 +80,6 @@ def collect_dependencies(
         yield Dependency(
             name=name,
             type_=dep_type,
-            implementation=inject_marker.impl,
-            use_cache=inject_marker.cache,
         )
 
 

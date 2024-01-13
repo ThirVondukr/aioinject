@@ -1,4 +1,3 @@
-from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterator, Generator, Iterator
 from typing import Annotated
 from unittest.mock import patch
@@ -85,12 +84,12 @@ def test_type_hints_on_class() -> None:
 
 def test_annotated_type_hint() -> None:
     def factory(
-        a: Annotated[int, Inject(cache=False)],  # noqa: ARG001
+        a: Annotated[int, Inject()],  # noqa: ARG001
     ) -> None:
         pass
 
     provider = providers.Scoped(factory)
-    assert provider.type_hints == {"a": Annotated[int, Inject(cache=False)]}
+    assert provider.type_hints == {"a": Annotated[int, Inject()]}
 
 
 def test_is_async_on_sync() -> None:
@@ -122,9 +121,9 @@ def test_dependencies() -> None:
         a: int,  # noqa: ARG001
         service: Annotated[  # noqa: ARG001
             dict[str, int],
-            Inject(defaultdict),
+            Inject(),
         ],
-        string: Annotated[str, Inject(cache=False)],  # noqa: ARG001
+        string: Annotated[str, Inject()],  # noqa: ARG001
     ) -> None:
         pass
 
@@ -133,20 +132,14 @@ def test_dependencies() -> None:
         Dependency(
             name="a",
             type_=int,
-            implementation=None,
-            use_cache=True,
         ),
         Dependency(
             name="service",
             type_=dict[str, int],
-            implementation=defaultdict,
-            use_cache=True,
         ),
         Dependency(
             name="string",
             type_=str,
-            implementation=None,
-            use_cache=False,
         ),
     )
     assert provider.dependencies == expected

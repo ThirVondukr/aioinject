@@ -1,8 +1,6 @@
-from dataclasses import dataclass
-from typing import Any
+import dataclasses
 
 
-@dataclass(slots=True)
+@dataclasses.dataclass(slots=True)
 class Inject:
-    impl: Any | None = None
-    cache: bool = True
+    pass
