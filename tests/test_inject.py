@@ -21,27 +21,11 @@ class _Interface:
         self.session = session
 
 
-class _ImplementationA(_Interface):
-    pass
-
-
-class _NeedsMultipleImplementations:
-    def __init__(
-        self,
-        a: _Interface,
-        b: _Interface,
-    ) -> None:
-        self.a = a
-        self.b = b
-
-
 @pytest.fixture
 def container() -> Container:
     container = Container()
     container.register(providers.Scoped(_Session))
     container.register(providers.Scoped(_Service))
-    container.register(providers.Scoped(_ImplementationA, type_=_Interface))
-    container.register(providers.Scoped(_NeedsMultipleImplementations))
     return container
 
 
