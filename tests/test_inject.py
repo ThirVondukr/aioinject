@@ -1,8 +1,8 @@
-from typing import Annotated
+from typing import Annotated, NewType
 
 import pytest
 
-from aioinject import Container, Inject, inject, providers
+from aioinject import Container, Inject, Object, Scoped, inject, providers
 from aioinject.context import container_var
 from aioinject.decorators import InjectMethod
 
@@ -96,3 +96,24 @@ async def test_inject_using_container(
     coro = injectee()  # type: ignore[call-arg]
     assert isinstance(await coro, _Service)
     container_var.reset(token)
+
+
+@pytest.mark.anyio
+async def test_new_type() -> None:
+    A = NewType("A", int)
+    B = NewType("B", int)
+
+    class Service:
+        def __init__(self, a: A, b: B) -> None:
+            self.a = a
+            self.b = b
+
+    container = Container()
+    container.register(Object(1, type_=A))
+    container.register(Object(2, type_=B))
+    container.register(Scoped(Service))
+
+    async with container.context() as ctx:
+        service = await ctx.resolve(Service)
+        assert service.a == 1
+        assert service.b == 2  # noqa: PLR2004
