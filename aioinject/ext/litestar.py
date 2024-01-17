@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 from collections.abc import AsyncIterator, Callable
-from contextlib import aclosing
 from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from litestar import Litestar
@@ -56,7 +55,7 @@ class AioInjectPlugin(InitPluginProtocol):
         self,
         _: Litestar,
     ) -> AsyncIterator[None]:
-        async with aclosing(self.container):
+        async with self.container:
             yield
 
     def on_app_init(self, app_config: AppConfig) -> AppConfig:
