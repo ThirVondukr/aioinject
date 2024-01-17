@@ -1,6 +1,9 @@
 import contextlib
 from collections.abc import Iterator
+from types import TracebackType
 from typing import Any, TypeAlias, TypeVar
+
+from typing_extensions import Self
 
 from aioinject._store import SingletonStore
 from aioinject.context import InjectionContext, SyncInjectionContext
@@ -59,5 +62,16 @@ class Container:
         if previous is not None:
             self.providers[provider.type_] = previous
 
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        await self._singletons.__aexit__(exc_type, exc_val, exc_tb)
+
     async def aclose(self) -> None:
-        await self._singletons.aclose()
+        await self.__aexit__(None, None, None)
