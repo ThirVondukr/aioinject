@@ -22,7 +22,7 @@ import typing_extensions
 
 from aioinject.markers import Inject
 from aioinject.utils import (
-    is_generator,
+    is_context_manager_function,
     remove_annotation,
 )
 
@@ -182,7 +182,7 @@ class Provider(Protocol[_T]):
 
     @functools.cached_property
     def is_generator(self) -> bool:
-        return is_generator(self.impl)
+        return is_context_manager_function(self.impl)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__qualname__}(type={self.type_}, implementation={self.impl})"

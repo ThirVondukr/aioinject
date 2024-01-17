@@ -52,7 +52,7 @@ def get_inject_annotations(
         }
 
 
-def is_generator(func: Callable[..., Any]) -> bool:
+def is_context_manager_function(func: Callable[..., Any]) -> bool:
     while inner := getattr(func, "__wrapped__", None):
         func = inner
     return inspect.isgeneratorfunction(func) or inspect.isasyncgenfunction(
