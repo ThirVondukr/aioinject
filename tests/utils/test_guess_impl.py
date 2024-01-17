@@ -4,14 +4,14 @@ from typing import TypeAlias
 
 import pytest
 
-from aioinject.providers import _guess_impl
+from aioinject.providers import _guess_return_type
 
 
 def test_class() -> None:
     class A:
         pass
 
-    assert _guess_impl(A) is A
+    assert _guess_return_type(A) is A
 
 
 def test_function() -> None:
@@ -21,8 +21,8 @@ def test_function() -> None:
     async def async_factory() -> int:
         return 42
 
-    assert _guess_impl(factory) is int
-    assert _guess_impl(async_factory) is int  # type: ignore[arg-type]
+    assert _guess_return_type(factory) is int
+    assert _guess_return_type(async_factory) is int  # type: ignore[arg-type]
 
 
 def test_function_with_no_return_annotation() -> None:
@@ -30,9 +30,9 @@ def test_function_with_no_return_annotation() -> None:
         pass
 
     with pytest.raises(ValueError) as exc_info:  # noqa: PT011
-        _guess_impl(factory)
+        _guess_return_type(factory)
 
-    msg = f"factory {factory.__qualname__} does not specify return type."
+    msg = f"Factory {factory.__qualname__} does not specify return type."
     assert str(exc_info.value) == msg
 
 
@@ -47,8 +47,8 @@ def test_sync_iterables(return_type: TypeAlias) -> None:
     def iterable() -> return_type:
         yield None
 
-    assert _guess_impl(iterable) is int
-    assert _guess_impl(contextlib.contextmanager(iterable)) is int  # type: ignore[comparison-overlap]
+    assert _guess_return_type(iterable) is int
+    assert _guess_return_type(contextlib.contextmanager(iterable)) is int  # type: ignore[comparison-overlap]
 
 
 @pytest.mark.parametrize(
@@ -62,5 +62,5 @@ def test_async_iterables(return_type: TypeAlias) -> None:
     async def iterable() -> return_type:
         yield None
 
-    assert _guess_impl(iterable) is int
-    assert _guess_impl(contextlib.asynccontextmanager(iterable)) is int  # type: ignore[comparison-overlap]
+    assert _guess_return_type(iterable) is int
+    assert _guess_return_type(contextlib.asynccontextmanager(iterable)) is int  # type: ignore[comparison-overlap]

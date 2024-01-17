@@ -6,6 +6,7 @@ from contextlib import (
     AbstractAsyncContextManager,
     AbstractContextManager,
     AsyncExitStack,
+    ExitStack,
 )
 from typing import Any, TypeVar
 
@@ -64,6 +65,15 @@ async def enter_context_maybe(
         return await stack.enter_async_context(
             resolved,  # type: ignore[arg-type]
         )
+    return resolved  # type: ignore[return-value]
+
+
+def enter_sync_context_maybe(
+    resolved: (_T | AbstractContextManager[_T]),
+    stack: ExitStack,
+) -> _T:
+    if isinstance(resolved, contextlib.ContextDecorator):
+        return stack.enter_context(resolved)  # type: ignore[arg-type]
     return resolved  # type: ignore[return-value]
 
 

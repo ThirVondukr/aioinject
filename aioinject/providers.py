@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import asyncio
 import collections.abc
+import enum
 import functools
 import inspect
-import threading
 import typing
-from contextlib import AsyncExitStack
 from dataclasses import dataclass
 from inspect import isclass
 from typing import (
@@ -24,16 +22,14 @@ import typing_extensions
 
 from aioinject.markers import Inject
 from aioinject.utils import (
-    enter_context_maybe,
     remove_annotation,
-    sentinel,
 )
 
 
 _T = TypeVar("_T")
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, kw_only=True, frozen=True)
 class Dependency(Generic[_T]):
     name: str
     type_: type[_T]
@@ -122,17 +118,16 @@ _FactoryType: TypeAlias = (
 )
 
 
-def _guess_impl(factory: _FactoryType[_T]) -> type[_T]:
+def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
     if isclass(factory):
         return typing.cast(type[_T], factory)
+
     type_hints = typing.get_type_hints(factory)
     try:
         return_type = type_hints["return"]
     except KeyError as e:
-        err_msg = (
-            f"factory {factory.__qualname__} does not specify return type."
-        )
-        raise ValueError(err_msg) from e
+        msg = f"Factory {factory.__qualname__} does not specify return type."
+        raise ValueError(msg) from e
 
     if origin := typing.get_origin(return_type):
         args = typing.get_args(return_type)
@@ -150,18 +145,26 @@ def _guess_impl(factory: _FactoryType[_T]) -> type[_T]:
             maybe_wrapped,
         ):
             return args[0]
+
     return return_type
+
+
+class DependencyLifetime(enum.Enum):
+    transient = enum.auto()
+    scoped = enum.auto()
+    singleton = enum.auto()
 
 
 @runtime_checkable
 class Provider(Protocol[_T]):
     type_: type[_T]
     impl: Any
-
-    def provide_sync(self, **kwargs: Any) -> _T:
-        ...
+    lifetime: DependencyLifetime
 
     async def provide(self, **kwargs: Any) -> _T:
+        ...
+
+    def provide_sync(self, **kwargs: Any) -> _T:
         ...
 
     @property
@@ -181,12 +184,14 @@ class Provider(Protocol[_T]):
 
 
 class Scoped(Provider[_T]):
+    lifetime = DependencyLifetime.scoped
+
     def __init__(
         self,
         factory: _FactoryType[_T],
         type_: type[_T] | None = None,
     ) -> None:
-        self.type_ = type_ or _guess_impl(factory)
+        self.type_ = type_ or _guess_return_type(factory)
         self.impl = factory
 
     def provide_sync(self, **kwargs: Any) -> _T:
@@ -196,8 +201,6 @@ class Scoped(Provider[_T]):
         if self.is_async:
             return await self.impl(**kwargs)  # type: ignore[misc]
 
-        if self._is_async_generator:
-            return self.impl(**kwargs)  # type: ignore[return-value]
         return self.provide_sync(**kwargs)
 
     @functools.cached_property
@@ -210,13 +213,6 @@ class Scoped(Provider[_T]):
     @functools.cached_property
     def is_async(self) -> bool:
         return inspect.iscoroutinefunction(self.impl)
-
-    @functools.cached_property
-    def _is_async_generator(self) -> bool:
-        target = self.impl
-        while wrapped := getattr(target, "__wrapped__", None):
-            target = wrapped
-        return inspect.isasyncgenfunction(target)
 
 
 @typing_extensions.deprecated(
@@ -234,43 +230,18 @@ class Factory(Scoped[_T]):
 
 
 class Singleton(Scoped[_T]):
-    def __init__(
-        self,
-        factory: _FactoryType[_T],
-        type_: type[_T] | None = None,
-    ) -> None:
-        super().__init__(factory=factory, type_=type_)
-        self.cache: _T = sentinel  # type: ignore[assignment]
-        self._lock = threading.Lock()
-        self._async_lock = asyncio.Lock()
-        self._exit_stack = AsyncExitStack()
+    lifetime = DependencyLifetime.singleton
 
-    def provide_sync(self, **kwargs: Any) -> _T:
-        if self.cache is sentinel:
-            with self._lock:
-                if self.cache is sentinel:
-                    self.cache = super().provide_sync(**kwargs)
-        return self.cache
 
-    async def provide(self, **kwargs: Any) -> _T:
-        if self.cache is sentinel:
-            async with self._async_lock:
-                if self.cache is sentinel:
-                    provided = await super().provide(**kwargs)
-                    self.cache = await enter_context_maybe(
-                        provided,
-                        self._exit_stack,
-                    )
-        return self.cache
-
-    async def aclose(self) -> None:
-        await self._exit_stack.aclose()
+class Transient(Scoped[_T]):
+    lifetime = DependencyLifetime.transient
 
 
 class Object(Provider[_T]):
     type_hints: ClassVar[dict[str, Any]] = {}
     is_async = False
     impl: _T
+    lifetime = DependencyLifetime.scoped  # It's ok to cache it
 
     def __init__(
         self,

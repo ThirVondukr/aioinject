@@ -1,44 +1,48 @@
 import pytest
 
-from aioinject import Provider, Singleton
+from aioinject import Container, Singleton
 
 
 class _Test:
     pass
 
 
-def test_identity() -> None:
-    provider = Singleton(_Test)
-    instance = provider.provide_sync()
-    assert instance is provider.provide_sync()
+@pytest.fixture
+def container() -> Container:
+    container = Container()
+    container.register(Singleton(_Test))
+    return container
+
+
+def test_identity(container: Container) -> None:
+    with container.sync_context() as ctx:
+        instance = ctx.resolve(_Test)
+
+    with container.sync_context() as ctx:
+        assert instance is ctx.resolve(_Test)
 
 
 @pytest.mark.anyio
-async def test_identity_async() -> None:
-    provider = Singleton(_Test)
-    instance = provider.provide_sync()
-    assert instance is provider.provide_sync() is await provider.provide()
+async def test_identity_async(container: Container) -> None:
+    async with container.context() as ctx:
+        instance = await ctx.resolve(_Test)
+
+    async with container.context() as ctx:
+        assert instance is await ctx.resolve(_Test)
 
 
 @pytest.mark.anyio
-async def test_async_function() -> None:
-    async def create_test() -> _Test:
-        return _Test()
-
-    provider = Singleton[_Test](factory=create_test)
-    instance = await provider.provide()
-    assert instance is await provider.provide()
-
-
-@pytest.mark.anyio
-async def test_should_not_provide_none_twice() -> None:
+async def test_should_not_execute_twice() -> None:
     count = 0
 
-    async def func() -> None:
+    async def func() -> int:
         nonlocal count
         count += 1
+        return count
 
-    provider: Provider[None] = Singleton(func)
+    container = Container()
+    container.register(Singleton(func))
     for _ in range(5):
-        assert await provider.provide() is None  # type: ignore[func-returns-value]
-        assert count == 1
+        async with container.context() as ctx:
+            assert await ctx.resolve(int) == count
+            assert count == 1

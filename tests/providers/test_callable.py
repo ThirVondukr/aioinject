@@ -89,7 +89,9 @@ def test_annotated_type_hint() -> None:
         pass
 
     provider = providers.Scoped(factory)
-    assert provider.type_hints == {"a": Annotated[int, Inject()]}
+    assert provider.type_hints == {
+        "a": Annotated[int, Inject()],
+    }
 
 
 def test_is_async_on_sync() -> None:
