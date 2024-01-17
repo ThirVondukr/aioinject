@@ -69,8 +69,8 @@ class InjectionContext(_BaseInjectionContext):
             dep.name: await self.resolve(type_=dep.type_)
             for dep in provider.dependencies
         }
-        async with store.lock(provider) as should_cache:
-            if should_cache:
+        async with store.lock(provider) as should_provide:
+            if should_provide:
                 resolved = await store.enter_context(
                     await provider.provide(**dependencies),
                 )
@@ -149,8 +149,8 @@ class SyncInjectionContext(_BaseInjectionContext):
             dep.name: self.resolve(type_=dep.type_)
             for dep in provider.dependencies
         }
-        with store.sync_lock(provider) as should_cache:
-            if should_cache:
+        with store.sync_lock(provider) as should_provide:
+            if should_provide:
                 resolved = store.enter_sync_context(
                     provider.provide_sync(**dependencies),
                 )
