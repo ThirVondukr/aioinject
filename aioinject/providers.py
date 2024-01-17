@@ -22,6 +22,7 @@ import typing_extensions
 
 from aioinject.markers import Inject
 from aioinject.utils import (
+    is_generator,
     remove_annotation,
 )
 
@@ -178,6 +179,10 @@ class Provider(Protocol[_T]):
     @functools.cached_property
     def dependencies(self) -> tuple[Dependency[object], ...]:
         return tuple(collect_dependencies(self.type_hints))
+
+    @functools.cached_property
+    def is_generator(self) -> bool:
+        return is_generator(self.impl)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__qualname__}(type={self.type_}, implementation={self.impl})"

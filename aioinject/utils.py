@@ -1,7 +1,7 @@
 import contextlib
 import inspect
 import typing
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import (
     AbstractAsyncContextManager,
     AbstractContextManager,
@@ -50,6 +50,14 @@ def get_inject_annotations(
                 for arg in typing.get_args(annotation)
             )
         }
+
+
+def is_generator(func: Callable[..., Any]) -> bool:
+    while inner := getattr(func, "__wrapped__", None):
+        func = inner
+    return inspect.isgeneratorfunction(func) or inspect.isasyncgenfunction(
+        func,
+    )
 
 
 async def enter_context_maybe(

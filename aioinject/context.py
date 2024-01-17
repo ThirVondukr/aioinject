@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextvars
 import inspect
-from collections.abc import Callable, Coroutine, Iterable, Iterator
+from collections.abc import Callable, Coroutine, Iterable, Mapping
 from contextvars import ContextVar
 from types import TracebackType
 from typing import (
@@ -21,6 +21,7 @@ from aioinject.providers import Dependency, DependencyLifetime
 
 
 if TYPE_CHECKING:
+    from aioinject import Provider
     from aioinject.containers import Container
 
 _T = TypeVar("_T")
@@ -38,30 +39,23 @@ class _BaseInjectionContext:
         singletons: InstanceStore,
     ) -> None:
         self._container = container
-        store = InstanceStore()
-        self._stores = {
-            DependencyLifetime.singleton: singletons,
-            DependencyLifetime.scoped: store,
-            DependencyLifetime.transient: store,
-        }
+        self._store = InstanceStore()
+        self._singletons = singletons
         self._token: contextvars.Token[_AnyCtx] | None = None
 
-    @property
-    def _stores_to_finalize(self) -> Iterator[InstanceStore]:
-        for lifetime, store in self._stores.items():
-            if lifetime is DependencyLifetime.singleton:
-                continue
-            yield store
+    def _get_store(self, lifetime: DependencyLifetime) -> InstanceStore:
+        if lifetime is DependencyLifetime.singleton:
+            return self._singletons
+        return self._store
 
 
 class InjectionContext(_BaseInjectionContext):
-    # @profile
     async def resolve(
         self,
         type_: type[_T],
     ) -> _T:
         provider = self._container.get_provider(type_)
-        store = self._stores[provider.lifetime]
+        store = self._get_store(provider.lifetime)
         if (cached := store.get(provider)) is not NotInCache.sentinel:
             return cached
 
@@ -69,15 +63,25 @@ class InjectionContext(_BaseInjectionContext):
             dep.name: await self.resolve(type_=dep.type_)
             for dep in provider.dependencies
         }
-        async with store.lock(provider) as should_provide:
-            if should_provide:
-                resolved = await store.enter_context(
-                    await provider.provide(**dependencies),
-                )
-                store.add(provider, resolved)
-                return resolved
-        # It's safe to just call store.get here
-        return store.get(provider)  # type: ignore[return-value]
+        if provider.lifetime is DependencyLifetime.singleton:
+            async with store.lock(provider) as should_provide:
+                if should_provide:
+                    return await self._resolve(provider, store, dependencies)
+                return store.get(provider)  # type: ignore[return-value]
+
+        return await self._resolve(provider, store, dependencies)
+
+    async def _resolve(
+        self,
+        provider: Provider[_T],
+        store: InstanceStore,
+        dependencies: Mapping[str, Any],
+    ) -> _T:
+        resolved = await provider.provide(**dependencies)
+        if provider.is_generator:
+            resolved = await store.enter_context(resolved)
+        store.add(provider, resolved)
+        return resolved
 
     @overload
     async def execute(
@@ -120,8 +124,6 @@ class InjectionContext(_BaseInjectionContext):
 
     async def __aenter__(self) -> Self:
         self._token = context_var.set(self)
-        for store in self._stores.values():
-            await store.__aenter__()
         return self
 
     async def __aexit__(
@@ -131,8 +133,7 @@ class InjectionContext(_BaseInjectionContext):
         exc_tb: TracebackType | None,
     ) -> None:
         context_var.reset(self._token)  # type: ignore[arg-type]
-        for store in self._stores_to_finalize:
-            await store.__aexit__(exc_type, exc_val, exc_tb)
+        await self._store.__aexit__(exc_type, exc_val, exc_tb)
 
 
 class SyncInjectionContext(_BaseInjectionContext):
@@ -141,7 +142,7 @@ class SyncInjectionContext(_BaseInjectionContext):
         type_: type[_T],
     ) -> _T:
         provider = self._container.get_provider(type_)
-        store = self._stores[provider.lifetime]
+        store = self._get_store(provider.lifetime)
         if (cached := store.get(provider)) is not NotInCache.sentinel:
             return cached
 
@@ -175,8 +176,6 @@ class SyncInjectionContext(_BaseInjectionContext):
 
     def __enter__(self) -> Self:
         self._token = context_var.set(self)
-        for store in self._stores.values():
-            store.__enter__()
         return self
 
     def __exit__(
@@ -186,5 +185,4 @@ class SyncInjectionContext(_BaseInjectionContext):
         exc_tb: TracebackType | None,
     ) -> None:
         context_var.reset(self._token)  # type: ignore[arg-type]
-        for store in self._stores_to_finalize:
-            store.__exit__(exc_type, exc_val, exc_tb)
+        self._store.__exit__(exc_type, exc_val, exc_tb)
