@@ -5,6 +5,7 @@ import collections
 import contextlib
 import enum
 import threading
+import typing
 from collections.abc import AsyncIterator, Iterator
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from types import TracebackType
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
     from aioinject.providers import Provider
 
 
-_T = TypeVar("_T")
+T = TypeVar("T")
 
 
 class NotInCache(enum.Enum):
@@ -33,10 +34,10 @@ class InstanceStore:
         self._exit_stack = contextlib.AsyncExitStack()
         self._sync_exit_stack = contextlib.ExitStack()
 
-    def get(self, provider: Provider[_T]) -> _T | Literal[NotInCache.sentinel]:
+    def get(self, provider: Provider[T]) -> T | Literal[NotInCache.sentinel]:
         return self._cache.get(provider.type_, NotInCache.sentinel)
 
-    def add(self, provider: Provider[_T], obj: _T) -> None:
+    def add(self, provider: Provider[T], obj: T) -> None:
         if provider.lifetime is not DependencyLifetime.transient:
             self._cache[provider.type_] = obj
 
@@ -52,16 +53,35 @@ class InstanceStore:
     ) -> AbstractContextManager[bool]:
         return contextlib.nullcontext(provider.type_ not in self._cache)
 
+    @typing.overload
     async def enter_context(
         self,
-        obj: _T | AbstractContextManager[_T] | AbstractAsyncContextManager[_T],
-    ) -> _T:
+        obj: AbstractAsyncContextManager[T] | AbstractContextManager[T],
+    ) -> T:
+        ...
+
+    @typing.overload
+    async def enter_context(self, obj: T) -> T:
+        ...
+
+    async def enter_context(
+        self,
+        obj: AbstractAsyncContextManager[T] | AbstractContextManager[T] | T,
+    ) -> T:
         return await enter_context_maybe(obj, self._exit_stack)
+
+    @typing.overload
+    def enter_sync_context(self, obj: AbstractContextManager[T]) -> T:
+        ...
+
+    @typing.overload
+    def enter_sync_context(self, obj: T) -> T:
+        ...
 
     def enter_sync_context(
         self,
-        obj: _T | AbstractContextManager[_T],
-    ) -> _T:
+        obj: AbstractContextManager[T] | T,
+    ) -> T:
         return enter_sync_context_maybe(obj, self._sync_exit_stack)
 
     async def __aenter__(self) -> Self:
