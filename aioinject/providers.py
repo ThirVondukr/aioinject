@@ -5,6 +5,7 @@ import enum
 import functools
 import inspect
 import typing
+from collections.abc import Mapping
 from dataclasses import dataclass
 from inspect import isclass
 from typing import (
@@ -162,10 +163,10 @@ class Provider(Protocol[_T]):
     impl: Any
     lifetime: DependencyLifetime
 
-    async def provide(self, **kwargs: Any) -> _T:
+    async def provide(self, kwargs: Mapping[str, Any]) -> _T:
         ...
 
-    def provide_sync(self, **kwargs: Any) -> _T:
+    def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
         ...
 
     @property
@@ -199,14 +200,14 @@ class Scoped(Provider[_T]):
         self.type_ = type_ or _guess_return_type(factory)
         self.impl = factory
 
-    def provide_sync(self, **kwargs: Any) -> _T:
+    def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
         return self.impl(**kwargs)  # type: ignore[return-value]
 
-    async def provide(self, **kwargs: Any) -> _T:
+    async def provide(self, kwargs: Mapping[str, Any]) -> _T:
         if self.is_async:
             return await self.impl(**kwargs)  # type: ignore[misc]
 
-        return self.provide_sync(**kwargs)
+        return self.provide_sync(kwargs)
 
     @functools.cached_property
     def type_hints(self) -> dict[str, Any]:
@@ -256,8 +257,8 @@ class Object(Provider[_T]):
         self.type_ = type_ or type(object_)
         self.impl = object_
 
-    def provide_sync(self, **kwargs: Any) -> _T:  # noqa: ARG002
+    def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:  # noqa: ARG002
         return self.impl
 
-    async def provide(self, **kwargs: Any) -> _T:  # noqa: ARG002
+    async def provide(self, kwargs: Mapping[str, Any]) -> _T:  # noqa: ARG002
         return self.impl

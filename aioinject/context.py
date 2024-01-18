@@ -59,15 +59,19 @@ class InjectionContext(_BaseInjectionContext):
         if (cached := store.get(provider)) is not NotInCache.sentinel:
             return cached
 
-        dependencies = {
-            dep.name: await self.resolve(type_=dep.type_)
-            for dep in provider.dependencies
-        }
+        dependencies = {}
+        for dependency in provider.dependencies:
+            dependencies[dependency.name] = await self.resolve(
+                type_=dependency.type_,
+            )
+
         if provider.lifetime is DependencyLifetime.singleton:
             async with store.lock(provider) as should_provide:
                 if should_provide:
                     return await self._resolve(provider, store, dependencies)
-                return store.get(provider)  # type: ignore[return-value]
+                return store.get(  # type: ignore[return-value] # pragma: no cover
+                    provider,
+                )
 
         return await self._resolve(provider, store, dependencies)
 
@@ -77,7 +81,7 @@ class InjectionContext(_BaseInjectionContext):
         store: InstanceStore,
         dependencies: Mapping[str, Any],
     ) -> _T:
-        resolved = await provider.provide(**dependencies)
+        resolved = await provider.provide(dependencies)
         if provider.is_generator:
             resolved = await store.enter_context(resolved)
         store.add(provider, resolved)
@@ -146,19 +150,31 @@ class SyncInjectionContext(_BaseInjectionContext):
         if (cached := store.get(provider)) is not NotInCache.sentinel:
             return cached
 
-        dependencies = {
-            dep.name: self.resolve(type_=dep.type_)
-            for dep in provider.dependencies
-        }
-        with store.sync_lock(provider) as should_provide:
-            if should_provide:
-                resolved = store.enter_sync_context(
-                    provider.provide_sync(**dependencies),
-                )
-                store.add(provider, resolved)
-                return resolved
+        dependencies = {}
+        for dependency in provider.dependencies:
+            dependencies[dependency.name] = self.resolve(
+                type_=dependency.type_,
+            )
 
-        return store.get(provider)  # type: ignore[return-value]
+        if provider.lifetime is DependencyLifetime.singleton:
+            with store.sync_lock(provider) as should_provide:
+                if should_provide:
+                    return self._resolve(provider, store, dependencies)
+                return store.get(provider)  # type: ignore[return-value] # pragma: no cover
+
+        return self._resolve(provider, store, dependencies)
+
+    def _resolve(
+        self,
+        provider: Provider[_T],
+        store: InstanceStore,
+        dependencies: Mapping[str, Any],
+    ) -> _T:
+        resolved = provider.provide_sync(dependencies)
+        if provider.is_generator:
+            resolved = store.enter_sync_context(resolved)
+        store.add(provider, resolved)
+        return resolved
 
     def execute(
         self,

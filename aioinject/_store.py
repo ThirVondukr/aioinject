@@ -20,7 +20,6 @@ if TYPE_CHECKING:
 
     from aioinject.providers import Provider
 
-
 T = TypeVar("T")
 
 
@@ -85,7 +84,7 @@ class InstanceStore:
         return enter_sync_context_maybe(obj, self._sync_exit_stack)
 
     async def __aenter__(self) -> Self:
-        return self
+        return self  # pragma: no cover
 
     async def __aexit__(
         self,
@@ -99,7 +98,7 @@ class InstanceStore:
         await self.__aexit__(None, None, None)
 
     def __enter__(self) -> Self:
-        return self
+        return self  # pragma: no cover
 
     def __exit__(
         self,

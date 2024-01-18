@@ -10,8 +10,8 @@ async def test_would_provide_same_object() -> None:
     obj = object()
     provider = Object(object_=obj)
 
-    assert provider.provide_sync() is obj
-    assert await provider.provide() is obj
+    assert provider.provide_sync({}) is obj
+    assert await provider.provide({}) is obj
 
 
 @pytest.fixture
