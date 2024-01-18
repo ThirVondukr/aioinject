@@ -206,62 +206,21 @@ if __name__ == "__main__":
 
 ## Providers
 
-When creating a provider you should specify the type it returns, but it can be inferred from class type or function
-return type:
-
 ### Scoped
 
-`Scoped` (or `Factory` for convenience) provider would create instance of a class each time:
+Objects provided with `Scoped` provider would be cached within context.
 
-```python
-from aioinject import Scoped
+### Transient
 
+`Transient` provider would provide different instances even if used within same context 
 
-class Service:
-    pass
-
-
-provider = Scoped(Service)
-service_one = provider.provide_sync()
-service_two = provider.provide_sync()
-print(service_one is service_two)
-# False
-```
 
 ### Singleton
 
-`Singleton` works the same way as `Scoped` but it caches first created object:
+`Singleton` works as you expect - there would be only one instance of a singleton
+object, bound to a specific container
 
-```python
-from aioinject import Singleton
-
-
-class Service:
-    pass
-
-
-provider = Singleton(Service)
-first = provider.provide_sync()
-second = provider.provide_sync()
-print(first is second)
-# True
-
-```
 
 ### Object
 
-`Object` provider just returns an object provided to it:
-
-```python
-from aioinject import Object
-
-
-class Service:
-    pass
-
-
-provider = Object(Service())
-service = provider.provide_sync()
-print(service)
-# <__main__.Service>
-```
+`Object` provider just returns an object provided to it, e.g. `Object(42)`
