@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from aioinject import Singleton, providers
+from aioinject import Scoped, Singleton, providers
 from aioinject.containers import Container
 from aioinject.context import InjectionContext
 
@@ -38,54 +38,26 @@ def test_can_register_single(container: Container) -> None:
     provider = providers.Scoped(_ServiceA)
     container.register(provider)
 
-    expected = {_ServiceA: [provider]}
+    expected = {_ServiceA: provider}
     assert container.providers == expected
 
 
-def test_can_register_multi(container: Container) -> None:
-    provider_a = providers.Scoped(_ServiceA)
-    provider_b = providers.Scoped(_ServiceB)
-    container.register(provider_a)
-    container.register(provider_b)
+def test_cant_register_multiple_providers_for_same_type(
+    container: Container,
+) -> None:
+    container.register(Scoped(int))
 
-    expected = {_ServiceA: [provider_a], _ServiceB: [provider_b]}
-    assert container.providers == expected
+    with pytest.raises(
+        ValueError,
+        match="^Provider for type <class 'int'> is already registered$",
+    ):
+        container.register(Scoped(int))
 
 
 def test_can_retrieve_single_provider(container: Container) -> None:
     int_provider = providers.Scoped(int)
     container.register(int_provider)
     assert container.get_provider(int)
-
-
-@pytest.fixture
-def multi_provider_container(container: Container) -> Container:
-    a_provider = providers.Scoped(_ServiceA, type_=_AbstractService)
-    b_provider = providers.Scoped(_ServiceB, type_=_AbstractService)
-    container.register(a_provider)
-    container.register(b_provider)
-    return container
-
-
-def test_get_provider_raises_error_if_multiple_providers(
-    multi_provider_container: Container,
-) -> None:
-    with pytest.raises(ValueError) as exc_info:  # noqa: PT011
-        assert multi_provider_container.get_provider(_AbstractService)
-
-    msg = (
-        f"Multiple providers for type {_AbstractService.__qualname__} were found, "
-        f"you have to specify implementation using 'impl' parameter: "
-        f"Annotated[IService, Inject(impl=Service)]"
-    )
-    assert str(exc_info.value) == msg
-
-
-def test_can_get_multi_provider_if__specified(
-    multi_provider_container: Container,
-) -> None:
-    assert multi_provider_container.get_provider(_AbstractService, _ServiceA)
-    assert multi_provider_container.get_provider(_AbstractService, _ServiceB)
 
 
 def test_missing_provider() -> None:

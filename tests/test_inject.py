@@ -1,8 +1,8 @@
-from typing import Annotated
+from typing import Annotated, NewType
 
 import pytest
 
-from aioinject import Container, Inject, inject, providers
+from aioinject import Container, Inject, Object, Scoped, inject, providers
 from aioinject.context import container_var
 from aioinject.decorators import InjectMethod
 
@@ -12,35 +12,13 @@ class _Session:
 
 
 class _Service:
-    def __init__(self, session: Annotated[_Session, Inject]) -> None:
+    def __init__(self, session: _Session) -> None:
         self.session = session
 
 
 class _Interface:
-    def __init__(self, session: Annotated[_Session, Inject]) -> None:
+    def __init__(self, session: _Session) -> None:
         self.session = session
-
-
-class _ImplementationA(_Interface):
-    pass
-
-
-class _ImplementationB(_Interface):
-    pass
-
-
-def _get_impl_b(session: Annotated[_Session, Inject]) -> _ImplementationB:
-    return _ImplementationB(session)
-
-
-class _NeedsMultipleImplementations:
-    def __init__(
-        self,
-        a: Annotated[_Interface, Inject(_ImplementationA)],
-        b: Annotated[_Interface, Inject(_get_impl_b)],
-    ) -> None:
-        self.a = a
-        self.b = b
 
 
 @pytest.fixture
@@ -48,16 +26,13 @@ def container() -> Container:
     container = Container()
     container.register(providers.Scoped(_Session))
     container.register(providers.Scoped(_Service))
-    container.register(providers.Scoped(_ImplementationA, type_=_Interface))
-    container.register(providers.Scoped(_get_impl_b, type_=_Interface))
-    container.register(providers.Scoped(_NeedsMultipleImplementations))
     return container
 
 
 @inject
 def _injectee(
     test: Annotated[_Session, Inject],
-    test_no_cache: Annotated[_Session, Inject(cache=False)],
+    test_no_cache: Annotated[_Session, Inject()],
 ) -> tuple[_Session, _Session]:
     return test, test_no_cache
 
@@ -80,17 +55,6 @@ def test_simple_inject(container: Container) -> None:
     with container.sync_context():
         session, *_ = _injectee()  # type: ignore[call-arg]
         assert isinstance(session, _Session)
-
-
-def test_no_cache_marker(container: Container) -> None:
-    with container.sync_context():
-        test_first, no_cache_first = _injectee()  # type: ignore[call-arg]
-        test_second, no_cache_second = _injectee()  # type: ignore[call-arg]
-
-    assert test_first is test_second
-    assert test_first is not no_cache_first
-    assert test_second is not no_cache_second
-    assert no_cache_first is not no_cache_second
 
 
 @pytest.mark.anyio
@@ -120,21 +84,6 @@ async def test_retrieve_service_with_dependencies(
 
 
 @pytest.mark.anyio
-async def test_service_with_multiple_dependencies_with_same_type(
-    container: Container,
-) -> None:
-    with container.sync_context() as ctx:
-        service = ctx.resolve(_NeedsMultipleImplementations)
-        assert isinstance(service.a, _ImplementationA)
-        assert isinstance(service.b, _ImplementationB)
-
-    async with container.context() as ctx:
-        service = await ctx.resolve(_NeedsMultipleImplementations)
-        assert isinstance(service.a, _ImplementationA)
-        assert isinstance(service.b, _ImplementationB)
-
-
-@pytest.mark.anyio
 async def test_inject_using_container(
     container: Container,
 ) -> None:
@@ -147,3 +96,24 @@ async def test_inject_using_container(
     coro = injectee()  # type: ignore[call-arg]
     assert isinstance(await coro, _Service)
     container_var.reset(token)
+
+
+@pytest.mark.anyio
+async def test_new_type() -> None:
+    A = NewType("A", int)
+    B = NewType("B", int)
+
+    class Service:
+        def __init__(self, a: A, b: B) -> None:
+            self.a = a
+            self.b = b
+
+    container = Container()
+    container.register(Object(1, type_=A))
+    container.register(Object(2, type_=B))
+    container.register(Scoped(Service))
+
+    async with container.context() as ctx:
+        service = await ctx.resolve(Service)
+        assert service.a == 1
+        assert service.b == 2  # noqa: PLR2004

@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-import contextlib
 import contextvars
 import inspect
-from collections.abc import Callable, Coroutine, Iterable
-from contextlib import AsyncExitStack, ExitStack
+from collections.abc import Callable, Coroutine, Iterable, Mapping
 from contextvars import ContextVar
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
-    Generic,
     TypeAlias,
     TypeVar,
     Union,
@@ -19,71 +16,75 @@ from typing import (
 
 from typing_extensions import Self
 
-from aioinject.providers import Dependency
-from aioinject.utils import enter_context_maybe
+from aioinject._store import InstanceStore, NotInCache
+from aioinject.providers import Dependency, DependencyLifetime
 
 
 if TYPE_CHECKING:
+    from aioinject import Provider
     from aioinject.containers import Container
 
 _T = TypeVar("_T")
 
 _AnyCtx: TypeAlias = Union["InjectionContext", "SyncInjectionContext"]
-_TypeAndImpl: TypeAlias = tuple[type[_T], _T | None]
-_ExitStackT = TypeVar("_ExitStackT")
 
 context_var: ContextVar[_AnyCtx] = ContextVar("aioinject_context")
 container_var: ContextVar[Container] = ContextVar("aioinject_container")
 
 
-class _BaseInjectionContext(Generic[_ExitStackT]):
-    _token: contextvars.Token[_AnyCtx] | None
-    _exit_stack_type: type[_ExitStackT]
-
-    def __init__(self, container: Container) -> None:
+class _BaseInjectionContext:
+    def __init__(
+        self,
+        container: Container,
+        singletons: InstanceStore,
+    ) -> None:
         self._container = container
-        self._exit_stack = self._exit_stack_type()
-        self._cache: dict[_TypeAndImpl[Any], Any] = {}
-        self._token = None
+        self._store = InstanceStore()
+        self._singletons = singletons
+        self._token: contextvars.Token[_AnyCtx] | None = None
 
-    def __class_getitem__(
-        cls,
-        item: type[_ExitStackT],
-    ) -> _BaseInjectionContext[type[_ExitStackT]]:
-        return type(  # type: ignore[return-value]
-            f"_BaseInjectionContext[{item.__class__.__name__}]",
-            (cls,),
-            {"_exit_stack_type": item},
-        )
+    def _get_store(self, lifetime: DependencyLifetime) -> InstanceStore:
+        if lifetime is DependencyLifetime.singleton:
+            return self._singletons
+        return self._store
 
 
-class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
+class InjectionContext(_BaseInjectionContext):
     async def resolve(
         self,
         type_: type[_T],
-        impl: Any | None = None,
-        *,
-        use_cache: bool = True,
     ) -> _T:
-        if use_cache and (type_, impl) in self._cache:
-            return self._cache[type_, impl]
+        provider = self._container.get_provider(type_)
+        store = self._get_store(provider.lifetime)
+        if (cached := store.get(provider)) is not NotInCache.sentinel:
+            return cached
 
-        provider = self._container.get_provider(type_, impl)
-        dependencies = {
-            dep.name: await self.resolve(
-                type_=dep.type_,
-                impl=dep.implementation,
-                use_cache=dep.use_cache,
+        dependencies = {}
+        for dependency in provider.dependencies:
+            dependencies[dependency.name] = await self.resolve(
+                type_=dependency.type_,
             )
-            for dep in provider.dependencies
-        }
 
-        resolved = await enter_context_maybe(
-            resolved=await provider.provide(**dependencies),
-            stack=self._exit_stack,
-        )
-        if use_cache:
-            self._cache[type_, impl] = resolved
+        if provider.lifetime is DependencyLifetime.singleton:
+            async with store.lock(provider) as should_provide:
+                if should_provide:
+                    return await self._resolve(provider, store, dependencies)
+                return store.get(  # type: ignore[return-value] # pragma: no cover
+                    provider,
+                )
+
+        return await self._resolve(provider, store, dependencies)
+
+    async def _resolve(
+        self,
+        provider: Provider[_T],
+        store: InstanceStore,
+        dependencies: Mapping[str, Any],
+    ) -> _T:
+        resolved = await provider.provide(dependencies)
+        if provider.is_generator:
+            resolved = await store.enter_context(resolved)
+        store.add(provider, resolved)
         return resolved
 
     @overload
@@ -117,10 +118,9 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
         for dependency in dependencies:
             if dependency.name in kwargs:
                 continue
+
             resolved[dependency.name] = await self.resolve(
                 type_=dependency.type_,
-                impl=dependency.implementation,
-                use_cache=dependency.use_cache,
             )
         if inspect.iscoroutinefunction(function):
             return await function(*args, **kwargs, **resolved)
@@ -137,35 +137,43 @@ class InjectionContext(_BaseInjectionContext[AsyncExitStack]):
         exc_tb: TracebackType | None,
     ) -> None:
         context_var.reset(self._token)  # type: ignore[arg-type]
-        await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+        await self._store.__aexit__(exc_type, exc_val, exc_tb)
 
 
-class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
+class SyncInjectionContext(_BaseInjectionContext):
     def resolve(
         self,
         type_: type[_T],
-        impl: Any | None = None,
-        *,
-        use_cache: bool = True,
     ) -> _T:
-        if use_cache and (type_, impl) in self._cache:
-            return self._cache[type_, impl]
+        provider = self._container.get_provider(type_)
+        store = self._get_store(provider.lifetime)
+        if (cached := store.get(provider)) is not NotInCache.sentinel:
+            return cached
 
-        provider = self._container.get_provider(type_, impl)
-        dependencies = {
-            dep.name: self.resolve(
-                type_=dep.type_,
-                impl=dep.implementation,
-                use_cache=dep.use_cache,
+        dependencies = {}
+        for dependency in provider.dependencies:
+            dependencies[dependency.name] = self.resolve(
+                type_=dependency.type_,
             )
-            for dep in provider.dependencies
-        }
 
-        resolved = provider.provide_sync(**dependencies)
-        if isinstance(resolved, contextlib.ContextDecorator):
-            resolved = self._exit_stack.enter_context(resolved)  # type: ignore[arg-type]
-        if use_cache:
-            self._cache[type_, impl] = resolved
+        if provider.lifetime is DependencyLifetime.singleton:
+            with store.sync_lock(provider) as should_provide:
+                if should_provide:
+                    return self._resolve(provider, store, dependencies)
+                return store.get(provider)  # type: ignore[return-value] # pragma: no cover
+
+        return self._resolve(provider, store, dependencies)
+
+    def _resolve(
+        self,
+        provider: Provider[_T],
+        store: InstanceStore,
+        dependencies: Mapping[str, Any],
+    ) -> _T:
+        resolved = provider.provide_sync(dependencies)
+        if provider.is_generator:
+            resolved = store.enter_sync_context(resolved)
+        store.add(provider, resolved)
         return resolved
 
     def execute(
@@ -179,11 +187,7 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
         for dependency in dependencies:
             if dependency.name in kwargs:
                 continue
-            resolved[dependency.name] = self.resolve(
-                type_=dependency.type_,
-                impl=dependency.implementation,
-                use_cache=dependency.use_cache,
-            )
+            resolved[dependency.name] = self.resolve(type_=dependency.type_)
         return function(*args, **kwargs, **resolved)
 
     def __enter__(self) -> Self:
@@ -197,4 +201,4 @@ class SyncInjectionContext(_BaseInjectionContext[ExitStack]):
         exc_tb: TracebackType | None,
     ) -> None:
         context_var.reset(self._token)  # type: ignore[arg-type]
-        self._exit_stack.__exit__(exc_type, exc_val, exc_tb)
+        self._store.__exit__(exc_type, exc_val, exc_tb)
