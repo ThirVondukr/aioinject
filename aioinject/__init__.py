@@ -9,6 +9,7 @@ from aioinject.providers import (
     Provider,
     Scoped,
     Singleton,
+    Transient,
 )
 
 
@@ -24,6 +25,7 @@ __all__ = [
     "Singleton",
     "SyncInjectionContext",
     "inject",
+    "Transient",
 ]
 
 __version__ = "0.20.0"
