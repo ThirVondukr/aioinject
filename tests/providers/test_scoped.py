@@ -140,21 +140,20 @@ def test_dependencies() -> None:
     )
     assert provider.dependencies == expected
 
+def iterable() -> Iterator[int]:
+    yield 42
 
-def test_generator_return_types() -> None:
-    def iterable() -> Iterator[int]:
-        yield 42
+def gen() -> Generator[int, None, None]:
+    yield 42
 
-    def gen() -> Generator[int, None, None]:
-        yield 42
+async def async_iterable() -> AsyncIterator[int]:
+    yield 42
 
-    async def async_iterable() -> AsyncIterator[int]:
-        yield 42
+async def async_gen() -> AsyncGenerator[int, None]:
+    yield 42
 
-    async def async_gen() -> AsyncGenerator[int, None]:
-        yield 42
+@pytest.mark.parametrize("factory", [iterable, gen, async_iterable, async_gen])
+def test_generator_return_types(factory) -> None:
+    provider = providers.Scoped(factory)
+    assert provider.resolve_type() is int
 
-    factories = [iterable, gen, async_iterable, async_gen]
-    for factory in factories:
-        provider = providers.Scoped(factory)
-        assert provider.type_ is int

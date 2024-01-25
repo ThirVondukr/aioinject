@@ -18,16 +18,36 @@ class Container:
     def __init__(self) -> None:
         self.providers: _Providers[Any] = {}
         self._singletons = SingletonStore()
+        self._unresolved_providers: list[Provider[Any]] = []
+        self._type_context: dict[str, type[Any]] = {}
+
+    def _resolve_unresolved_provider(self) -> None:
+        for provider in self._unresolved_providers:
+            with contextlib.suppress(NameError):
+                self._register_impl(provider)
+                self._unresolved_providers.remove(provider)
+
+
+    def _register_impl(self, provider: Provider[Any]) -> None:
+            provider_type = provider.resolve_type(self._type_context)
+            if provider_type in self.providers:
+                msg = f"Provider for type {provider_type} is already registered"
+                raise ValueError(msg)
+            self.providers[provider_type] = provider
+            if klass_name := getattr(provider_type, "__name__" , None):
+                self._type_context[klass_name] = provider_type
+
 
     def register(
         self,
         provider: Provider[Any],
-    ) -> None:
-        if provider.type_ in self.providers:
-            msg = f"Provider for type {provider.type_} is already registered"
-            raise ValueError(msg)
+    ) -> None:  
+        try:
+            self._register_impl(provider)
+        except NameError:
+            self._unresolved_providers.append(provider)
+        self._resolve_unresolved_provider()
 
-        self.providers[provider.type_] = provider
 
     def get_provider(self, type_: type[_T]) -> Provider[_T]:
         try:

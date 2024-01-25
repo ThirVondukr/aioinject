@@ -23,12 +23,14 @@ import typing_extensions
 
 from aioinject.markers import Inject
 from aioinject.utils import (
+    _get_type_hints,
     is_context_manager_function,
     remove_annotation,
 )
 
 
 _T = TypeVar("_T")
+
 
 
 @dataclass(slots=True, kw_only=True, frozen=True)
@@ -61,14 +63,13 @@ def _find_inject_marker_in_annotation_args(
 
 
 def collect_dependencies(
-    dependant: typing.Callable[..., object] | dict[str, Any],
+    dependant: typing.Callable[..., object] | dict[str, Any], ctx: dict[str, type[Any]] | None =  None
 ) -> typing.Iterable[Dependency[object]]:
     if not isinstance(dependant, dict):
         with remove_annotation(dependant.__annotations__, "return"):
-            type_hints = typing.get_type_hints(dependant, include_extras=True)
+            type_hints = _get_type_hints(dependant, context=ctx)
     else:
         type_hints = dependant
-
     for name, hint in type_hints.items():
         dep_type, args = _get_annotation_args(hint)
         inject_marker = _find_inject_marker_in_annotation_args(args)
@@ -120,11 +121,11 @@ _FactoryType: TypeAlias = (
 )
 
 
-def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
+def _guess_return_type(factory: _FactoryType[_T], context: dict[str, type[Any] ] | None = None) -> type[_T]:
     if isclass(factory):
         return typing.cast(type[_T], factory)
 
-    type_hints = typing.get_type_hints(factory)
+    type_hints = _get_type_hints(factory, context=context)
     try:
         return_type = type_hints["return"]
     except KeyError as e:
@@ -159,7 +160,6 @@ class DependencyLifetime(enum.Enum):
 
 @runtime_checkable
 class Provider(Protocol[_T]):
-    type_: type[_T]
     impl: Any
     lifetime: DependencyLifetime
 
@@ -168,6 +168,10 @@ class Provider(Protocol[_T]):
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
         ...
+    
+    def resolve_type(self, context: dict[str, Any] | None = None) -> type[_T]:
+        ...
+
 
     @property
     def type_hints(self) -> dict[str, Any]:
@@ -197,8 +201,11 @@ class Scoped(Provider[_T]):
         factory: _FactoryType[_T],
         type_: type[_T] | None = None,
     ) -> None:
-        self.type_ = type_ or _guess_return_type(factory)
+        self.type_ = type_
         self.impl = factory
+
+    def resolve_type(self, context: dict[str, Any] | None = None) -> type[_T]:
+        return self.type_ or _guess_return_type(self.impl, context=context)
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
         return self.impl(**kwargs)  # type: ignore[return-value]
@@ -256,6 +263,9 @@ class Object(Provider[_T]):
     ) -> None:
         self.type_ = type_ or type(object_)
         self.impl = object_
+
+    def resolve_type(self, _: dict[str, Any] | None = None) -> type[_T]:
+        return self.type_
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:  # noqa: ARG002
         return self.impl
