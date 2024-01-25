@@ -95,9 +95,10 @@ def remove_annotation(
     if annotation is not sentinel:
         annotations[name] = annotation
 
+
 def _get_type_hints(
     obj: Any,
-    context: dict[str, type[Any]] | None = None
+    context: dict[str, type[Any]] | None = None,
 ) -> dict[str, Any]:
     if not context:
         context = {}

@@ -32,7 +32,6 @@ from aioinject.utils import (
 _T = TypeVar("_T")
 
 
-
 @dataclass(slots=True, kw_only=True, frozen=True)
 class Dependency(Generic[_T]):
     name: str
@@ -63,7 +62,8 @@ def _find_inject_marker_in_annotation_args(
 
 
 def collect_dependencies(
-    dependant: typing.Callable[..., object] | dict[str, Any], ctx: dict[str, type[Any]] | None =  None
+    dependant: typing.Callable[..., object] | dict[str, Any],
+    ctx: dict[str, type[Any]] | None = None,
 ) -> typing.Iterable[Dependency[object]]:
     if not isinstance(dependant, dict):
         with remove_annotation(dependant.__annotations__, "return"):
@@ -82,7 +82,10 @@ def collect_dependencies(
         )
 
 
-def _get_provider_type_hints(provider: Provider[Any], context: dict[str, Any] | None = None) -> dict[str, Any]:
+def _get_provider_type_hints(
+    provider: Provider[Any],
+    context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     source = provider.impl
     if inspect.isclass(source):
         source = source.__init__
@@ -121,7 +124,10 @@ _FactoryType: TypeAlias = (
 )
 
 
-def _guess_return_type(factory: _FactoryType[_T], context: dict[str, type[Any] ] | None = None) -> type[_T]:
+def _guess_return_type(
+    factory: _FactoryType[_T],
+    context: dict[str, type[Any]] | None = None,
+) -> type[_T]:
     if isclass(factory):
         return typing.cast(type[_T], factory)
 
@@ -169,12 +175,10 @@ class Provider(Protocol[_T]):
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
         ...
-    
+
     def resolve_type(self, context: dict[str, Any] | None = None) -> type[_T]:
         ...
 
-
-    
     def type_hints(self, context: dict[str, Any] | None) -> dict[str, Any]:
         ...
 
@@ -182,13 +186,18 @@ class Provider(Protocol[_T]):
     def is_async(self) -> bool:
         ...
 
-    def resolve_dependencies(self, context: dict[str, Any] | None = None) ->  tuple[Dependency[object], ...]:
+    def resolve_dependencies(
+        self,
+        context: dict[str, Any] | None = None,
+    ) -> tuple[Dependency[object], ...]:
         if deps := getattr(self, "_cached_dependecies", None):
             return deps
-        ret = tuple(collect_dependencies(self.type_hints(context), ctx=context))
+        ret = tuple(
+            collect_dependencies(self.type_hints(context), ctx=context),
+        )
         self._cached_dependecies = ret
         return ret
-  
+
     @functools.cached_property
     def is_generator(self) -> bool:
         return is_context_manager_function(self.impl)

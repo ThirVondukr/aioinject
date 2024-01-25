@@ -27,28 +27,25 @@ class Container:
                 self._register_impl(provider)
                 self._unresolved_providers.remove(provider)
 
-
     def _register_impl(self, provider: Provider[Any]) -> None:
-            provider_type = provider.resolve_type(self.type_context)
-            if provider_type in self.providers:
-                provider.dependencies
-                msg = f"Provider for type {provider_type} is already registered"
-                raise ValueError(msg)
-            self.providers[provider_type] = provider
-            if klass_name := getattr(provider_type, "__name__" , None):
-                self.type_context[klass_name] = provider_type
-
+        provider_type = provider.resolve_type(self.type_context)
+        if provider_type in self.providers:
+            provider.dependencies
+            msg = f"Provider for type {provider_type} is already registered"
+            raise ValueError(msg)
+        self.providers[provider_type] = provider
+        if klass_name := getattr(provider_type, "__name__", None):
+            self.type_context[klass_name] = provider_type
 
     def register(
         self,
         provider: Provider[Any],
-    ) -> None:  
+    ) -> None:
         try:
             self._register_impl(provider)
         except NameError:
             self._unresolved_providers.append(provider)
         self._resolve_unresolved_provider()
-
 
     def get_provider(self, type_: type[_T]) -> Provider[_T]:
         try:
