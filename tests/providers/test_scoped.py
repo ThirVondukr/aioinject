@@ -1,5 +1,5 @@
 from collections.abc import AsyncGenerator, AsyncIterator, Generator, Iterator
-from typing import Annotated
+from typing import Annotated, Any
 from unittest.mock import patch
 
 import pytest
@@ -60,7 +60,7 @@ def test_type_hints_on_function() -> None:
         "a": Annotated[int, Inject],
         "b": Annotated[str, Inject],
     }
-    assert provider.type_hints == expected
+    assert provider.type_hints() == expected
 
 
 def test_type_hints_on_class() -> None:
@@ -73,7 +73,7 @@ def test_type_hints_on_class() -> None:
         "a": Annotated[int, Inject],
         "b": Annotated[str, Inject],
     }
-    assert provider.type_hints == expected
+    assert provider.type_hints() == expected
 
 
 def test_annotated_type_hint() -> None:
@@ -83,7 +83,7 @@ def test_annotated_type_hint() -> None:
         pass
 
     provider = providers.Scoped(factory)
-    assert provider.type_hints == {
+    assert provider.type_hints() == {
         "a": Annotated[int, Inject()],
     }
 
@@ -109,7 +109,7 @@ def test_empty_dependencies() -> None:
         pass
 
     provider = providers.Scoped(factory)
-    assert provider.dependencies == ()
+    assert provider.resolve_dependencies() == ()
 
 
 def test_dependencies() -> None:
@@ -158,6 +158,6 @@ async def async_gen() -> AsyncGenerator[int, None]:
 
 
 @pytest.mark.parametrize("factory", [iterable, gen, async_iterable, async_gen])
-def test_generator_return_types(factory) -> None:
+def test_generator_return_types(factory: Any) -> None:
     provider = providers.Scoped(factory)
     assert provider.resolve_type() is int

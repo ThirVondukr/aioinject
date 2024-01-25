@@ -30,7 +30,6 @@ class Container:
     def _register_impl(self, provider: Provider[Any]) -> None:
         provider_type = provider.resolve_type(self.type_context)
         if provider_type in self.providers:
-            provider.dependencies
             msg = f"Provider for type {provider_type} is already registered"
             raise ValueError(msg)
         self.providers[provider_type] = provider
@@ -71,14 +70,14 @@ class Container:
         self,
         provider: Provider[Any],
     ) -> Iterator[None]:
-        previous = self.providers.get(provider.type_)
-        self.providers[provider.type_] = provider
+        previous = self.providers.get(provider.resolve_type())
+        self.providers[provider.resolve_type()] = provider
 
         yield
 
-        del self.providers[provider.type_]
+        del self.providers[provider.resolve_type()]
         if previous is not None:
-            self.providers[provider.type_] = previous
+            self.providers[provider.resolve_type()] = previous
 
     async def __aenter__(self) -> Self:
         return self

@@ -153,7 +153,7 @@ class SyncInjectionContext(_BaseInjectionContext):
             return cached
 
         dependencies = {}
-        for dependency in provider.dependencies:
+        for dependency in provider.resolve_dependencies():
             dependencies[dependency.name] = self.resolve(
                 type_=dependency.type_,
             )

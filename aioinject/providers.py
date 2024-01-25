@@ -169,6 +169,7 @@ class Provider(Protocol[_T]):
     impl: Any
     lifetime: DependencyLifetime
     _cached_dependecies: tuple[Dependency[object], ...]
+    _cached_type: type[_T] | None
 
     async def provide(self, kwargs: Mapping[str, Any]) -> _T:
         ...
@@ -176,8 +177,18 @@ class Provider(Protocol[_T]):
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
         ...
 
-    def resolve_type(self, context: dict[str, Any] | None = None) -> type[_T]:
+    def _resolve_type_impl(
+        self,
+        context: dict[str, Any] | None = None,
+    ) -> type[_T]:
         ...
+
+    def resolve_type(self, context: dict[str, Any] | None = None) -> type[_T]:
+        if resolved := getattr(self, "_cached_type", None):
+            return resolved
+        ret = self._resolve_type_impl(context)
+        self._cached_type = ret
+        return ret
 
     def type_hints(self, context: dict[str, Any] | None) -> dict[str, Any]:
         ...
@@ -202,8 +213,12 @@ class Provider(Protocol[_T]):
     def is_generator(self) -> bool:
         return is_context_manager_function(self.impl)
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__qualname__}(type={self.type_}, implementation={self.impl})"
+    def __repr__(self) -> str:  # pragma: no cover
+        try:
+            type_ = repr(self.resolve_type())
+        except NameError:
+            type_ = "UNKNOWN"
+        return f"{self.__class__.__qualname__}(type={type_}, implementation={self.impl})"
 
 
 class Scoped(Provider[_T]):
@@ -217,7 +232,10 @@ class Scoped(Provider[_T]):
         self.type_ = type_
         self.impl = factory
 
-    def resolve_type(self, context: dict[str, Any] | None = None) -> type[_T]:
+    def _resolve_type_impl(
+        self,
+        context: dict[str, Any] | None = None,
+    ) -> type[_T]:
         return self.type_ or _guess_return_type(self.impl, context=context)
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
@@ -229,7 +247,10 @@ class Scoped(Provider[_T]):
 
         return self.provide_sync(kwargs)
 
-    def type_hints(self, context: dict[str, Any] | None) -> dict[str, Any]:
+    def type_hints(
+        self,
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         type_hints = _get_provider_type_hints(self, context=context)
         if "return" in type_hints:
             del type_hints["return"]
@@ -263,7 +284,7 @@ class Transient(Scoped[_T]):
 
 
 class Object(Provider[_T]):
-    type_hints: ClassVar[dict[str, Any]] = {}
+    _type_hints: ClassVar[dict[str, Any]] = {}
     is_async = False
     impl: _T
     lifetime = DependencyLifetime.scoped  # It's ok to cache it
@@ -276,7 +297,7 @@ class Object(Provider[_T]):
         self.type_ = type_ or type(object_)
         self.impl = object_
 
-    def resolve_type(self, _: dict[str, Any] | None = None) -> type[_T]:
+    def _resolve_type_impl(self, _: dict[str, Any] | None = None) -> type[_T]:
         return self.type_
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:  # noqa: ARG002
@@ -284,3 +305,6 @@ class Object(Provider[_T]):
 
     async def provide(self, kwargs: Mapping[str, Any]) -> _T:  # noqa: ARG002
         return self.impl
+
+    def type_hints(self, _: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._type_hints

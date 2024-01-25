@@ -18,7 +18,7 @@ def all_dependencies_are_present(
         for dependency in provider.resolve_dependencies(
             container.type_context,
         ):
-            dep_type = dependency.resolve_type(container.type_context)
+            dep_type = dependency.type_
             if dep_type not in container.providers:
                 error = DependencyNotFoundError(
                     message=f"Provider for type {dep_type} not found",
@@ -50,7 +50,7 @@ class ForbidDependency(ContainerValidator):
             for dependency in provider.resolve_dependencies(
                 container.type_context,
             ):
-                dep_type = dependency.resolve_type(container.type_context)
+                dep_type = dependency.type_
                 dependency_provider = container.get_provider(
                     type_=dep_type,
                 )

@@ -45,7 +45,7 @@ def test_should_have_empty_type_hints(
 ) -> None:
     for obj in dependencies_test_data:
         provider = Object(object_=obj)
-        assert not provider.type_hints
+        assert not provider.type_hints()
 
 
 def test_should_not_be_async(
