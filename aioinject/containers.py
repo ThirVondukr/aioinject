@@ -19,7 +19,7 @@ class Container:
         self.providers: _Providers[Any] = {}
         self._singletons = SingletonStore()
         self._unresolved_providers: list[Provider[Any]] = []
-        self._type_context: dict[str, type[Any]] = {}
+        self.type_context: dict[str, type[Any]] = {}
 
     def _resolve_unresolved_provider(self) -> None:
         for provider in self._unresolved_providers:
@@ -29,13 +29,14 @@ class Container:
 
 
     def _register_impl(self, provider: Provider[Any]) -> None:
-            provider_type = provider.resolve_type(self._type_context)
+            provider_type = provider.resolve_type(self.type_context)
             if provider_type in self.providers:
+                provider.dependencies
                 msg = f"Provider for type {provider_type} is already registered"
                 raise ValueError(msg)
             self.providers[provider_type] = provider
             if klass_name := getattr(provider_type, "__name__" , None):
-                self._type_context[klass_name] = provider_type
+                self.type_context[klass_name] = provider_type
 
 
     def register(

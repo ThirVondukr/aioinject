@@ -82,7 +82,7 @@ def collect_dependencies(
         )
 
 
-def _get_provider_type_hints(provider: Provider[Any]) -> dict[str, Any]:
+def _get_provider_type_hints(provider: Provider[Any], context: dict[str, Any] | None = None) -> dict[str, Any]:
     source = provider.impl
     if inspect.isclass(source):
         source = source.__init__
@@ -90,7 +90,7 @@ def _get_provider_type_hints(provider: Provider[Any]) -> dict[str, Any]:
     if isinstance(source, functools.partial):
         return {}
 
-    type_hints = typing.get_type_hints(source, include_extras=True)
+    type_hints = _get_type_hints(source, context=context)
     for key, value in type_hints.items():
         _, args = _get_annotation_args(value)
         for arg in args:
@@ -162,6 +162,7 @@ class DependencyLifetime(enum.Enum):
 class Provider(Protocol[_T]):
     impl: Any
     lifetime: DependencyLifetime
+    _cached_dependecies: tuple[Dependency[object], ...]
 
     async def provide(self, kwargs: Mapping[str, Any]) -> _T:
         ...
@@ -173,18 +174,21 @@ class Provider(Protocol[_T]):
         ...
 
 
-    @property
-    def type_hints(self) -> dict[str, Any]:
+    
+    def type_hints(self, context: dict[str, Any] | None) -> dict[str, Any]:
         ...
 
     @property
     def is_async(self) -> bool:
         ...
 
-    @functools.cached_property
-    def dependencies(self) -> tuple[Dependency[object], ...]:
-        return tuple(collect_dependencies(self.type_hints))
-
+    def resolve_dependencies(self, context: dict[str, Any] | None = None) ->  tuple[Dependency[object], ...]:
+        if deps := getattr(self, "_cached_dependecies", None):
+            return deps
+        ret = tuple(collect_dependencies(self.type_hints(context), ctx=context))
+        self._cached_dependecies = ret
+        return ret
+  
     @functools.cached_property
     def is_generator(self) -> bool:
         return is_context_manager_function(self.impl)
@@ -216,9 +220,8 @@ class Scoped(Provider[_T]):
 
         return self.provide_sync(kwargs)
 
-    @functools.cached_property
-    def type_hints(self) -> dict[str, Any]:
-        type_hints = _get_provider_type_hints(self)
+    def type_hints(self, context: dict[str, Any] | None) -> dict[str, Any]:
+        type_hints = _get_provider_type_hints(self, context=context)
         if "return" in type_hints:
             del type_hints["return"]
         return type_hints

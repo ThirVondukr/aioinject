@@ -60,7 +60,7 @@ class InjectionContext(_BaseInjectionContext):
             return cached
 
         dependencies = {}
-        for dependency in provider.dependencies:
+        for dependency in provider.resolve_dependencies(self._container.type_context):
             dependencies[dependency.name] = await self.resolve(
                 type_=dependency.type_,
             )

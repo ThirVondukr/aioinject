@@ -138,7 +138,7 @@ def test_dependencies() -> None:
             type_=str,
         ),
     )
-    assert provider.dependencies == expected
+    assert provider.resolve_dependencies() == expected
 
 def iterable() -> Iterator[int]:
     yield 42

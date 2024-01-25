@@ -94,16 +94,16 @@ async def test_should_close_singletons() -> None:
     assert shutdown is True
 
 @pytest.mark.anyio
-async def test_deffered_types() -> None:
+async def test_deffered_type() -> None:
     if TYPE_CHECKING:
         from decimal import Decimal
     
-    def some_deffered_type() -> 'Decimal':
+    def some_deffered_type() -> "Decimal":
         from decimal import Decimal
-        return Decimal('1.0')
+        return Decimal("1.0")
     
     class DoubledDecimal:
-        def __init__(self, decimal: 'Decimal') -> None:
+        def __init__(self, decimal: "Decimal") -> None:
             self.decimal = decimal * 2
     container = Container()
     def register_decimal_scoped() -> None:

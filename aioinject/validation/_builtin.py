@@ -15,11 +15,12 @@ def all_dependencies_are_present(
 ) -> Sequence[ContainerValidationError]:
     errors = []
     for provider in container.providers.values():
-        for dependency in provider.dependencies:
-            if dependency.type_ not in container.providers:
+        for dependency in provider.resolve_dependencies(container.type_context):
+            dep_type = dependency.resolve_type(container.type_context)
+            if dep_type not in container.providers:
                 error = DependencyNotFoundError(
-                    message=f"Provider for type {dependency.type_} not found",
-                    dependency=dependency.type_,
+                    message=f"Provider for type {dep_type} not found",
+                    dependency=dep_type,
                 )
                 errors.append(error)
 
@@ -44,9 +45,10 @@ class ForbidDependency(ContainerValidator):
             if not self.dependant(provider):
                 continue
 
-            for dependency in provider.dependencies:
+            for dependency in provider.resolve_dependencies(container.type_context):
+                dep_type = dependency.resolve_type(container.type_context)
                 dependency_provider = container.get_provider(
-                    type_=dependency.type_,
+                    type_=dep_type,
                 )
                 if self.dependency(dependency_provider):
                     msg = f"Provider {provider!r} cannot depend on {dependency_provider!r}"
