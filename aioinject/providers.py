@@ -169,7 +169,7 @@ class Provider(Protocol[_T]):
     impl: Any
     lifetime: DependencyLifetime
     _cached_dependencies: tuple[Dependency[object], ...]
-    _cached_type: type[_T] # TODO: I think it is redundant.
+    _cached_type: type[_T]  # TODO: I think it is redundant.
 
     async def provide(self, kwargs: Mapping[str, Any]) -> _T:
         ...
@@ -201,10 +201,10 @@ class Provider(Protocol[_T]):
         self,
         context: dict[str, Any] | None = None,
     ) -> tuple[Dependency[object], ...]:
-        try: 
+        try:
             return self._cached_dependencies
         except AttributeError:
-            self._cached_dependencies =  tuple(
+            self._cached_dependencies = tuple(
                 collect_dependencies(self.type_hints(context), ctx=context),
             )
             return self._cached_dependencies
