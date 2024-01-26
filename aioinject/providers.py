@@ -168,8 +168,8 @@ class DependencyLifetime(enum.Enum):
 class Provider(Protocol[_T]):
     impl: Any
     lifetime: DependencyLifetime
-    _cached_dependecies: tuple[Dependency[object], ...]
-    _cached_type: type[_T] | None
+    _cached_dependencies: tuple[Dependency[object], ...]
+    _cached_type: type[_T] # TODO: I think it is redundant.
 
     async def provide(self, kwargs: Mapping[str, Any]) -> _T:
         ...
@@ -184,9 +184,11 @@ class Provider(Protocol[_T]):
         ...
 
     def resolve_type(self, context: dict[str, Any] | None = None) -> type[_T]:
-        if self._cached_type is None:
+        try:
+            return self._cached_type
+        except AttributeError:
             self._cached_type = self._resolve_type_impl(context)
-        return self._cached_type
+            return self._cached_type
 
     def type_hints(self, context: dict[str, Any] | None) -> dict[str, Any]:
         ...
@@ -199,11 +201,13 @@ class Provider(Protocol[_T]):
         self,
         context: dict[str, Any] | None = None,
     ) -> tuple[Dependency[object], ...]:
-        if self._cached_dependencies is None:
-            self._cached_dependencies = tuple(
+        try: 
+            return self._cached_dependencies
+        except AttributeError:
+            self._cached_dependencies =  tuple(
                 collect_dependencies(self.type_hints(context), ctx=context),
             )
-        return self._cached_dependencies
+            return self._cached_dependencies
 
     @functools.cached_property
     def is_generator(self) -> bool:
