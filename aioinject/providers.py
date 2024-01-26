@@ -199,13 +199,11 @@ class Provider(Protocol[_T]):
         self,
         context: dict[str, Any] | None = None,
     ) -> tuple[Dependency[object], ...]:
-        if deps := getattr(self, "_cached_dependecies", None):
-            return deps
-        ret = tuple(
-            collect_dependencies(self.type_hints(context), ctx=context),
-        )
-        self._cached_dependecies = ret
-        return ret
+        if self._cached_dependencies is None:
+            self._cached_dependencies = tuple(
+                collect_dependencies(self.type_hints(context), ctx=context),
+            )
+        return self._cached_dependencies
 
     @functools.cached_property
     def is_generator(self) -> bool:
