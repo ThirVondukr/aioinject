@@ -95,7 +95,7 @@ async def test_should_close_singletons() -> None:
 
 
 @pytest.mark.anyio
-async def test_deffered_type() -> None:
+async def test_deffered_dependecies() -> None:
     if TYPE_CHECKING:
         from decimal import Decimal
 
