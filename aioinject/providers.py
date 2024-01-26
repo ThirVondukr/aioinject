@@ -184,11 +184,9 @@ class Provider(Protocol[_T]):
         ...
 
     def resolve_type(self, context: dict[str, Any] | None = None) -> type[_T]:
-        if resolved := getattr(self, "_cached_type", None):
-            return resolved
-        ret = self._resolve_type_impl(context)
-        self._cached_type = ret
-        return ret
+        if self._cached_type is None:
+            self._cached_type = self._resolve_type_impl(context)
+        return self._cached_type
 
     def type_hints(self, context: dict[str, Any] | None) -> dict[str, Any]:
         ...
