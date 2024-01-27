@@ -18,16 +18,33 @@ class Container:
     def __init__(self) -> None:
         self.providers: _Providers[Any] = {}
         self._singletons = SingletonStore()
+        self._unresolved_providers: list[Provider[Any]] = []
+        self.type_context: dict[str, type[Any]] = {}
+
+    def _resolve_unresolved_provider(self) -> None:
+        for provider in self._unresolved_providers:
+            with contextlib.suppress(NameError):
+                self._register_impl(provider)
+                self._unresolved_providers.remove(provider)
+
+    def _register_impl(self, provider: Provider[Any]) -> None:
+        provider_type = provider.resolve_type(self.type_context)
+        if provider_type in self.providers:
+            msg = f"Provider for type {provider_type} is already registered"
+            raise ValueError(msg)
+        self.providers[provider_type] = provider
+        if klass_name := getattr(provider_type, "__name__", None):
+            self.type_context[klass_name] = provider_type
 
     def register(
         self,
         provider: Provider[Any],
     ) -> None:
-        if provider.type_ in self.providers:
-            msg = f"Provider for type {provider.type_} is already registered"
-            raise ValueError(msg)
-
-        self.providers[provider.type_] = provider
+        try:
+            self._register_impl(provider)
+        except NameError:
+            self._unresolved_providers.append(provider)
+        self._resolve_unresolved_provider()
 
     def get_provider(self, type_: type[_T]) -> Provider[_T]:
         try:
@@ -53,14 +70,14 @@ class Container:
         self,
         provider: Provider[Any],
     ) -> Iterator[None]:
-        previous = self.providers.get(provider.type_)
-        self.providers[provider.type_] = provider
+        previous = self.providers.get(provider.resolve_type())
+        self.providers[provider.resolve_type()] = provider
 
         yield
 
-        del self.providers[provider.type_]
+        del self.providers[provider.resolve_type()]
         if previous is not None:
-            self.providers[provider.type_] = previous
+            self.providers[provider.resolve_type()] = previous
 
     async def __aenter__(self) -> Self:
         return self
