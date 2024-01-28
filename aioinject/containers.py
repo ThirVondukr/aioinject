@@ -25,14 +25,13 @@ class Container:
         self,
         provider: Provider[Any],
     ) -> None:
-        provider_type = provider.resolve_type(self.type_context)
-        if provider_type in self.providers:
-            msg = f"Provider for type {provider_type} is already registered"
+        if provider.type_ in self.providers:
+            msg = f"Provider for type {provider.type_} is already registered"
             raise ValueError(msg)
 
-        self.providers[provider_type] = provider
-        if class_name := getattr(provider_type, "__name__", None):
-            self.type_context[class_name] = provider_type
+        self.providers[provider.type_] = provider
+        if class_name := getattr(provider.type_, "__name__", None):
+            self.type_context[class_name] = provider.type_
 
     def get_provider(self, type_: type[_T]) -> Provider[_T]:
         try:
@@ -58,14 +57,14 @@ class Container:
         self,
         provider: Provider[Any],
     ) -> Iterator[None]:
-        previous = self.providers.get(provider.resolve_type())
-        self.providers[provider.resolve_type()] = provider
+        previous = self.providers.get(provider.type_)
+        self.providers[provider.type_] = provider
 
         yield
 
-        del self.providers[provider.resolve_type()]
+        del self.providers[provider.type_]
         if previous is not None:
-            self.providers[provider.resolve_type()] = previous
+            self.providers[provider.type_] = previous
 
     async def __aenter__(self) -> Self:
         return self

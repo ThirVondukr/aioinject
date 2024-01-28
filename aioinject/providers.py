@@ -124,14 +124,11 @@ _FactoryType: TypeAlias = (
 )
 
 
-def _guess_return_type(
-    factory: _FactoryType[_T],
-    context: dict[str, type[Any]] | None = None,
-) -> type[_T]:
+def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
     if isclass(factory):
         return typing.cast(type[_T], factory)
 
-    type_hints = _get_type_hints(factory, context=context)
+    type_hints = _get_type_hints(factory)
     try:
         return_type = type_hints["return"]
     except KeyError as e:
@@ -167,28 +164,15 @@ class DependencyLifetime(enum.Enum):
 @runtime_checkable
 class Provider(Protocol[_T]):
     impl: Any
+    type_: type[_T]
     lifetime: DependencyLifetime
     _cached_dependencies: tuple[Dependency[object], ...]
-    _cached_type: type[_T]
 
     async def provide(self, kwargs: Mapping[str, Any]) -> _T:
         ...
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
         ...
-
-    def _resolve_type_impl(
-        self,
-        context: dict[str, Any] | None = None,
-    ) -> type[_T]:
-        ...
-
-    def resolve_type(self, context: dict[str, Any] | None = None) -> type[_T]:
-        try:
-            return self._cached_type
-        except AttributeError:
-            self._cached_type = self._resolve_type_impl(context)
-            return self._cached_type
 
     def resolve_dependencies(
         self,
@@ -214,11 +198,7 @@ class Provider(Protocol[_T]):
         return is_context_manager_function(self.impl)
 
     def __repr__(self) -> str:  # pragma: no cover
-        try:
-            type_ = repr(self.resolve_type())
-        except NameError:
-            type_ = "UNKNOWN"
-        return f"{self.__class__.__qualname__}(type={type_}, implementation={self.impl})"
+        return f"{self.__class__.__qualname__}(type={self.type_}, implementation={self.impl})"
 
 
 class Scoped(Provider[_T]):
@@ -229,14 +209,8 @@ class Scoped(Provider[_T]):
         factory: _FactoryType[_T],
         type_: type[_T] | None = None,
     ) -> None:
-        self.type_ = type_
         self.impl = factory
-
-    def _resolve_type_impl(
-        self,
-        context: dict[str, Any] | None = None,
-    ) -> type[_T]:
-        return self.type_ or _guess_return_type(self.impl, context=context)
+        self.type_ = type_ or _guess_return_type(factory)
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
         return self.impl(**kwargs)  # type: ignore[return-value]
@@ -296,9 +270,6 @@ class Object(Provider[_T]):
     ) -> None:
         self.type_ = type_ or type(object_)
         self.impl = object_
-
-    def _resolve_type_impl(self, _: dict[str, Any] | None = None) -> type[_T]:
-        return self.type_
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:  # noqa: ARG002
         return self.impl

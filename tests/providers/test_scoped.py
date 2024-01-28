@@ -160,4 +160,4 @@ async def async_gen() -> AsyncGenerator[int, None]:
 @pytest.mark.parametrize("factory", [iterable, gen, async_iterable, async_gen])
 def test_generator_return_types(factory: Any) -> None:
     provider = providers.Scoped(factory)
-    assert provider.resolve_type() is int
+    assert provider.type_ is int

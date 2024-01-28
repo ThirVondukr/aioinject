@@ -34,27 +34,23 @@ class InstanceStore:
         self._sync_exit_stack = contextlib.ExitStack()
 
     def get(self, provider: Provider[T]) -> T | Literal[NotInCache.sentinel]:
-        return self._cache.get(provider.resolve_type(), NotInCache.sentinel)
+        return self._cache.get(provider.type_, NotInCache.sentinel)
 
     def add(self, provider: Provider[T], obj: T) -> None:
         if provider.lifetime is not DependencyLifetime.transient:
-            self._cache[provider.resolve_type()] = obj
+            self._cache[provider.type_] = obj
 
     def lock(
         self,
         provider: Provider[Any],
     ) -> AbstractAsyncContextManager[bool]:
-        return contextlib.nullcontext(
-            provider.resolve_type() not in self._cache,
-        )
+        return contextlib.nullcontext(provider.type_ not in self._cache)
 
     def sync_lock(
         self,
         provider: Provider[Any],
     ) -> AbstractContextManager[bool]:
-        return contextlib.nullcontext(
-            provider.resolve_type() not in self._cache,
-        )
+        return contextlib.nullcontext(provider.type_ not in self._cache)
 
     @typing.overload
     async def enter_context(
@@ -128,9 +124,9 @@ class SingletonStore(InstanceStore):
 
     @contextlib.asynccontextmanager
     async def lock(self, provider: Provider[Any]) -> AsyncIterator[bool]:
-        if provider.resolve_type() not in self._cache:
-            async with self._locks[provider.resolve_type()]:
-                yield provider.resolve_type() not in self._cache
+        if provider.type_ not in self._cache:
+            async with self._locks[provider.type_]:
+                yield provider.type_ not in self._cache
                 return
         yield False
 
@@ -139,8 +135,8 @@ class SingletonStore(InstanceStore):
         self,
         provider: Provider[Any],
     ) -> Iterator[bool]:
-        if provider.resolve_type() not in self._cache:
-            with self._sync_locks[provider.resolve_type()]:
-                yield provider.resolve_type() not in self._cache
+        if provider.type_ not in self._cache:
+            with self._sync_locks[provider.type_]:
+                yield provider.type_ not in self._cache
                 return
         yield False
