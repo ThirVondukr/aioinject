@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from strawberry.extensions import SchemaExtension
 
-from aioinject import decorators, utils
+from aioinject import _utils, decorators
 from aioinject.context import container_var
 
 
@@ -21,7 +21,7 @@ def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
         function,
         inject_method=decorators.InjectMethod.container,
     )
-    return utils.clear_wrapper(wrapper)
+    return _utils.clear_wrapper(wrapper)
 
 
 class AioInjectExtension(SchemaExtension):

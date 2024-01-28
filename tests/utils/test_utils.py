@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from aioinject import Inject
-from aioinject.utils import get_inject_annotations
+from aioinject._utils import get_inject_annotations
 
 
 def test_inject_annotations_returns_all_inject_markers() -> None:

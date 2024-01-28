@@ -10,7 +10,7 @@ from litestar.middleware import MiddlewareProtocol
 from litestar.plugins import InitPluginProtocol
 from litestar.types import ASGIApp, Receive, Scope, Send
 
-from aioinject import decorators, utils
+from aioinject import _utils, decorators
 
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
         function,
         inject_method=decorators.InjectMethod.context,
     )
-    return utils.clear_wrapper(wrapper)
+    return _utils.clear_wrapper(wrapper)
 
 
 class AioInjectMiddleware(MiddlewareProtocol):

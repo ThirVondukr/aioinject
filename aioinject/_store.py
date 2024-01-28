@@ -11,8 +11,8 @@ from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar
 
+from aioinject._utils import enter_context_maybe, enter_sync_context_maybe
 from aioinject.providers import DependencyLifetime
-from aioinject.utils import enter_context_maybe, enter_sync_context_maybe
 
 
 if TYPE_CHECKING:

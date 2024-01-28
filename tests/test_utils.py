@@ -4,7 +4,7 @@ from contextlib import AsyncExitStack, ExitStack
 
 import pytest
 
-from aioinject.utils import enter_context_maybe, enter_sync_context_maybe
+from aioinject._utils import enter_context_maybe, enter_sync_context_maybe
 
 
 pytestmark = pytest.mark.anyio

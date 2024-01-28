@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
-from aioinject import decorators, utils
+from aioinject import _utils, decorators
 
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
         function,
         inject_method=decorators.InjectMethod.context,
     )
-    return utils.clear_wrapper(wrapper)
+    return _utils.clear_wrapper(wrapper)
 
 
 class AioInjectMiddleware:
