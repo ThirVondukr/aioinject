@@ -20,6 +20,7 @@ from typing import (
 )
 
 import typing_extensions
+from typing_extensions import Self
 
 from aioinject._utils import (
     _get_type_hints,
@@ -124,7 +125,7 @@ _FactoryType: TypeAlias = (
 )
 
 
-def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
+def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:  # noqa: C901
     if isclass(factory):
         return typing.cast(type[_T], factory)
 
@@ -151,6 +152,12 @@ def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
             maybe_wrapped,
         ):
             return args[0]
+
+    # Classmethod returning `typing.Self`
+    if return_type == Self and (
+        self_cls := getattr(factory, "__self__", None)
+    ):
+        return self_cls
 
     return return_type
 

@@ -1,11 +1,11 @@
 import contextlib
 from collections.abc import AsyncIterator, Generator
-from typing import Annotated, Any
+from typing import Annotated, Any, Self
 
 import anyio
 import pytest
 
-from aioinject import Provider, Scoped, Singleton, providers
+from aioinject import Object, Provider, Scoped, Singleton, providers
 from aioinject.containers import Container
 from aioinject.markers import Inject
 
@@ -140,3 +140,21 @@ async def test_singleton_contextmanager_error() -> None:
 
     async with container.context() as ctx:
         await ctx.resolve(int)
+
+
+async def test_returns_self() -> None:
+    class Class:
+        def __init__(self, number: str) -> None:
+            self.number = number
+
+        @classmethod
+        async def self_classmethod(cls, number: int) -> Self:
+            return cls(number=str(number))
+
+    container = Container()
+    container.register(Object(42))
+    container.register(Scoped(Class.self_classmethod))
+
+    async with container.context() as ctx:
+        instance = await ctx.resolve(Class)
+        assert instance.number == "42"
