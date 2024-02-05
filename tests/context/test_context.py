@@ -1,5 +1,5 @@
 import contextlib
-from collections.abc import AsyncIterator, Generator
+from collections.abc import AsyncIterator, Generator, Iterator
 from typing import Annotated, Any
 
 import anyio
@@ -152,10 +152,28 @@ async def test_returns_self() -> None:
         async def self_classmethod(cls, number: int) -> Self:
             return cls(number=str(number))
 
-    container = Container()
-    container.register(Object(42))
-    container.register(Scoped(Class.self_classmethod))
+        @classmethod
+        @contextlib.asynccontextmanager
+        async def async_context_classmethod(
+            cls,
+            number: int,
+        ) -> AsyncIterator[Self]:
+            yield cls(number=str(number))
 
-    async with container.context() as ctx:
-        instance = await ctx.resolve(Class)
-        assert instance.number == "42"
+        @classmethod
+        @contextlib.contextmanager
+        def sync_context_classmethod(cls, number: int) -> Iterator[Self]:
+            yield cls(number=str(number))
+
+    for factory in (
+        Class.self_classmethod,
+        Class.async_context_classmethod,
+        Class.sync_context_classmethod,
+    ):
+        container = Container()
+        container.register(Object(42))
+        container.register(Scoped(factory))
+
+        async with container.context() as ctx:
+            instance = await ctx.resolve(Class)
+            assert instance.number == "42"

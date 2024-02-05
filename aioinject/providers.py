@@ -125,7 +125,7 @@ _FactoryType: TypeAlias = (
 )
 
 
-def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:  # noqa: C901
+def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
     if isclass(factory):
         return typing.cast(type[_T], factory)
 
@@ -144,14 +144,16 @@ def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:  # noqa: C901
             "__wrapped__",
             factory,
         )
-        if origin in _ASYNC_GENERATORS and inspect.isasyncgenfunction(
+
+        is_async_gen = (
+            origin in _ASYNC_GENERATORS
+            and inspect.isasyncgenfunction(maybe_wrapped)
+        )
+        is_sync_gen = origin in _GENERATORS and inspect.isgeneratorfunction(
             maybe_wrapped,
-        ):
-            return args[0]
-        if origin in _GENERATORS and inspect.isgeneratorfunction(
-            maybe_wrapped,
-        ):
-            return args[0]
+        )
+        if is_async_gen or is_sync_gen:
+            return_type = args[0]
 
     # Classmethod returning `typing.Self`
     if return_type == Self and (
