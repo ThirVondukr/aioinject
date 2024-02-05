@@ -19,7 +19,6 @@ from typing import (
     runtime_checkable,
 )
 
-import typing_extensions
 from typing_extensions import Self
 
 from aioinject._utils import (
@@ -242,20 +241,6 @@ class Scoped(Provider[_T]):
     @functools.cached_property
     def is_async(self) -> bool:
         return inspect.iscoroutinefunction(self.impl)
-
-
-@typing_extensions.deprecated(
-    "Callable is deprecated, use aioinject.Scoped instead",
-)
-class Callable(Scoped[_T]):
-    pass
-
-
-@typing_extensions.deprecated(
-    "Factory is deprecated, use aioinject.Scoped instead",
-)
-class Factory(Scoped[_T]):
-    pass
 
 
 class Singleton(Scoped[_T]):

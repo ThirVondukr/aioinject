@@ -3,8 +3,6 @@ from aioinject.context import InjectionContext, SyncInjectionContext
 from aioinject.decorators import inject
 from aioinject.markers import Inject
 from aioinject.providers import (
-    Callable,
-    Factory,
     Object,
     Provider,
     Scoped,
@@ -14,18 +12,16 @@ from aioinject.providers import (
 
 
 __all__ = [
-    "Scoped",
-    "Factory",
-    "Callable",
     "Container",
     "Inject",
     "InjectionContext",
     "Object",
     "Provider",
+    "Scoped",
     "Singleton",
     "SyncInjectionContext",
-    "inject",
     "Transient",
+    "inject",
 ]
 
 __version__ = "0.24.0"
