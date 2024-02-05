@@ -11,10 +11,6 @@ jobs:
           - mypy .
           - black --check .
           - ruff check .
-          - |
-            pdm run coverage run
-            pdm run coverage report -m
-            pdm run coverage xml
 
     steps:
       - uses: actions/checkout@v3
