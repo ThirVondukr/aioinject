@@ -17,7 +17,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Repository" = "https://gitlab.com/ThirVondukr/aioinject"
+Documentation = "https://thirvondukr.github.io/aioinject/"
+Repository = "https://github.com/ThirVondukr/aioinject"
 
 [build-system]
 requires = ["pdm-pep517>=1.0"]
