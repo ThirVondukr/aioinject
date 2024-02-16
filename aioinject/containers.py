@@ -79,3 +79,14 @@ class Container:
 
     async def aclose(self) -> None:
         await self.__aexit__(None, None, None)
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self._singletons.__exit__(exc_type, exc_val, exc_tb)

@@ -32,14 +32,19 @@ dev = [
     "black>=23.12.1",
     "commitizen>=3.13.0",
     "coverage[toml]>=7.4.0",
-    "fastapi>=0.108.0",
+    "fastapi>=0.109.2",
     "litestar>=2.5.0",
     "mypy>=1.8.0",
+    "pydantic-settings>=2.1.0",
     "pytest>=7.4.4",
     "ruff>=0.1.11",
     "strawberry-graphql>=0.217.1",
     "trio>=0.24.0",
     "uvicorn>=0.25.0",
+]
+docs = [
+    "mkdocs>=1.5.3",
+    "mkdocs-material>=9.5.9",
 ]
 [tool.pdm.build]
 includes = ["aioinject"]
@@ -121,6 +126,12 @@ line-length = 79
 
 [tool.ruff.per-file-ignores]
 "tests/*" = ["S101"]
+"docs/*" = [
+    "INP001", # Implicit package (no __init__.py)
+    "A002", # shadows built-int
+    "S101", # assert
+    "T201", # print
+]
 
 [tool.ruff.mccabe]
 max-complexity = 6

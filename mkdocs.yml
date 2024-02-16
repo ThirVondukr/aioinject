@@ -1,0 +1,43 @@
+site_name: Aioinject
+site_description: Async-first python dependency injection library
+repo_url: https://github.com/ThirVondukr/aioinject
+
+nav:
+  - About: index.md
+  - Providers: providers.md
+  - Context manager dependencies: context-managers.md
+  - Integrations:
+      - FastAPI: integrations/fastapi.md
+      - Litestar: integrations/litestar.md
+      - Strawberry GraphQL: integrations/strawberry-graphql.md
+  - Cook Book: cookbook.md
+
+
+theme:
+  name: material
+  features:
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: pink
+      toggle:
+        icon: material/brightness-4
+
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: pink
+      toggle:
+        icon: material/brightness-7
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences

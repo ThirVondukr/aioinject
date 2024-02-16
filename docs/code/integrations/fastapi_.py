@@ -1,4 +1,3 @@
-```python
 import contextlib
 from collections.abc import AsyncIterator
 from typing import Annotated
@@ -10,6 +9,7 @@ import aioinject
 from aioinject import Inject
 from aioinject.ext.fastapi import AioInjectMiddleware, inject
 
+
 container = aioinject.Container()
 container.register(aioinject.Object(42))
 
@@ -17,22 +17,20 @@ container.register(aioinject.Object(42))
 @contextlib.asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     async with container:
-        pass
+        yield
 
 
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
+    app.add_middleware(AioInjectMiddleware, container=container)
 
     @app.get("/")
     @inject
     async def root(number: Annotated[int, Inject]) -> int:
         return number
 
-    app.add_middleware(AioInjectMiddleware, container=container)
-
     return app
 
 
 if __name__ == "__main__":
     uvicorn.run("main:create_app", factory=True, reload=True)
-```
