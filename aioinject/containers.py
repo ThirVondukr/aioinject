@@ -78,7 +78,7 @@ class Container:
         await self._singletons.__aexit__(exc_type, exc_val, exc_tb)
 
     async def aclose(self) -> None:
-        await self.__aexit__(None, None, None)
+        await self.__aexit__(None, None, None)  # pragma: no cover
 
     def __enter__(self) -> Self:
         return self
@@ -90,3 +90,6 @@ class Container:
         exc_tb: TracebackType | None,
     ) -> None:
         self._singletons.__exit__(exc_type, exc_val, exc_tb)
+
+    def close(self) -> None:
+        self.__exit__(None, None, None)  # pragma: no cover

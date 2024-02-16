@@ -1,5 +1,5 @@
 import contextlib
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from typing import TYPE_CHECKING
 
 import pytest
@@ -81,16 +81,34 @@ async def test_should_close_singletons() -> None:
         yield 42
         shutdown = True
 
-    provider = Singleton(dependency)
+    container = Container()
+    container.register(Singleton(dependency))
+    async with container:
+        for _ in range(2):
+            async with container.context() as ctx:
+                assert await ctx.resolve(int) == 42  # noqa: PLR2004
+
+        assert shutdown is False
+    assert shutdown is True
+
+
+def test_should_close_singletons_sync() -> None:
+    shutdown = False
+
+    @contextlib.contextmanager
+    def dependency() -> Iterator[int]:
+        nonlocal shutdown
+        yield 42
+        shutdown = True
 
     container = Container()
-    container.register(provider)
-    for _ in range(2):
-        async with container.context() as ctx:
-            assert await ctx.resolve(int) == 42  # noqa: PLR2004
-    assert shutdown is False
+    container.register(Singleton(dependency))
+    with container:
+        for _ in range(2):
+            with container.sync_context() as ctx:
+                assert ctx.resolve(int) == 42  # noqa: PLR2004
 
-    await container.aclose()
+        assert shutdown is False
     assert shutdown is True
 
 
