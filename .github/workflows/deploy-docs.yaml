@@ -1,4 +1,4 @@
-name: Lint
+name: Publish Docs
 on: [push]
 jobs:
   lint:
