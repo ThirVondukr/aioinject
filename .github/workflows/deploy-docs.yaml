@@ -21,4 +21,4 @@ jobs:
         run: |
           pip install pdm
           pdm sync --clean
-      - run: mkdocs gh-deploy --force
+      - run: pdm run mkdocs gh-deploy --force
