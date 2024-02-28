@@ -36,7 +36,7 @@ def test_override_batch() -> None:
     container.register(Object(0))
     container.register(Object("barfoo"))
 
-    with container.override_batch(
+    with container.override(
         Object(1),
         Object("foobar"),
     ), container.sync_context() as ctx:
