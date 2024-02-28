@@ -96,8 +96,7 @@ class InjectionContext(_BaseInjectionContext):
         dependencies: Iterable[Dependency[object]],
         *args: Any,
         **kwargs: Any,
-    ) -> _T:
-        ...
+    ) -> _T: ...
 
     @overload
     async def execute(
@@ -106,8 +105,7 @@ class InjectionContext(_BaseInjectionContext):
         dependencies: Iterable[Dependency[object]],
         *args: Any,
         **kwargs: Any,
-    ) -> _T:
-        ...
+    ) -> _T: ...
 
     async def execute(
         self,

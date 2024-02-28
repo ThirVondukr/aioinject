@@ -9,5 +9,4 @@ class ContainerValidator(Protocol):
     def __call__(
         self,
         container: aioinject.Container,
-    ) -> Sequence[ContainerValidationError]:
-        ...
+    ) -> Sequence[ContainerValidationError]: ...

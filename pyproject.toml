@@ -28,20 +28,20 @@ build-backend = "pdm.pep517.api"
 [tool.pdm]
 [tool.pdm.dev-dependencies]
 dev = [
-    "anyio>=4.2.0",
+    "anyio>=4.3.0",
     "asgi-lifespan>=2.1.0",
-    "black>=23.12.1",
-    "commitizen>=3.13.0",
-    "coverage[toml]>=7.4.0",
-    "fastapi>=0.109.2",
-    "litestar>=2.5.0",
+    "black>=24.2.0",
+    "commitizen>=3.16.0",
+    "coverage[toml]>=7.4.3",
+    "fastapi>=0.110.0",
+    "litestar>=2.6.1",
     "mypy>=1.8.0",
-    "pydantic-settings>=2.1.0",
-    "pytest>=7.4.4",
-    "ruff>=0.1.11",
-    "strawberry-graphql>=0.217.1",
+    "pydantic-settings>=2.2.1",
+    "pytest>=8.0.2",
+    "ruff>=0.2.2",
+    "strawberry-graphql>=0.219.2",
     "trio>=0.24.0",
-    "uvicorn>=0.25.0",
+    "uvicorn>=0.27.1",
 ]
 docs = [
     "mkdocs>=1.5.3",
@@ -97,6 +97,9 @@ line_length = 79
 [tool.ruff]
 target-version = "py310"
 src = ["aioinject", "tests"]
+line-length = 79
+
+[tool.ruff.lint]
 select = ["ALL"]
 fixable = [
     "F",
@@ -123,9 +126,8 @@ ignore = [
     "EXE",
 ]
 
-line-length = 79
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
 "docs/*" = [
     "INP001", # Implicit package (no __init__.py)
@@ -134,25 +136,25 @@ line-length = 79
     "T201", # print
 ]
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 6
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 lines-after-imports = 2
 known-first-party = ["aioinject"]
 
-[tool.ruff.flake8-quotes]
+[tool.ruff.lint.flake8-quotes]
 inline-quotes = "double"
 
-[tool.ruff.pep8-naming]
+[tool.ruff.lint.pep8-naming]
 classmethod-decorators = ["classmethod"]
 staticmethod-decorators = ["staticmethod"]
 
-[tool.ruff.flake8-pytest-style]
+[tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
 mark-parentheses = false
 
-[tool.ruff.flake8-tidy-imports]
+[tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
 

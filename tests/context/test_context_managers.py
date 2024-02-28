@@ -111,7 +111,9 @@ async def test_async_context_would_use_sync_context_managers() -> None:
 
 
 @pytest.mark.anyio
-async def test_should_not_use_resolved_class_as_async_context_manager() -> None:
+async def test_should_not_use_resolved_class_as_async_context_manager() -> (
+    None
+):
     container = Container()
     container.register(Scoped(_AsyncContextManager))
     async with container.context() as ctx:

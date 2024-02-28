@@ -176,11 +176,9 @@ class Provider(Protocol[_T]):
     lifetime: DependencyLifetime
     _cached_dependencies: tuple[Dependency[object], ...]
 
-    async def provide(self, kwargs: Mapping[str, Any]) -> _T:
-        ...
+    async def provide(self, kwargs: Mapping[str, Any]) -> _T: ...
 
-    def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
-        ...
+    def provide_sync(self, kwargs: Mapping[str, Any]) -> _T: ...
 
     def resolve_dependencies(
         self,
@@ -194,12 +192,10 @@ class Provider(Protocol[_T]):
             )
             return self._cached_dependencies
 
-    def type_hints(self, context: dict[str, Any] | None) -> dict[str, Any]:
-        ...
+    def type_hints(self, context: dict[str, Any] | None) -> dict[str, Any]: ...
 
     @property
-    def is_async(self) -> bool:
-        ...
+    def is_async(self) -> bool: ...
 
     @functools.cached_property
     def is_generator(self) -> bool:

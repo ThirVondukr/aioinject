@@ -77,7 +77,7 @@ async def enter_context_maybe(
 
 
 def enter_sync_context_maybe(
-    resolved: (_T | AbstractContextManager[_T]),
+    resolved: _T | AbstractContextManager[_T],
     stack: ExitStack,
 ) -> _T:
     if isinstance(resolved, contextlib.ContextDecorator):

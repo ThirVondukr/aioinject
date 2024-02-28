@@ -15,8 +15,11 @@ def test_provider_override() -> None:
         a_overridden = _A()
         assert a_overridden is not a
 
-    with container.sync_context() as ctx, container.override(
-        Object(a_overridden),
+    with (
+        container.sync_context() as ctx,
+        container.override(
+            Object(a_overridden),
+        ),
     ):
         assert ctx.resolve(_A) is a_overridden is not a
 
@@ -36,10 +39,13 @@ def test_override_batch() -> None:
     container.register(Object(0))
     container.register(Object("barfoo"))
 
-    with container.override(
-        Object(1),
-        Object("foobar"),
-    ), container.sync_context() as ctx:
+    with (
+        container.override(
+            Object(1),
+            Object("foobar"),
+        ),
+        container.sync_context() as ctx,
+    ):
         assert ctx.resolve(int) == 1
         assert ctx.resolve(str) == "foobar"
 

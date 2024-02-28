@@ -56,12 +56,10 @@ class InstanceStore:
     async def enter_context(
         self,
         obj: AbstractAsyncContextManager[T] | AbstractContextManager[T],
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @typing.overload
-    async def enter_context(self, obj: T) -> T:
-        ...
+    async def enter_context(self, obj: T) -> T: ...
 
     async def enter_context(
         self,
@@ -70,12 +68,10 @@ class InstanceStore:
         return await enter_context_maybe(obj, self._exit_stack)
 
     @typing.overload
-    def enter_sync_context(self, obj: AbstractContextManager[T]) -> T:
-        ...
+    def enter_sync_context(self, obj: AbstractContextManager[T]) -> T: ...
 
     @typing.overload
-    def enter_sync_context(self, obj: T) -> T:
-        ...
+    def enter_sync_context(self, obj: T) -> T: ...
 
     def enter_sync_context(
         self,

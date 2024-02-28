@@ -34,8 +34,7 @@ def format_result(result: BenchmarkResult, row_template: str) -> str:
 
 
 class BenchFunction(Protocol):
-    def __call__(self, iterations: int) -> AsyncIterator[BenchmarkResult]:
-        ...
+    def __call__(self, iterations: int) -> AsyncIterator[BenchmarkResult]: ...
 
 
 BENCHMARK_FUNCTIONS: Sequence[BenchFunction] = [

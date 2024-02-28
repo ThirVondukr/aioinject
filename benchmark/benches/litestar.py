@@ -71,9 +71,11 @@ async def litestar_bench(
     enable_aioinject: bool = False,
 ) -> AsyncIterator[BenchmarkResult]:
     app = Litestar(
-        plugins=[AioInjectPlugin(container=create_container())]
-        if enable_aioinject
-        else [],
+        plugins=(
+            [AioInjectPlugin(container=create_container())]
+            if enable_aioinject
+            else []
+        ),
         route_handlers=[test_aioinject, test_litestar],
         dependencies={
             "session": Provide(_get_session),
