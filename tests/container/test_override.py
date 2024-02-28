@@ -29,3 +29,20 @@ def test_override_multiple_times() -> None:
 
         with container.sync_context() as ctx:
             assert ctx.resolve(int) == 1
+
+
+def test_override_batch() -> None:
+    container = Container()
+    container.register(Object(0))
+    container.register(Object("barfoo"))
+
+    with container.override(
+        Object(1),
+        Object("foobar"),
+    ), container.sync_context() as ctx:
+        assert ctx.resolve(int) == 1
+        assert ctx.resolve(str) == "foobar"
+
+    with container.sync_context() as ctx:
+        assert ctx.resolve(int) == 0
+        assert ctx.resolve(str) == "barfoo"

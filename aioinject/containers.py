@@ -53,18 +53,19 @@ class Container:
         )
 
     @contextlib.contextmanager
-    def override(
-        self,
-        provider: Provider[Any],
-    ) -> Iterator[None]:
-        previous = self.providers.get(provider.type_)
-        self.providers[provider.type_] = provider
+    def override(self, *providers: Provider[Any]) -> Iterator[None]:
+        previous: dict[type[Any], Provider[Any] | None] = {}
+        for provider in providers:
+            previous[provider.type_] = self.providers.get(provider.type_)
+            self.providers[provider.type_] = provider
 
         yield
 
-        del self.providers[provider.type_]
-        if previous is not None:
-            self.providers[provider.type_] = previous
+        for provider in providers:
+            del self.providers[provider.type_]
+            prev = previous[provider.type_]
+            if prev is not None:
+                self.providers[provider.type_] = prev
 
     async def __aenter__(self) -> Self:
         return self
