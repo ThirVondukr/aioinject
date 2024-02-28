@@ -9,13 +9,15 @@ from aioinject.validation._validate import validate_container
 from aioinject.validation.abc import ContainerValidator
 
 
+forbid_singleton_on_scoped_dependency = ForbidDependency(
+    dependant=lambda p: isinstance(p, Singleton),
+    dependency=lambda p: isinstance(p, Scoped)
+    and not isinstance(p, Singleton),
+)
+
 DEFAULT_VALIDATORS: Sequence[ContainerValidator] = [
     all_dependencies_are_present,
-    ForbidDependency(
-        dependant=lambda p: isinstance(p, Singleton),
-        dependency=lambda p: isinstance(p, Scoped)
-        and not isinstance(p, Singleton),
-    ),
+    forbid_singleton_on_scoped_dependency,
 ]
 
 __all__ = [
