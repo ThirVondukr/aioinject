@@ -2,12 +2,8 @@ import contextlib
 from collections.abc import AsyncIterator, Iterator
 from contextlib import AsyncExitStack, ExitStack
 
-import pytest
-
 from aioinject._utils import enter_context_maybe, enter_sync_context_maybe
 
-
-pytestmark = pytest.mark.anyio
 
 _NUMBER = 42
 

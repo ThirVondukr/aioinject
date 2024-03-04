@@ -1,8 +1,6 @@
 import functools
 from typing import Annotated
 
-import pytest
-
 import aioinject
 from aioinject import Container, Inject
 from aioinject.providers import collect_dependencies
@@ -40,7 +38,6 @@ def test_execute_sync_with_kwargs(container: Container) -> None:
         assert isinstance(c, _C)
 
 
-@pytest.mark.anyio
 async def test_execute_async(container: Container) -> None:
     dependencies = list(collect_dependencies(_dependant))
     async with container.context() as ctx:
@@ -49,7 +46,6 @@ async def test_execute_async(container: Container) -> None:
         assert isinstance(c, _C)
 
 
-@pytest.mark.anyio
 async def test_execute_async_with_kwargs(container: Container) -> None:
     dependencies = list(collect_dependencies(_dependant))
     provided_a = _A()
@@ -59,7 +55,6 @@ async def test_execute_async_with_kwargs(container: Container) -> None:
         assert isinstance(c, _C)
 
 
-@pytest.mark.anyio
 async def test_execute_async_coroutine(container: Container) -> None:
     dependencies = list(collect_dependencies(_async_dependant))
     async with container.context() as ctx:
@@ -68,7 +63,6 @@ async def test_execute_async_coroutine(container: Container) -> None:
         assert isinstance(c, _C)
 
 
-@pytest.mark.anyio
 async def test_provide_functools_partial() -> None:
     container = Container()
     container.register(

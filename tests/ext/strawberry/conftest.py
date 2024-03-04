@@ -11,7 +11,7 @@ from aioinject.ext.strawberry import AioInjectExtension
 from tests.ext.strawberry.app import StrawberryApp, _Query
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def anyio_backend() -> str:
     return "asyncio"
 

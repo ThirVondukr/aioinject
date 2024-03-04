@@ -1,12 +1,10 @@
 import uuid
 
 import httpx
-import pytest
 
 import aioinject
 
 
-@pytest.mark.anyio
 async def test_function_route(
     http_client: httpx.AsyncClient,
     provided_value: int,
@@ -16,7 +14,6 @@ async def test_function_route(
     assert response.json() == {"value": provided_value}
 
 
-@pytest.mark.anyio
 async def test_function_route_override(
     http_client: httpx.AsyncClient,
     container: aioinject.Container,

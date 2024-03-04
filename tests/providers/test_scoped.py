@@ -40,7 +40,6 @@ def test_would_return_factory_result(provider: Provider[_Test]) -> None:
         assert provider.provide_sync({}) is instance
 
 
-@pytest.mark.anyio
 async def test_provide_async() -> None:
     return_value = 42
 

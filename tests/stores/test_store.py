@@ -8,8 +8,6 @@ from aioinject import Object
 from aioinject._store import InstanceStore, SingletonStore
 
 
-pytestmark = [pytest.mark.anyio]
-
 _NUMBER = 42
 
 
