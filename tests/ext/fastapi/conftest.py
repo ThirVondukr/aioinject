@@ -4,6 +4,7 @@ from typing import Annotated
 import httpx
 import pytest
 from fastapi import Depends, FastAPI
+from httpx import ASGITransport
 
 import aioinject
 from aioinject import Inject
@@ -39,5 +40,8 @@ def app(container: aioinject.Container) -> FastAPI:
 
 @pytest.fixture
 async def http_client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(app=app, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=ASGITransport(app),  # type: ignore[arg-type]
+        base_url="http://test",
+    ) as client:
         yield client

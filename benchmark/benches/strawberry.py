@@ -5,6 +5,7 @@ from typing import Annotated
 
 import httpx
 import strawberry
+from httpx import ASGITransport
 from strawberry import Schema
 from strawberry.asgi import GraphQL
 from strawberry.schema.config import StrawberryConfig
@@ -56,7 +57,7 @@ async def bench_strawberry(
     """
 
     async with httpx.AsyncClient(
-        app=app,
+        transport=ASGITransport(app),  # type: ignore[arg-type]
         base_url="http://test",
     ) as client:
         for resolver_name in resolver_names:
