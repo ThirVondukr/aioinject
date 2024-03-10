@@ -16,4 +16,12 @@ class LifespanExtension(Protocol):
     ) -> AbstractAsyncContextManager[None]: ...
 
 
-Extension = LifespanExtension
+@runtime_checkable
+class OnInitExtension(Protocol):
+    def on_init(
+        self,
+        container: Container,
+    ) -> None: ...
+
+
+Extension = LifespanExtension | OnInitExtension

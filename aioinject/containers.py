@@ -8,7 +8,7 @@ from typing_extensions import Self
 
 from aioinject._store import SingletonStore
 from aioinject.context import InjectionContext, SyncInjectionContext
-from aioinject.extensions import Extension, LifespanExtension
+from aioinject.extensions import Extension, LifespanExtension, OnInitExtension
 from aioinject.providers import Provider
 
 
@@ -21,9 +21,15 @@ class Container:
         self._exit_stack = AsyncExitStack()
         self._singletons = SingletonStore(exit_stack=self._exit_stack)
 
-        self.extensions = extensions or []
         self.providers: _Providers[Any] = {}
         self.type_context: dict[str, type[Any]] = {}
+        self.extensions = extensions or []
+        self._init_extensions(self.extensions)
+
+    def _init_extensions(self, extensions: Sequence[Extension]) -> None:
+        for extension in extensions:
+            if isinstance(extension, OnInitExtension):
+                extension.on_init(self)
 
     def register(
         self,

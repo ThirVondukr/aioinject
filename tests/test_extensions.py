@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import AsyncIterator
 
 from aioinject import Container
-from aioinject.extensions import LifespanExtension
+from aioinject.extensions import LifespanExtension, OnInitExtension
 
 
 async def test_lifespan_extension() -> None:
@@ -27,3 +27,17 @@ async def test_lifespan_extension() -> None:
         assert extension.open
         assert not extension.closed
     assert extension.closed
+
+
+def test_on_mount_extension() -> None:
+    class TestExtension(OnInitExtension):
+        def __init__(self) -> None:
+            self.mounted = False
+
+        def on_init(self, _: Container) -> None:
+            self.mounted = True
+
+    extension = TestExtension()
+    assert not extension.mounted
+    Container(extensions=[extension])
+    assert extension.mounted
