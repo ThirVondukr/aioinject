@@ -70,7 +70,6 @@ def test_missing_provider() -> None:
     assert str(exc_info.value) == msg
 
 
-@pytest.mark.anyio
 async def test_should_close_singletons() -> None:
     shutdown = False
 
@@ -112,7 +111,6 @@ def test_should_close_singletons_sync() -> None:
     assert shutdown is True
 
 
-@pytest.mark.anyio
 async def test_deffered_dependecies() -> None:
     if TYPE_CHECKING:
         from decimal import Decimal

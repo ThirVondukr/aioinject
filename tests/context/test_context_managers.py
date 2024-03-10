@@ -70,7 +70,6 @@ def test_should_not_use_resolved_class_as_context_manager() -> None:
     resolved.mock.close.assert_not_called()
 
 
-@pytest.mark.anyio
 async def test_async_context_manager() -> None:
     mock = MagicMock()
 
@@ -90,7 +89,6 @@ async def test_async_context_manager() -> None:
     mock.close.assert_called_once()
 
 
-@pytest.mark.anyio
 async def test_async_context_would_use_sync_context_managers() -> None:
     mock = MagicMock()
 
@@ -110,7 +108,6 @@ async def test_async_context_would_use_sync_context_managers() -> None:
     mock.close.assert_called_once()
 
 
-@pytest.mark.anyio
 async def test_should_not_use_resolved_class_as_async_context_manager() -> (
     None
 ):

@@ -28,10 +28,14 @@ class NotInCache(enum.Enum):
 
 
 class InstanceStore:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        exit_stack: contextlib.AsyncExitStack | None = None,
+        sync_exit_stack: contextlib.ExitStack | None = None,
+    ) -> None:
         self._cache: dict[type, Any] = {}
-        self._exit_stack = contextlib.AsyncExitStack()
-        self._sync_exit_stack = contextlib.ExitStack()
+        self._exit_stack = exit_stack or contextlib.AsyncExitStack()
+        self._sync_exit_stack = sync_exit_stack or contextlib.ExitStack()
 
     def get(self, provider: Provider[T]) -> T | Literal[NotInCache.sentinel]:
         return self._cache.get(provider.type_, NotInCache.sentinel)
@@ -109,8 +113,12 @@ class InstanceStore:
 
 
 class SingletonStore(InstanceStore):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        exit_stack: contextlib.AsyncExitStack | None = None,
+        sync_exit_stack: contextlib.ExitStack | None = None,
+    ) -> None:
+        super().__init__(exit_stack, sync_exit_stack)
         self._locks: dict[type, asyncio.Lock] = collections.defaultdict(
             asyncio.Lock,
         )

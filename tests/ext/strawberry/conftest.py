@@ -3,6 +3,7 @@ from typing import Any
 
 import httpx
 import pytest
+from httpx import ASGITransport
 from strawberry import Schema
 from strawberry.asgi import GraphQL
 
@@ -11,7 +12,7 @@ from aioinject.ext.strawberry import AioInjectExtension
 from tests.ext.strawberry.app import StrawberryApp, _Query
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def anyio_backend() -> str:
     return "asyncio"
 
@@ -29,5 +30,8 @@ async def app(container: aioinject.Container) -> GraphQL[Any, Any]:
 async def http_client(
     app: GraphQL[Any, Any],
 ) -> AsyncIterator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(app=app, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=ASGITransport(app),  # type: ignore[arg-type]
+        base_url="http://test",
+    ) as client:
         yield client

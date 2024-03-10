@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import Annotated
 
 import httpx
+from httpx import ASGITransport
 from litestar import Litestar, get
 from litestar.di import Provide
 from litestar.logging import LoggingConfig
@@ -90,7 +91,7 @@ async def litestar_bench(
 
     durations = []
     async with httpx.AsyncClient(
-        app=app,
+        transport=ASGITransport(app),  # type: ignore[arg-type]
         base_url="http://test",
     ) as client:
         for _ in range(iterations):

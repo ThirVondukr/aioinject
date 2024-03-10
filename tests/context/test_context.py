@@ -11,9 +11,6 @@ from aioinject.containers import Container
 from aioinject.markers import Inject
 
 
-pytestmark = [pytest.mark.anyio]
-
-
 class _TestError(Exception):
     pass
 

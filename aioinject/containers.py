@@ -1,5 +1,6 @@
 import contextlib
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
+from contextlib import AsyncExitStack
 from types import TracebackType
 from typing import Any, TypeAlias, TypeVar
 
@@ -7,6 +8,7 @@ from typing_extensions import Self
 
 from aioinject._store import SingletonStore
 from aioinject.context import InjectionContext, SyncInjectionContext
+from aioinject.extensions import Extension, LifespanExtension, OnInitExtension
 from aioinject.providers import Provider
 
 
@@ -15,11 +17,19 @@ _Providers: TypeAlias = dict[type[_T], Provider[_T]]
 
 
 class Container:
-    def __init__(self) -> None:
+    def __init__(self, extensions: Sequence[Extension] | None = None) -> None:
+        self._exit_stack = AsyncExitStack()
+        self._singletons = SingletonStore(exit_stack=self._exit_stack)
+
         self.providers: _Providers[Any] = {}
-        self._singletons = SingletonStore()
-        self._unresolved_providers: list[Provider[Any]] = []
         self.type_context: dict[str, type[Any]] = {}
+        self.extensions = extensions or []
+        self._init_extensions(self.extensions)
+
+    def _init_extensions(self, extensions: Sequence[Extension]) -> None:
+        for extension in extensions:
+            if isinstance(extension, OnInitExtension):
+                extension.on_init(self)
 
     def register(
         self,
@@ -68,6 +78,11 @@ class Container:
                 self.providers[provider.type_] = prev
 
     async def __aenter__(self) -> Self:
+        for extension in self.extensions:
+            if isinstance(extension, LifespanExtension):
+                await self._exit_stack.enter_async_context(
+                    extension.lifespan(self),
+                )
         return self
 
     async def __aexit__(

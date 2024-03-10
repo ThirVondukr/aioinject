@@ -4,9 +4,6 @@ import httpx
 import pytest
 
 
-pytestmark = [pytest.mark.anyio]
-
-
 @pytest.mark.parametrize("resolver_name", ["helloWorld", "helloWorldSync"])
 async def test_async_resolver(
     http_client: httpx.AsyncClient,

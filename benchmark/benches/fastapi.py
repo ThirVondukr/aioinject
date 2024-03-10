@@ -5,6 +5,7 @@ from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Depends, FastAPI
+from httpx import ASGITransport
 
 from aioinject import Inject
 from aioinject.ext.fastapi import AioInjectMiddleware, inject
@@ -59,7 +60,7 @@ async def fastapi_bench(
 
     durations = []
     async with httpx.AsyncClient(
-        app=app,
+        transport=ASGITransport(app),  # type: ignore[arg-type]
         base_url="http://test",
     ) as client:
         for _ in range(iterations):

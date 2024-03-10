@@ -5,7 +5,6 @@ import pytest
 from aioinject import Inject, Object
 
 
-@pytest.mark.anyio
 async def test_would_provide_same_object() -> None:
     obj = object()
     provider = Object(object_=obj)

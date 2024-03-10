@@ -57,7 +57,6 @@ def test_simple_inject(container: Container) -> None:
         assert isinstance(session, _Session)
 
 
-@pytest.mark.anyio
 async def test_simple_service(container: Container) -> None:
     with container.sync_context() as ctx:
         session = ctx.resolve(_Session)
@@ -68,7 +67,6 @@ async def test_simple_service(container: Container) -> None:
         assert isinstance(session, _Session)
 
 
-@pytest.mark.anyio
 async def test_retrieve_service_with_dependencies(
     container: Container,
 ) -> None:
@@ -83,7 +81,6 @@ async def test_retrieve_service_with_dependencies(
         assert isinstance(service.session, _Session)
 
 
-@pytest.mark.anyio
 async def test_inject_using_container(
     container: Container,
 ) -> None:
@@ -98,7 +95,6 @@ async def test_inject_using_container(
     container_var.reset(token)
 
 
-@pytest.mark.anyio
 async def test_new_type() -> None:
     A = NewType("A", int)
     B = NewType("B", int)

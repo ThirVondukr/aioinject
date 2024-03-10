@@ -22,7 +22,6 @@ def test_identity(container: Container) -> None:
         assert instance is ctx.resolve(_Test)
 
 
-@pytest.mark.anyio
 async def test_identity_async(container: Container) -> None:
     async with container.context() as ctx:
         instance = await ctx.resolve(_Test)
@@ -31,7 +30,6 @@ async def test_identity_async(container: Container) -> None:
         assert instance is await ctx.resolve(_Test)
 
 
-@pytest.mark.anyio
 async def test_should_not_execute_twice() -> None:
     count = 0
 

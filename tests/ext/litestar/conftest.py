@@ -3,6 +3,7 @@ from typing import Annotated
 
 import httpx
 import pytest
+from httpx import ASGITransport
 from litestar import Litestar, get
 
 import aioinject
@@ -27,5 +28,8 @@ def app(container: aioinject.Container) -> Litestar:
 
 @pytest.fixture
 async def http_client(app: Litestar) -> AsyncIterator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(app=app, base_url="http://test") as client:
+    async with httpx.AsyncClient(
+        transport=ASGITransport(app),  # type: ignore[arg-type]
+        base_url="http://test",
+    ) as client:
         yield client

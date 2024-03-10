@@ -18,19 +18,16 @@ def container() -> Container:
     return container
 
 
-@pytest.mark.anyio
 def test_identity(container: Container) -> None:
     with container.sync_context() as ctx:
         assert ctx.resolve(_Test) is not ctx.resolve(_Test)
 
 
-@pytest.mark.anyio
 async def test_identity_async(container: Container) -> None:
     async with container.context() as ctx:
         assert await ctx.resolve(_Test) is not await ctx.resolve(_Test)
 
 
-@pytest.mark.anyio
 async def test_should_close_transient_dependencies() -> None:
     count = 0
 
