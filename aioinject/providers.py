@@ -98,7 +98,7 @@ def _typevar_map(
 
         params = origin.__parameters__
         args = typing.get_args(base)
-        typevar_map |= dict(zip(params, args, strict=True))
+        typevar_map |= dict(zip(params, args, strict=False))
 
     return resolved_source, typevar_map
 
