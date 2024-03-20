@@ -96,7 +96,7 @@ def _typevar_map(
         if not origin:
             continue
 
-        params = origin.__parameters__
+        params = getattr(origin, "__parameters__", ())
         args = typing.get_args(base)
         typevar_map |= dict(zip(params, args, strict=False))
 
