@@ -82,11 +82,33 @@ def collect_dependencies(
         )
 
 
+def _typevar_map(
+    source: type[Any],
+) -> tuple[type, Mapping[object, object]]:
+    origin = typing.get_origin(source)
+    if not isclass(source) and not origin:
+        return source, {}
+
+    resolved_source = origin or source
+    typevar_map: dict[object, object] = {}
+    for base in (source, *getattr(source, "__orig_bases__", [])):
+        origin = typing.get_origin(base)
+        if not origin:
+            continue
+
+        params = origin.__parameters__
+        args = typing.get_args(base)
+        typevar_map |= dict(zip(params, args, strict=True))
+
+    return resolved_source, typevar_map
+
+
 def _get_provider_type_hints(
     provider: Provider[Any],
     context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    source = provider.impl
+    source, typevar_map = _typevar_map(source=provider.impl)
+
     if inspect.isclass(source):
         source = source.__init__
 
@@ -100,7 +122,7 @@ def _get_provider_type_hints(
             if isinstance(arg, Inject):
                 break
         else:
-            type_hints[key] = Annotated[value, Inject]
+            type_hints[key] = Annotated[typevar_map.get(value, value), Inject]
 
     return type_hints
 
@@ -125,7 +147,9 @@ _FactoryType: TypeAlias = (
 
 
 def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
-    if isclass(factory):
+    origin = typing.get_origin(factory)
+    is_generic = origin and isclass(origin)
+    if isclass(factory) or is_generic:
         return typing.cast(type[_T], factory)
 
     type_hints = _get_type_hints(factory)
