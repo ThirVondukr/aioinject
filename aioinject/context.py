@@ -8,27 +8,24 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
-    TypeAlias,
     TypeVar,
-    Union,
     overload,
 )
 
 from typing_extensions import Self
 
 from aioinject._store import InstanceStore, NotInCache
+from aioinject._types import AnyCtx
 from aioinject.providers import Dependency, DependencyLifetime
 
 
 if TYPE_CHECKING:
-    from aioinject import Provider
+    from aioinject import Provider, _types
     from aioinject.containers import Container
 
 _T = TypeVar("_T")
 
-_AnyCtx: TypeAlias = Union["InjectionContext", "SyncInjectionContext"]
-
-context_var: ContextVar[_AnyCtx] = ContextVar("aioinject_context")
+context_var: ContextVar[AnyCtx] = ContextVar("aioinject_context")
 container_var: ContextVar[Container] = ContextVar("aioinject_container")
 
 
@@ -41,12 +38,21 @@ class _BaseInjectionContext:
         self._container = container
         self._store = InstanceStore()
         self._singletons = singletons
-        self._token: contextvars.Token[_AnyCtx] | None = None
+        self._token: contextvars.Token[AnyCtx] | None = None
+        self._providers: _types.Providers[Any] = {}
 
     def _get_store(self, lifetime: DependencyLifetime) -> InstanceStore:
         if lifetime is DependencyLifetime.singleton:
             return self._singletons
         return self._store
+
+    def _get_provider(self, type_: type[_T]) -> Provider[_T]:
+        return self._providers.get(type_) or self._container.get_provider(
+            type_,
+        )
+
+    def register(self, provider: Provider[Any]) -> None:
+        self._providers[provider.type_] = provider
 
 
 class InjectionContext(_BaseInjectionContext):
@@ -54,7 +60,7 @@ class InjectionContext(_BaseInjectionContext):
         self,
         type_: type[_T],
     ) -> _T:
-        provider = self._container.get_provider(type_)
+        provider = self._get_provider(type_)
         store = self._get_store(provider.lifetime)
         if (cached := store.get(provider)) is not NotInCache.sentinel:
             return cached
@@ -145,13 +151,15 @@ class SyncInjectionContext(_BaseInjectionContext):
         self,
         type_: type[_T],
     ) -> _T:
-        provider = self._container.get_provider(type_)
+        provider = self._get_provider(type_)
         store = self._get_store(provider.lifetime)
         if (cached := store.get(provider)) is not NotInCache.sentinel:
             return cached
 
         dependencies = {}
-        for dependency in provider.resolve_dependencies():
+        for dependency in provider.resolve_dependencies(
+            self._container.type_context,
+        ):
             dependencies[dependency.name] = self.resolve(
                 type_=dependency.type_,
             )

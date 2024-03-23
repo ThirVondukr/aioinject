@@ -2,18 +2,16 @@ import contextlib
 from collections.abc import Iterator, Sequence
 from contextlib import AsyncExitStack
 from types import TracebackType
-from typing import Any, TypeAlias, TypeVar
+from typing import Any
 
 from typing_extensions import Self
 
+from aioinject import _types
 from aioinject._store import SingletonStore
+from aioinject._types import T
 from aioinject.context import InjectionContext, SyncInjectionContext
 from aioinject.extensions import Extension, LifespanExtension, OnInitExtension
 from aioinject.providers import Provider
-
-
-_T = TypeVar("_T")
-_Providers: TypeAlias = dict[type[_T], Provider[_T]]
 
 
 class Container:
@@ -21,7 +19,7 @@ class Container:
         self._exit_stack = AsyncExitStack()
         self._singletons = SingletonStore(exit_stack=self._exit_stack)
 
-        self.providers: _Providers[Any] = {}
+        self.providers: _types.Providers[Any] = {}
         self.type_context: dict[str, type[Any]] = {}
         self.extensions = extensions or []
         self._init_extensions(self.extensions)
@@ -43,7 +41,7 @@ class Container:
         if class_name := getattr(provider.type_, "__name__", None):
             self.type_context[class_name] = provider.type_
 
-    def get_provider(self, type_: type[_T]) -> Provider[_T]:
+    def get_provider(self, type_: type[T]) -> Provider[T]:
         try:
             return self.providers[type_]
         except KeyError as exc:
