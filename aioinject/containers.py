@@ -10,7 +10,12 @@ from aioinject import _types
 from aioinject._store import SingletonStore
 from aioinject._types import T
 from aioinject.context import InjectionContext, SyncInjectionContext
-from aioinject.extensions import Extension, LifespanExtension, OnInitExtension
+from aioinject.extensions import (
+    ContextExtension,
+    Extension,
+    LifespanExtension,
+    OnInitExtension,
+)
 from aioinject.providers import Provider
 
 
@@ -48,16 +53,21 @@ class Container:
             err_msg = f"Provider for type {type_.__qualname__} not found"
             raise ValueError(err_msg) from exc
 
-    def context(self) -> InjectionContext:
+    def context(
+        self,
+        extensions: Sequence[ContextExtension] = (),
+    ) -> InjectionContext:
         return InjectionContext(
             container=self,
             singletons=self._singletons,
+            extensions=extensions,
         )
 
     def sync_context(self) -> SyncInjectionContext:
         return SyncInjectionContext(
             container=self,
             singletons=self._singletons,
+            extensions=(),
         )
 
     @contextlib.contextmanager

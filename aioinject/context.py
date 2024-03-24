@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextvars
 import inspect
-from collections.abc import Callable, Coroutine, Iterable, Mapping
+from collections.abc import Callable, Coroutine, Iterable, Mapping, Sequence
 from contextvars import ContextVar
 from types import TracebackType
 from typing import (
@@ -15,7 +15,8 @@ from typing import (
 from typing_extensions import Self
 
 from aioinject._store import InstanceStore, NotInCache
-from aioinject._types import AnyCtx
+from aioinject._types import AnyCtx, T
+from aioinject.extensions import ContextExtension, OnResolveExtension
 from aioinject.providers import Dependency, DependencyLifetime
 
 
@@ -34,10 +35,14 @@ class _BaseInjectionContext:
         self,
         container: Container,
         singletons: InstanceStore,
+        extensions: Sequence[ContextExtension],
     ) -> None:
         self._container = container
-        self._store = InstanceStore()
+        self._extensions = extensions
+
         self._singletons = singletons
+        self._store = InstanceStore()
+
         self._token: contextvars.Token[AnyCtx] | None = None
         self._providers: _types.Providers[Any] = {}
 
@@ -93,6 +98,7 @@ class InjectionContext(_BaseInjectionContext):
         if provider.is_generator:
             resolved = await store.enter_context(resolved)
         store.add(provider, resolved)
+        await self._on_resolve(provider=provider, instance=resolved)
         return resolved
 
     @overload
@@ -131,6 +137,11 @@ class InjectionContext(_BaseInjectionContext):
         if inspect.iscoroutinefunction(function):
             return await function(*args, **kwargs, **resolved)
         return function(*args, **kwargs, **resolved)  # type: ignore[return-value]
+
+    async def _on_resolve(self, provider: Provider[T], instance: T) -> None:
+        for extension in self._extensions:
+            if isinstance(extension, OnResolveExtension):
+                await extension.on_resolve(self, provider, instance)
 
     async def __aenter__(self) -> Self:
         self._token = context_var.set(self)

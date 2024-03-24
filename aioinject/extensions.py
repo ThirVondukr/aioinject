@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from contextlib import AbstractAsyncContextManager
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 
 if TYPE_CHECKING:
-    from aioinject import Container
+    from contextlib import AbstractAsyncContextManager
+
+    from aioinject import Container, InjectionContext, Provider
+    from aioinject._types import T
 
 
 @runtime_checkable
@@ -24,4 +26,15 @@ class OnInitExtension(Protocol):
     ) -> None: ...
 
 
+@runtime_checkable
+class OnResolveExtension(Protocol):
+    async def on_resolve(
+        self,
+        context: InjectionContext,
+        provider: Provider[T],
+        instance: T,
+    ) -> None: ...
+
+
 Extension = LifespanExtension | OnInitExtension
+ContextExtension = OnResolveExtension
