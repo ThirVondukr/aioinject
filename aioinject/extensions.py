@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 if TYPE_CHECKING:
     from contextlib import AbstractAsyncContextManager
 
-    from aioinject import Container, InjectionContext, Provider
+    from aioinject import Container, Provider
+    from aioinject import InjectionContext, SyncInjectionContext
     from aioinject._types import T
 
 
@@ -36,5 +37,15 @@ class OnResolveExtension(Protocol):
     ) -> None: ...
 
 
+@runtime_checkable
+class SyncOnResolveExtension(Protocol):
+    def on_resolve(
+        self,
+        context: SyncInjectionContext,
+        provider: Provider[T],
+        instance: T,
+    ) -> None: ...
+
+
 Extension = LifespanExtension | OnInitExtension
-ContextExtension = OnResolveExtension
+ContextExtension = OnResolveExtension | SyncOnResolveExtension

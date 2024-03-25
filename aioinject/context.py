@@ -16,7 +16,9 @@ from typing_extensions import Self
 
 from aioinject._store import InstanceStore, NotInCache
 from aioinject._types import AnyCtx, T
-from aioinject.extensions import ContextExtension, OnResolveExtension
+from aioinject.extensions import (
+    ContextExtension, OnResolveExtension, SyncOnResolveExtension
+)
 from aioinject.providers import Dependency, DependencyLifetime
 
 
@@ -193,6 +195,7 @@ class SyncInjectionContext(_BaseInjectionContext):
         if provider.is_generator:
             resolved = store.enter_sync_context(resolved)
         store.add(provider, resolved)
+        self._on_resolve(provider=provider, instance=resolved)
         return resolved
 
     def execute(
@@ -208,6 +211,11 @@ class SyncInjectionContext(_BaseInjectionContext):
                 continue
             resolved[dependency.name] = self.resolve(type_=dependency.type_)
         return function(*args, **kwargs, **resolved)
+
+    def _on_resolve(self, provider: Provider[T], instance: T) -> None:
+        for extension in self._extensions:
+            if isinstance(extension, SyncOnResolveExtension):
+                extension.on_resolve(self, provider, instance)
 
     def __enter__(self) -> Self:
         self._token = context_var.set(self)
