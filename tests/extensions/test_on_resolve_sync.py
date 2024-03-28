@@ -4,11 +4,11 @@ import pytest
 
 from aioinject import (
     Container,
-    InjectionContext,
     Object,
     Provider,
     Scoped,
     Singleton,
+    SyncInjectionContext,
     Transient,
 )
 from aioinject._types import T
@@ -21,9 +21,9 @@ class _TestExtension(SyncOnResolveExtension):
             int,
         )
 
-    def on_resolve(
+    def on_resolve_sync(
         self,
-        context: InjectionContext,  # noqa: ARG002
+        context: SyncInjectionContext,  # noqa: ARG002
         provider: Provider[T],
         instance: T,  # noqa: ARG002
     ) -> None:

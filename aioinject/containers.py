@@ -15,6 +15,7 @@ from aioinject.extensions import (
     Extension,
     LifespanExtension,
     OnInitExtension,
+    SyncContextExtension,
 )
 from aioinject.providers import Provider
 
@@ -64,8 +65,8 @@ class Container:
         )
 
     def sync_context(
-            self,
-            extensions: Sequence[ContextExtension] = (),
+        self,
+        extensions: Sequence[SyncContextExtension] = (),
     ) -> SyncInjectionContext:
         return SyncInjectionContext(
             container=self,

@@ -8,6 +8,7 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Generic,
     TypeVar,
     overload,
 )
@@ -17,7 +18,10 @@ from typing_extensions import Self
 from aioinject._store import InstanceStore, NotInCache
 from aioinject._types import AnyCtx, T
 from aioinject.extensions import (
-    ContextExtension, OnResolveExtension, SyncOnResolveExtension
+    ContextExtension,
+    OnResolveExtension,
+    SyncContextExtension,
+    SyncOnResolveExtension,
 )
 from aioinject.providers import Dependency, DependencyLifetime
 
@@ -27,17 +31,18 @@ if TYPE_CHECKING:
     from aioinject.containers import Container
 
 _T = TypeVar("_T")
+_TExtension = TypeVar("_TExtension")
 
 context_var: ContextVar[AnyCtx] = ContextVar("aioinject_context")
 container_var: ContextVar[Container] = ContextVar("aioinject_container")
 
 
-class _BaseInjectionContext:
+class _BaseInjectionContext(Generic[_TExtension]):
     def __init__(
         self,
         container: Container,
         singletons: InstanceStore,
-        extensions: Sequence[ContextExtension],
+        extensions: Sequence[_TExtension],
     ) -> None:
         self._container = container
         self._extensions = extensions
@@ -62,7 +67,7 @@ class _BaseInjectionContext:
         self._providers[provider.type_] = provider
 
 
-class InjectionContext(_BaseInjectionContext):
+class InjectionContext(_BaseInjectionContext[ContextExtension]):
     async def resolve(
         self,
         type_: type[_T],
@@ -159,7 +164,7 @@ class InjectionContext(_BaseInjectionContext):
         await self._store.__aexit__(exc_type, exc_val, exc_tb)
 
 
-class SyncInjectionContext(_BaseInjectionContext):
+class SyncInjectionContext(_BaseInjectionContext[SyncContextExtension]):
     def resolve(
         self,
         type_: type[_T],
@@ -215,7 +220,7 @@ class SyncInjectionContext(_BaseInjectionContext):
     def _on_resolve(self, provider: Provider[T], instance: T) -> None:
         for extension in self._extensions:
             if isinstance(extension, SyncOnResolveExtension):
-                extension.on_resolve(self, provider, instance)
+                extension.on_resolve_sync(self, provider, instance)
 
     def __enter__(self) -> Self:
         self._token = context_var.set(self)
