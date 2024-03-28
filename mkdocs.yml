@@ -6,6 +6,7 @@ nav:
   - About: index.md
   - Providers: providers.md
   - Context manager dependencies: context-managers.md
+  - Extensions: extensions.md
   - Integrations:
       - FastAPI: integrations/fastapi.md
       - Litestar: integrations/litestar.md
