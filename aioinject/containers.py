@@ -63,11 +63,14 @@ class Container:
             extensions=extensions,
         )
 
-    def sync_context(self) -> SyncInjectionContext:
+    def sync_context(
+            self,
+            extensions: Sequence[ContextExtension] = (),
+    ) -> SyncInjectionContext:
         return SyncInjectionContext(
             container=self,
             singletons=self._singletons,
-            extensions=(),
+            extensions=extensions,
         )
 
     @contextlib.contextmanager
