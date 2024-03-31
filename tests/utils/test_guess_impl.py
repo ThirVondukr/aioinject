@@ -5,6 +5,7 @@ from typing import TypeAlias
 import pytest
 
 from aioinject.providers import _guess_return_type
+from tests.utils_ import dummy_decorator
 
 
 def test_class() -> None:
@@ -64,3 +65,13 @@ def test_async_iterables(return_type: TypeAlias) -> None:
 
     assert _guess_return_type(iterable) is int
     assert _guess_return_type(contextlib.asynccontextmanager(iterable)) is int  # type: ignore[comparison-overlap]
+
+
+def test_decorated_function() -> None:
+    def func() -> int:
+        return 42
+
+    func = dummy_decorator(func)
+    func = dummy_decorator(func)
+
+    assert _guess_return_type(func) is int

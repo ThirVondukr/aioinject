@@ -147,12 +147,14 @@ _FactoryType: TypeAlias = (
 
 
 def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
+    unwrapped = inspect.unwrap(factory)
+
     origin = typing.get_origin(factory)
     is_generic = origin and isclass(origin)
     if isclass(factory) or is_generic:
         return typing.cast(type[_T], factory)
 
-    type_hints = _get_type_hints(factory)
+    type_hints = _get_type_hints(unwrapped)
     try:
         return_type = type_hints["return"]
     except KeyError as e:
@@ -162,18 +164,12 @@ def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
     if origin := typing.get_origin(return_type):
         args = typing.get_args(return_type)
 
-        maybe_wrapped = getattr(  # @functools.wraps
-            factory,
-            "__wrapped__",
-            factory,
-        )
-
         is_async_gen = (
             origin in _ASYNC_GENERATORS
-            and inspect.isasyncgenfunction(maybe_wrapped)
+            and inspect.isasyncgenfunction(unwrapped)
         )
         is_sync_gen = origin in _GENERATORS and inspect.isgeneratorfunction(
-            maybe_wrapped,
+            unwrapped,
         )
         if is_async_gen or is_sync_gen:
             return_type = args[0]
