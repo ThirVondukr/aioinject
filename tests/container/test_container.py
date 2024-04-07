@@ -43,6 +43,14 @@ def test_can_register_single(container: Container) -> None:
     assert container.providers == expected
 
 
+def test_can_register_batch(container: Container) -> None:
+    provider1 = providers.Scoped(_ServiceA)
+    provider2 = providers.Scoped(_ServiceB)
+    container.register(provider1, provider2)
+    excepted = {_ServiceA: provider1, _ServiceB: provider2}
+    assert container.providers == excepted
+
+
 def test_cant_register_multiple_providers_for_same_type(
     container: Container,
 ) -> None:
