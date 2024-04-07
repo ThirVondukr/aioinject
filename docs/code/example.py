@@ -24,8 +24,9 @@ class UserService:
 
 
 container = aioinject.Container()
-container.register(aioinject.Singleton(Database))
-container.register(aioinject.Singleton(UserService))
+container.register(
+    aioinject.Singleton(Database), aioinject.Singleton(UserService),
+)
 
 with container.sync_context() as ctx:
     service = ctx.resolve(UserService)

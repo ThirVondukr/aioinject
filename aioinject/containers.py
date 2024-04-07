@@ -37,15 +37,18 @@ class Container:
 
     def register(
         self,
-        provider: Provider[Any],
+        *providers: Provider[Any],
     ) -> None:
-        if provider.type_ in self.providers:
-            msg = f"Provider for type {provider.type_} is already registered"
-            raise ValueError(msg)
+        for provider in providers:
+            if provider.type_ in self.providers:
+                msg = (
+                    f"Provider for type {provider.type_} is already registered"
+                )
+                raise ValueError(msg)
 
-        self.providers[provider.type_] = provider
-        if class_name := getattr(provider.type_, "__name__", None):
-            self.type_context[class_name] = provider.type_
+            self.providers[provider.type_] = provider
+            if class_name := getattr(provider.type_, "__name__", None):
+                self.type_context[class_name] = provider.type_
 
     def get_provider(self, type_: type[T]) -> Provider[T]:
         try:

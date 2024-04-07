@@ -6,7 +6,6 @@ from aioinject.extensions import OnResolveExtension, SyncOnResolveExtension
 
 
 class _TestExtension(SyncOnResolveExtension, OnResolveExtension):
-
     async def on_resolve(
         self,
         context: InjectionContext,

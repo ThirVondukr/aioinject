@@ -25,7 +25,5 @@ providers: Sequence[Provider[Any]] = [
 
 def create_container() -> aioinject.Container:
     container = aioinject.Container()
-    for provider in providers:
-        container.register(provider=provider)
-
+    container.register(*providers)
     return container
