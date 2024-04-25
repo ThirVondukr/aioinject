@@ -8,6 +8,7 @@ nav:
   - Context manager dependencies: context-managers.md
   - Extensions: extensions.md
   - Integrations:
+      - Aiogram: integrations/aiogram.md
       - FastAPI: integrations/fastapi.md
       - Litestar: integrations/litestar.md
       - Strawberry GraphQL: integrations/strawberry-graphql.md
