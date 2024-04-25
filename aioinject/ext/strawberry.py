@@ -12,6 +12,8 @@ from aioinject.context import container_var
 if TYPE_CHECKING:
     from aioinject.containers import Container
 
+__all__ = ["inject", "AioInjectExtension"]
+
 _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
