@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from aiogram import BaseMiddleware
+from aiogram import BaseMiddleware, Router
 from aiogram.types import TelegramObject
 
 import aioinject
@@ -32,3 +32,7 @@ class AioInjectMiddleware(BaseMiddleware):
     ) -> Any:
         async with self.container.context():
             return await handler(event, data)
+
+    def add_to_router(self, router: Router) -> None:
+        for observer in router.observers.values():
+            observer.outer_middleware.register(middleware=self)

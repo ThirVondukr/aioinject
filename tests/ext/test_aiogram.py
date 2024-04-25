@@ -1,5 +1,7 @@
 from typing import Annotated
 
+from aiogram import Router
+
 from aioinject import Container, Inject, Object
 from aioinject.ext.aiogram import AioInjectMiddleware, inject
 
@@ -26,3 +28,13 @@ async def test_middleware() -> None:
         assert number == _NUMBER
 
     await middleware(handler=handler, event=event_, data=data_)  # type: ignore[arg-type]
+
+
+def test_add_to_router() -> None:
+    middleware = AioInjectMiddleware(container=Container())
+
+    router = Router()
+    middleware.add_to_router(router=router)
+
+    for observer in router.observers.values():
+        assert observer.outer_middleware[0] is middleware
