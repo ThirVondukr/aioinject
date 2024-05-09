@@ -23,6 +23,7 @@ from typing_extensions import Self
 
 from aioinject._utils import (
     _get_type_hints,
+    get_fn_ns,
     get_return_annotation,
     is_context_manager_function,
     remove_annotation,
@@ -165,16 +166,12 @@ def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:  # noqa: C901
         # functions might have dependecies in them
         # and we don't have the container context here so
         # we can't call _get_type_hints
-        init_frame = (
-            inspect.currentframe().f_back.f_back  # type: ignore[union-attr] # pyright: ignore [reportArgumentType, reportOptionalMemberAccess]
-        )
-        assert init_frame  # noqa: S101
+        ret_annotation = unwrapped.__annotations__["return"]
+
         try:
-            ret_annotation = unwrapped.__annotations__["return"]
             return_type = get_return_annotation(
                 ret_annotation,
-                globals_=init_frame.f_globals,
-                locals_=init_frame.f_locals,
+                context=get_fn_ns(unwrapped),
             )
         except NameError as e:
             msg = f"Factory {factory.__qualname__} does not specify return type. Or it's type is not defined yet."
