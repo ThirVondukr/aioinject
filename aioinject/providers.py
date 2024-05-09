@@ -165,16 +165,20 @@ def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:  # noqa: C901
         # functions might have dependecies in them
         # and we don't have the container context here so
         # we can't call _get_type_hints
-        ret_annotation = unwrapped.__annotations__["return"]
         init_frame = (
             inspect.currentframe().f_back.f_back  # type: ignore[union-attr] # pyright: ignore [reportArgumentType, reportOptionalMemberAccess]
         )
         assert init_frame  # noqa: S101
-        return_type = get_return_annotation(
-            ret_annotation,
-            globals_=init_frame.f_globals,
-            locals_=init_frame.f_locals,
-        )
+        try:
+            ret_annotation = unwrapped.__annotations__["return"]
+            return_type = get_return_annotation(
+                ret_annotation,
+                globals_=init_frame.f_globals,
+                locals_=init_frame.f_locals,
+            )
+        except NameError as e:
+            msg = f"Factory {factory.__qualname__} does not specify return type. Or it's type is not defined yet."
+            raise ValueError(msg) from e
     if origin := typing.get_origin(return_type):
         args = typing.get_args(return_type)
 

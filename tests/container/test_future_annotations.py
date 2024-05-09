@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+import pytest
+
 from aioinject.containers import Container
 from aioinject.providers import Scoped, Singleton
 
@@ -51,3 +53,36 @@ def test_provider_fn_with_deffered_dep() -> None:
         a = ctx.resolve(A)
         b = ctx.resolve(B)
         assert b.a is a
+
+
+class C: ...
+
+
+def test_provider_fn_deffered_dep_globals() -> None:
+
+    def get_c(_: D) -> C:
+        return C()
+
+    class D: ...
+
+    cont = Container()
+    cont.register(Singleton(D))
+    cont.register(Singleton(get_c))
+    with cont.sync_context() as ctx:
+        _ = ctx.resolve(D)
+        _ = ctx.resolve(C)
+
+
+def test_provider_fn_deffered_dep_missuse() -> None:
+    cont = Container()
+
+    def get_a() -> A:
+        return A()
+
+        # notice that B is not defined yet
+
+    with pytest.raises(ValueError) as exc_info:  # noqa: PT011
+        cont.register(Singleton(get_a))
+    assert exc_info.match("Or it's type is not defined yet.")
+
+    class A: ...
