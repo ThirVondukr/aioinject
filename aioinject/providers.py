@@ -4,7 +4,6 @@ import collections.abc
 import enum
 import functools
 import inspect
-import sys
 import typing
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -24,9 +23,9 @@ from typing_extensions import Self
 
 from aioinject._utils import (
     _get_type_hints,
+    get_return_annotation,
     is_context_manager_function,
     remove_annotation,
-    get_return_annotation
 )
 from aioinject.markers import Inject
 
@@ -148,30 +147,34 @@ _FactoryType: TypeAlias = (
 )
 
 
-def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
+def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:  # noqa: C901
     unwrapped = inspect.unwrap(factory)
 
     origin = typing.get_origin(factory)
     is_generic = origin and isclass(origin)
     if isclass(factory) or is_generic:
         return typing.cast(type[_T], factory)
-    # functions might have dependecies in them
-    # and we don't have the container context here so 
-    # we can't call _get_type_hints
-    if (annotations := getattr(unwrapped, "__annotations__", None)) and (ret_ann :=
-        annotations.get("return", None)
-    ):
-        return get_return_annotation(
-            ret_ann,
-            inspect.currentframe().f_back.f_back, # pyright: ignore [reportArgumentType, reportOptionalMemberAccess]
-        )
-    type_hints = _get_type_hints(unwrapped)
+
     try:
-        return_type = type_hints["return"]
+        return_type = _get_type_hints(unwrapped)["return"]
     except KeyError as e:
         msg = f"Factory {factory.__qualname__} does not specify return type."
         raise ValueError(msg) from e
-
+    except NameError:
+        # handle future annotations.
+        # functions might have dependecies in them
+        # and we don't have the container context here so
+        # we can't call _get_type_hints
+        ret_annotation = unwrapped.__annotations__["return"]
+        init_frame = (
+            inspect.currentframe().f_back.f_back  # type: ignore[union-attr] # pyright: ignore [reportArgumentType, reportOptionalMemberAccess]
+        )
+        assert init_frame  # noqa: S101
+        return_type = get_return_annotation(
+            ret_annotation,
+            globals_=init_frame.f_globals,
+            locals_=init_frame.f_locals,
+        )
     if origin := typing.get_origin(return_type):
         args = typing.get_args(return_type)
 

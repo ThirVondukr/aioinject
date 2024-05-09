@@ -1,6 +1,5 @@
 import contextlib
 import inspect
-from threading import local
 import typing
 from collections.abc import Callable, Iterator
 from contextlib import (
@@ -108,7 +107,11 @@ def _get_type_hints(
 
 def get_return_annotation(
     ret_annotation: str,
-    frame: inspect.FrameInfo,
+    globals_: dict[str, Any],
+    locals_: dict[str, Any],
 ) -> Any:
-    return eval(ret_annotation, frame.f_globals, frame.f_locals)
-    
+    return eval(  # noqa: S307
+        ret_annotation,
+        globals_,
+        locals_,
+    )

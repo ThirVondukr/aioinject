@@ -1,6 +1,5 @@
 import contextlib
 from collections.abc import AsyncIterator, Iterator
-from typing import TYPE_CHECKING
 
 import pytest
 
@@ -117,6 +116,3 @@ def test_should_close_singletons_sync() -> None:
 
         assert shutdown is False
     assert shutdown is True
-
-
-

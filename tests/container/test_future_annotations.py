@@ -36,21 +36,18 @@ async def test_deffered_dependecies() -> None:
 
 
 def test_provider_fn_with_deffered_dep() -> None:
-	@dataclass
-	class  B:
-		a: A
+    @dataclass
+    class B:
+        a: A
 
-	def get_b(a: A) -> B:
-		return B(a)
+    def get_b(a: A) -> B:
+        return B(a)
 
-	class A: ...
+    class A: ...
 
-	cont = Container()
-	cont.register(
-		Singleton(A),
-		Singleton(get_b) 
-	)
-	with cont.sync_context() as ctx:
-		a = ctx.resolve(A)
-		b = ctx.resolve(B)
-		assert b.a is a
+    cont = Container()
+    cont.register(Singleton(A), Singleton(get_b))
+    with cont.sync_context() as ctx:
+        a = ctx.resolve(A)
+        b = ctx.resolve(B)
+        assert b.a is a
