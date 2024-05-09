@@ -102,14 +102,12 @@ def get_return_annotation(
     globalns: Namespace | None,
     localns: Namespace | None,
 ) -> Any | None:
-    try:
+    with contextlib.suppress(NameError):
         return typing.get_type_hints(
             obj,
             globalns=globalns,
             localns=localns,
         ).get("return")
-    except NameError:
-        pass
 
     return_type = obj.__annotations__.get("return")
     if return_type is None:
