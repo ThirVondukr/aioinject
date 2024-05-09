@@ -10,6 +10,7 @@ from contextlib import (
 )
 from typing import Any, TypeVar
 
+from aioinject._types import Namespace
 from aioinject.markers import Inject
 
 
@@ -96,10 +97,21 @@ def remove_annotation(
         annotations[name] = annotation
 
 
-def _get_type_hints(
+def get_return_annotation(
     obj: Any,
-    context: dict[str, object] | None = None,
-) -> dict[str, Any]:
-    if not context:
-        context = {}
-    return typing.get_type_hints(obj, include_extras=True, localns=context)
+    globalns: Namespace | None,
+    localns: Namespace | None,
+) -> Any | None:
+    try:
+        return typing.get_type_hints(
+            obj,
+            globalns=globalns,
+            localns=localns,
+        ).get("return")
+    except NameError:
+        pass
+
+    return_type = obj.__annotations__.get("return")
+    if return_type is None:
+        return None
+    return eval(return_type, globalns, localns)  # noqa: S307

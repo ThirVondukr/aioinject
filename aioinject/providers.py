@@ -8,6 +8,7 @@ import typing
 from collections.abc import Mapping
 from dataclasses import dataclass
 from inspect import isclass
+from types import FrameType
 from typing import (
     Annotated,
     Any,
@@ -21,8 +22,9 @@ from typing import (
 
 from typing_extensions import Self
 
+from aioinject._types import Namespace
 from aioinject._utils import (
-    _get_type_hints,
+    get_return_annotation,
     is_context_manager_function,
     remove_annotation,
 )
@@ -67,7 +69,11 @@ def collect_dependencies(
 ) -> typing.Iterable[Dependency[object]]:
     if not isinstance(dependant, dict):
         with remove_annotation(dependant.__annotations__, "return"):
-            type_hints = _get_type_hints(dependant, context=ctx)
+            type_hints = typing.get_type_hints(
+                dependant,
+                localns=ctx,
+                include_extras=True,
+            )
     else:
         type_hints = dependant
     for name, hint in type_hints.items():
@@ -115,7 +121,11 @@ def _get_provider_type_hints(
     if isinstance(source, functools.partial):
         return {}
 
-    type_hints = _get_type_hints(source, context=context)
+    type_hints = typing.get_type_hints(
+        source,
+        localns=context,
+        include_extras=True,
+    )
     for key, value in type_hints.items():
         _, args = _get_annotation_args(value)
         for arg in args:
@@ -148,7 +158,8 @@ _FactoryType: TypeAlias = (
 
 def _guess_return_type(
     factory: _FactoryType[_T],
-    context: dict[str, object] | None = None,
+    globalns: Namespace | None = None,
+    localns: Namespace | None = None,
 ) -> type[_T]:
     unwrapped = inspect.unwrap(factory)
 
@@ -157,12 +168,14 @@ def _guess_return_type(
     if isclass(factory) or is_generic:
         return typing.cast(type[_T], factory)
 
-    type_hints = _get_type_hints(unwrapped, context=context)
-    try:
-        return_type = type_hints["return"]
-    except KeyError as e:
+    return_type = get_return_annotation(
+        unwrapped,
+        globalns=globalns,
+        localns=localns,
+    )
+    if return_type is None:
         msg = f"Factory {factory.__qualname__} does not specify return type."
-        raise ValueError(msg) from e
+        raise ValueError(msg)
 
     if origin := typing.get_origin(return_type):
         args = typing.get_args(return_type)
@@ -236,15 +249,13 @@ class Scoped(Provider[_T]):
         factory: _FactoryType[_T],
         type_: type[_T] | None = None,
     ) -> None:
-        frame = inspect.currentframe()
-        locals_ = {}
-        if frame and frame.f_back:
-            locals_ = frame.f_back.f_locals
+        frame: FrameType = inspect.currentframe().f_back  # type: ignore[union-attr, assignment]
 
         self.impl = factory
         self.type_ = type_ or _guess_return_type(
             factory,
-            context=locals_,
+            globalns=frame.f_globals,
+            localns=frame.f_locals,
         )
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:

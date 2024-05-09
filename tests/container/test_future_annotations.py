@@ -82,8 +82,8 @@ def test_provider_fn_deffered_dep_missuse() -> None:
 
         # notice that A is not defined yet
 
-    with pytest.raises(ValueError) as exc_info:  # noqa: PT011
+    with pytest.raises(NameError) as exc_info:
         cont.register(Singleton(get_a))
-    assert exc_info.match("Or it's type is not defined yet.")
+    assert exc_info.match("name 'A' is not defined")
 
     class A: ...

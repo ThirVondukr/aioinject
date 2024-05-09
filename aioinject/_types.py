@@ -8,3 +8,4 @@ P = ParamSpec("P")
 T = TypeVar("T")
 Providers: TypeAlias = dict[type[T], "Provider[T]"]
 AnyCtx: TypeAlias = Union["InjectionContext", "SyncInjectionContext"]
+Namespace: TypeAlias = dict[str, object]
