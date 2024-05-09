@@ -63,7 +63,7 @@ def _find_inject_marker_in_annotation_args(
 
 def collect_dependencies(
     dependant: typing.Callable[..., object] | dict[str, Any],
-    ctx: dict[str, type[Any]] | None = None,
+    ctx: dict[str, object] | None = None,
 ) -> typing.Iterable[Dependency[object]]:
     if not isinstance(dependant, dict):
         with remove_annotation(dependant.__annotations__, "return"):
@@ -146,7 +146,10 @@ _FactoryType: TypeAlias = (
 )
 
 
-def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
+def _guess_return_type(
+    factory: _FactoryType[_T],
+    context: dict[str, object] | None = None,
+) -> type[_T]:
     unwrapped = inspect.unwrap(factory)
 
     origin = typing.get_origin(factory)
@@ -154,7 +157,7 @@ def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
     if isclass(factory) or is_generic:
         return typing.cast(type[_T], factory)
 
-    type_hints = _get_type_hints(unwrapped)
+    type_hints = _get_type_hints(unwrapped, context=context)
     try:
         return_type = type_hints["return"]
     except KeyError as e:
@@ -233,8 +236,16 @@ class Scoped(Provider[_T]):
         factory: _FactoryType[_T],
         type_: type[_T] | None = None,
     ) -> None:
+        frame = inspect.currentframe()
+        locals_ = {}
+        if frame and frame.f_back:
+            locals_ = frame.f_back.f_locals
+
         self.impl = factory
-        self.type_ = type_ or _guess_return_type(factory)
+        self.type_ = type_ or _guess_return_type(
+            factory,
+            context=locals_,
+        )
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
         return self.impl(**kwargs)  # type: ignore[return-value]

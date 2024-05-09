@@ -98,7 +98,7 @@ def remove_annotation(
 
 def _get_type_hints(
     obj: Any,
-    context: dict[str, type[Any]] | None = None,
+    context: dict[str, object] | None = None,
 ) -> dict[str, Any]:
     if not context:
         context = {}
