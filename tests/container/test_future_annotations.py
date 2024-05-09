@@ -41,19 +41,22 @@ def test_provider_fn_with_deffered_dep() -> None:
     @dataclass
     class B:
         a: A
+
     cont = Container()
+
     def get_b(a: A) -> B:
         return B(a)
+
     cont.register(Singleton(get_b))
 
     class A: ...
-
 
     cont.register(Singleton(A))
     with cont.sync_context() as ctx:
         a = ctx.resolve(A)
         b = ctx.resolve(B)
         assert b.a is a
+
 
 class C: ...
 
