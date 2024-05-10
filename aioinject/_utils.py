@@ -1,5 +1,6 @@
 import contextlib
 import inspect
+import sys
 import typing
 from collections.abc import Callable, Iterator
 from contextlib import (
@@ -103,3 +104,14 @@ def _get_type_hints(
     if not context:
         context = {}
     return typing.get_type_hints(obj, include_extras=True, localns=context)
+
+
+def get_fn_ns(fn: Callable[..., Any]) -> dict[str, Any]:
+    return getattr(sys.modules.get(fn.__module__, None), "__dict__", {})
+
+
+def get_return_annotation(
+    ret_annotation: str,
+    context: dict[str, Any],
+) -> type[Any]:
+    return eval(ret_annotation, context)  # noqa: S307

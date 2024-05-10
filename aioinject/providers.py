@@ -23,6 +23,8 @@ from typing_extensions import Self
 
 from aioinject._utils import (
     _get_type_hints,
+    get_fn_ns,
+    get_return_annotation,
     is_context_manager_function,
     remove_annotation,
 )
@@ -146,7 +148,7 @@ _FactoryType: TypeAlias = (
 )
 
 
-def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
+def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:  # noqa: C901
     unwrapped = inspect.unwrap(factory)
 
     origin = typing.get_origin(factory)
@@ -154,13 +156,26 @@ def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:
     if isclass(factory) or is_generic:
         return typing.cast(type[_T], factory)
 
-    type_hints = _get_type_hints(unwrapped)
     try:
-        return_type = type_hints["return"]
+        return_type = _get_type_hints(unwrapped)["return"]
     except KeyError as e:
         msg = f"Factory {factory.__qualname__} does not specify return type."
         raise ValueError(msg) from e
+    except NameError:
+        # handle future annotations.
+        # functions might have dependecies in them
+        # and we don't have the container context here so
+        # we can't call _get_type_hints
+        ret_annotation = unwrapped.__annotations__["return"]
 
+        try:
+            return_type = get_return_annotation(
+                ret_annotation,
+                context=get_fn_ns(unwrapped),
+            )
+        except NameError as e:
+            msg = f"Factory {factory.__qualname__} does not specify return type. Or it's type is not defined yet."
+            raise ValueError(msg) from e
     if origin := typing.get_origin(return_type):
         args = typing.get_args(return_type)
 
