@@ -2,6 +2,7 @@ import uuid
 
 import httpx
 import pytest
+import strawberry
 
 
 @pytest.mark.parametrize("resolver_name", ["helloWorld", "helloWorldSync"])
@@ -45,3 +46,18 @@ async def test_dataloader(
     assert response.json() == {
         "data": {"numbers": list(range(100))},
     }
+
+
+async def test_subscription(
+    schema: strawberry.Schema,
+) -> None:
+    subscription = """
+    subscription {
+        liveBars {
+            id
+            baz
+        }
+    }
+    """
+    async for res in await schema.subscribe(subscription):
+        print(res)

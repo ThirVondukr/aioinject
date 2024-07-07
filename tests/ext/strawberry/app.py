@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Sequence
-from typing import Annotated, Any
+from typing import Annotated, Any, AsyncGenerator
 
 import strawberry
 from starlette.requests import Request
@@ -14,7 +14,7 @@ from strawberry.types import Info
 
 from aioinject import Inject
 from aioinject.ext.strawberry import inject
-from tests.ext.conftest import NumberService
+from tests.ext.conftest import NumberService, ScopedNode
 
 
 any_: Any = object()
@@ -43,6 +43,25 @@ class _Query:
     @strawberry.field
     async def dataloader(self, info: Info[Any, None]) -> Sequence[int]:
         return await info.context.numbers.load_many(list(range(100)))
+@strawberry.type
+class Bar:
+    id: str
+    @strawberry.field
+    @inject
+    def baz(self, provided_value: Annotated[int, Inject]) -> str:
+        return f"baz-{provided_value}"
+
+@strawberry.type
+class _Subscription:
+
+    @strawberry.subscription
+    @inject
+    async def live_bars(
+        self,
+        node: Annotated[ScopedNode, Inject],
+    ) -> AsyncGenerator[Bar, None]:
+        for _ in range(5):
+            yield Bar(id=node["id"])
 
 
 @inject
