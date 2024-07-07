@@ -1,5 +1,4 @@
 from collections.abc import AsyncIterator
-from re import sub
 from typing import Any
 
 import httpx
@@ -17,6 +16,7 @@ from tests.ext.strawberry.app import StrawberryApp, _Query, _Subscription
 def anyio_backend() -> str:
     return "asyncio"
 
+
 @pytest.fixture
 async def schema(container: aioinject.Container) -> Schema:
     return Schema(
@@ -24,6 +24,8 @@ async def schema(container: aioinject.Container) -> Schema:
         subscription=_Subscription,
         extensions=[AioInjectExtension(container=container)],
     )
+
+
 @pytest.fixture
 async def app(schema: Schema) -> GraphQL[Any, Any]:
     return StrawberryApp(schema=schema)

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Sequence
-from typing import Annotated, Any, AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
+from typing import Annotated, Any
 
 import strawberry
 from starlette.requests import Request
@@ -43,13 +43,17 @@ class _Query:
     @strawberry.field
     async def dataloader(self, info: Info[Any, None]) -> Sequence[int]:
         return await info.context.numbers.load_many(list(range(100)))
+
+
 @strawberry.type
 class Bar:
     id: str
+
     @strawberry.field
     @inject
-    def baz(self, provided_value: Annotated[int, Inject]) -> str:
-        return f"baz-{provided_value}"
+    def baz(self, scoped_node: Annotated[ScopedNode, Inject]) -> str:
+        return f"baz-{scoped_node['id']}"
+
 
 @strawberry.type
 class _Subscription:

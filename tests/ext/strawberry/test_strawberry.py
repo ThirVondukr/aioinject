@@ -1,9 +1,15 @@
+from unittest import mock
+from unittest.mock import patch
 import uuid
+from collections.abc import AsyncIterator
 
 import httpx
 import pytest
 import strawberry
+from strawberry.types import ExecutionResult
 
+import aioinject
+from tests.ext.conftest import ScopedNode
 
 @pytest.mark.parametrize("resolver_name", ["helloWorld", "helloWorldSync"])
 async def test_async_resolver(
@@ -47,8 +53,16 @@ async def test_dataloader(
         "data": {"numbers": list(range(100))},
     }
 
+def ensure_agen(
+    gen: object,
+) -> AsyncIterator[ExecutionResult]:
+    if not hasattr(gen, "__aiter__"):
+        msg = f"Expected an async generator, got {gen!r}"
+        raise TypeError(msg)
+    return gen  # type: ignore[return-value]
 
 async def test_subscription(
+    container: aioinject.Container,
     schema: strawberry.Schema,
 ) -> None:
     subscription = """
@@ -59,5 +73,21 @@ async def test_subscription(
         }
     }
     """
-    async for res in await schema.subscribe(subscription):
-        print(res)
+    generate_node_mock = mock.Mock()
+    generate_node_mock.return_value = {"id": "5986123d250742a681da1defac165b8e"}
+    provider = container.get_provider(ScopedNode)
+    def wrap_mock() -> ScopedNode:
+        return generate_node_mock()
+
+    with container.override(
+        provider, aioinject.Scoped(wrap_mock)
+    ):
+        results = []
+        async for res in ensure_agen(await schema.subscribe(subscription)):
+            assert res.data
+            assert not res.errors
+            results.append(res.data["liveBars"])
+
+        assert results == [{
+                'id': '5986123d250742a681da1defac165b8e', 'baz': 'baz-5986123d250742a681da1defac165b8e'} for _ in range(5)]  # noqa: Q000
+        generate_node_mock.assert_called_once()
