@@ -39,10 +39,10 @@ dev = [
     "pydantic-settings>=2.2.1",
     "pytest>=8.1.1",
     "ruff>=0.3.2",
-    "strawberry-graphql>=0.220.0",
     "trio>=0.24.0",
     "uvicorn>=0.28.0",
     "aiogram>=3.5.0",
+    "strawberry-graphql @ git+https://github.com/nrbnlulu/strawberry.git@support_extensions_on_subscriptions",
 ]
 docs = [
     "mkdocs>=1.5.3",

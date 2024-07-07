@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docs"]
 strategy = ["cross_platform"]
 lock_version = "4.4.1"
-content_hash = "sha256:0565bbeb974653a1b85594f4236b874b0e6d863ea6f02da0a89f12d6ee1eb8a0"
+content_hash = "sha256:42925144b2eed58bd44f636c153d18efce5ae1e44aaa4c8d6607a5659a13799f"
 
 [[package]]
 name = "aiofiles"
@@ -577,13 +577,12 @@ files = [
 
 [[package]]
 name = "graphql-core"
-version = "3.2.3"
-requires_python = ">=3.6,<4"
-summary = "GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL."
-files = [
-    {file = "graphql-core-3.2.3.tar.gz", hash = "sha256:06d2aad0ac723e35b1cb47885d3e5c45e956a53bc1b209a9fc5369007fe46676"},
-    {file = "graphql_core-3.2.3-py3-none-any.whl", hash = "sha256:5766780452bd5ec8ba133f8bf287dc92713e3868ddd83aee4faab9fc3e303dc3"},
-]
+version = "3.3.0a5"
+requires_python = ">=3.7,<4.0"
+git = "https://github.com/nrbnlulu/graphql-core.git"
+ref = "support-middlewares-for-subscriptions"
+revision = "5b8febac5b10ae337fe65a3e6372df46b091c783"
+summary = "GraphQL-core is a Python port of GraphQL.js,the JavaScript reference implementation for GraphQL."
 
 [[package]]
 name = "h11"
@@ -1470,17 +1469,16 @@ files = [
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.227.2"
-requires_python = "<4.0,>=3.8"
+version = "0.235.1"
+requires_python = ">=3.8,<4.0"
+git = "https://github.com/nrbnlulu/strawberry.git"
+ref = "support_extensions_on_subscriptions"
+revision = "88f2bd567b2d796cbdecc678cab26612b2a6c832"
 summary = "A library for creating GraphQL APIs"
 dependencies = [
-    "graphql-core<3.3.0,>=3.2.0",
+    "graphql-core @ git+https://github.com/nrbnlulu/graphql-core.git@support-middlewares-for-subscriptions",
     "python-dateutil<3.0.0,>=2.7.0",
     "typing-extensions>=4.5.0",
-]
-files = [
-    {file = "strawberry_graphql-0.227.2-py3-none-any.whl", hash = "sha256:f03ecdd75ff8855be5dbd87f552a7f9a2f7891b0c1054b6f7c22a934523964c8"},
-    {file = "strawberry_graphql-0.227.2.tar.gz", hash = "sha256:c65ddc1d3c6b9dac9987360261920f2938fdab84260074d5f677a7272a75c9b5"},
 ]
 
 [[package]]
