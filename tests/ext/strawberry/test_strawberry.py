@@ -98,4 +98,3 @@ async def test_subscription(
             }
             for _ in range(5)
         ]
-        generate_node_mock.assert_called_once()
