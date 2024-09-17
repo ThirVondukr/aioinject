@@ -1,11 +1,11 @@
 from typing import Annotated, NewType
 
-from aioinject.markers import Injected
 import pytest
 
 from aioinject import Container, Inject, Object, Scoped, inject, providers
 from aioinject.context import container_var
 from aioinject.decorators import InjectMethod
+from aioinject.markers import Injected
 
 
 class _Session:

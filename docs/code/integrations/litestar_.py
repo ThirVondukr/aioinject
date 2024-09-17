@@ -1,10 +1,9 @@
-from typing import Annotated
 
 import uvicorn
 from litestar import Litestar, get
 
 import aioinject
-from aioinject import Inject
+from aioinject import Injected
 from aioinject.ext.litestar import AioInjectPlugin, inject
 
 
@@ -15,7 +14,7 @@ container.register(aioinject.Object(42))
 @get("/")
 @inject
 async def function_route(
-    number: Annotated[int, Inject],
+    number: Injected[int],
 ) -> int:
     return number
 
