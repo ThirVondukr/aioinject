@@ -15,6 +15,5 @@ if TYPE_CHECKING:
 else:
 
     class Injected(Generic[T]):
-        @classmethod
         def __class_getitem__(cls, item):  # noqa: ANN206, ANN001
             return Annotated[item, Inject]
