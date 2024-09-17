@@ -1,12 +1,11 @@
 import asyncio
-from typing import Annotated
 
 from aiogram import Bot, Dispatcher, Router
 from aiogram.filters import Command
 from aiogram.types import Message
 from benchmark.container import create_container
 
-from aioinject import Inject, Object
+from aioinject import Injected, Object
 from aioinject.ext.aiogram import AioInjectMiddleware, inject
 
 
@@ -24,7 +23,7 @@ async def main() -> None:
     @inject
     async def start(
         message: Message,
-        value: Annotated[int, Inject],
+        value: Injected[int],
     ) -> None:
         await message.reply(f"Injected value is {value}")
 

@@ -46,4 +46,4 @@ def test_err() -> None:
     assert len(exc_info.value.errors) == 1
     err = exc_info.value.errors[0]
     assert isinstance(err, DependencyNotFoundError)
-    assert err.dependency == int
+    assert err.dependency is int

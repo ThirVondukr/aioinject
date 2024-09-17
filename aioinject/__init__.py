@@ -1,7 +1,7 @@
 from aioinject.containers import Container
 from aioinject.context import InjectionContext, SyncInjectionContext
 from aioinject.decorators import inject
-from aioinject.markers import Inject
+from aioinject.markers import Inject, Injected
 from aioinject.providers import (
     Object,
     Provider,
@@ -22,6 +22,7 @@ __all__ = [
     "SyncInjectionContext",
     "Transient",
     "inject",
+    "Injected",
 ]
 
 __version__ = "0.34.0"
