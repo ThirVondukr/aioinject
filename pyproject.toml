@@ -90,6 +90,10 @@ version_files = [
     "aioinject/__init__.py",
     "pyproject.toml:version"
 ]
+update_changelog_on_bump = true
+changelog_start_rev = "0.34.0"
+major_version_zero = true
+changelog_incremental = true
 
 
 [tool.black]
