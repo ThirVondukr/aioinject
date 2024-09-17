@@ -60,7 +60,7 @@ async def fastapi_bench(
 
     durations = []
     async with httpx.AsyncClient(
-        transport=ASGITransport(app),  # type: ignore[arg-type]
+        transport=ASGITransport(app),
         base_url="http://test",
     ) as client:
         for _ in range(iterations):

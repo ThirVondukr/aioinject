@@ -9,7 +9,7 @@ from strawberry.asgi import GraphQL
 
 import aioinject
 from aioinject.ext.strawberry import AioInjectExtension
-from tests.ext.strawberry.app import StrawberryApp, _Query
+from tests.ext.strawberry.app import StrawberryApp, _Query, _Subscription
 
 
 @pytest.fixture(autouse=True)
@@ -18,11 +18,16 @@ def anyio_backend() -> str:
 
 
 @pytest.fixture
-async def app(container: aioinject.Container) -> GraphQL[Any, Any]:
-    schema = Schema(
+async def schema(container: aioinject.Container) -> Schema:
+    return Schema(
         query=_Query,
+        subscription=_Subscription,
         extensions=[AioInjectExtension(container=container)],
     )
+
+
+@pytest.fixture
+async def app(schema: Schema) -> GraphQL[Any, Any]:
     return StrawberryApp(schema=schema)
 
 
@@ -31,7 +36,7 @@ async def http_client(
     app: GraphQL[Any, Any],
 ) -> AsyncIterator[httpx.AsyncClient]:
     async with httpx.AsyncClient(
-        transport=ASGITransport(app),  # type: ignore[arg-type]
+        transport=ASGITransport(app),
         base_url="http://test",
     ) as client:
         yield client

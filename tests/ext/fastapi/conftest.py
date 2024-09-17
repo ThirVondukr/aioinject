@@ -41,7 +41,7 @@ def app(container: aioinject.Container) -> FastAPI:
 @pytest.fixture
 async def http_client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
     async with httpx.AsyncClient(
-        transport=ASGITransport(app),  # type: ignore[arg-type]
+        transport=ASGITransport(app),
         base_url="http://test",
     ) as client:
         yield client

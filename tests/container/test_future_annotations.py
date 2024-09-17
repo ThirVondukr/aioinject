@@ -41,7 +41,6 @@ def test_provider_fn_with_deffered_dep() -> None:
 
 
 def test_provider_fn_deffered_dep_missuse() -> None:
-
     with pytest.raises(ValueError) as exc_info:  # noqa: PT011
         from tests.container.mod_tests import (
             provider_fn_deffered_dep_missuse,  # noqa: F401

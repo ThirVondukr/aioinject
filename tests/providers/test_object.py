@@ -23,8 +23,8 @@ def dependencies_test_data() -> tuple[Any, ...]:
             pass
 
     def test(
-        a: Annotated[int, Inject],  # noqa: ARG001
-        b: Annotated[Test, Inject],  # noqa: ARG001
+        a: Annotated[int, Inject],
+        b: Annotated[Test, Inject],
     ) -> None:
         pass
 
