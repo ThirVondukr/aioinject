@@ -1,5 +1,6 @@
 from typing import Annotated, NewType
 
+from aioinject.markers import Injected
 import pytest
 
 from aioinject import Container, Inject, Object, Scoped, inject, providers
@@ -56,6 +57,17 @@ def test_simple_inject(container: Container) -> None:
         session, *_ = _injectee()  # type: ignore[call-arg]
         assert isinstance(session, _Session)
 
+def test_simple_inject_with_injected(container: Container) -> None:
+    @inject
+    def injectee(
+        test: Injected[_Session],
+        test_no_cache: Injected[_Session],
+    ) -> tuple[_Session, _Session]:
+        return test, test_no_cache
+
+    with container.sync_context():
+        session, *_ = _injectee()  # type: ignore[call-arg]
+        assert isinstance(session, _Session)
 
 async def test_simple_service(container: Container) -> None:
     with container.sync_context() as ctx:
