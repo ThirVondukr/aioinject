@@ -1,4 +1,3 @@
-
 import uvicorn
 from litestar import Litestar, get
 

@@ -57,6 +57,7 @@ def test_simple_inject(container: Container) -> None:
         session, *_ = _injectee()  # type: ignore[call-arg]
         assert isinstance(session, _Session)
 
+
 def test_simple_inject_with_injected(container: Container) -> None:
     @inject
     def injectee(
@@ -68,6 +69,7 @@ def test_simple_inject_with_injected(container: Container) -> None:
     with container.sync_context():
         session, *_ = _injectee()  # type: ignore[call-arg]
         assert isinstance(session, _Session)
+
 
 async def test_simple_service(container: Container) -> None:
     with container.sync_context() as ctx:
