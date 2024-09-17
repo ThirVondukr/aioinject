@@ -36,7 +36,7 @@ async def http_client(
     app: GraphQL[Any, Any],
 ) -> AsyncIterator[httpx.AsyncClient]:
     async with httpx.AsyncClient(
-        transport=ASGITransport(app),  # type: ignore[arg-type]
+        transport=ASGITransport(app),
         base_url="http://test",
     ) as client:
         yield client

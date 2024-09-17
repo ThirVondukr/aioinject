@@ -57,7 +57,6 @@ class Bar:
 
 @strawberry.type
 class _Subscription:
-
     @strawberry.subscription
     @inject
     async def live_bars(

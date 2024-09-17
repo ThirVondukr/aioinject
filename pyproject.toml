@@ -43,7 +43,6 @@ dev = [
     "trio>=0.25.0",
     "uvicorn>=0.29.0",
     "aiogram>=3.5.0",
-    "strawberry-graphql @ git+https://github.com/nrbnlulu/strawberry.git@support_extensions_on_subscriptions",
 ]
 docs = [
     "mkdocs>=1.6.0",

@@ -51,7 +51,7 @@ async def test_provide_async() -> None:
 
 
 def test_type_hints_on_function() -> None:
-    def factory(a: int, b: str) -> None:  # noqa: ARG001
+    def factory(a: int, b: str) -> None:
         pass
 
     provider = providers.Scoped(factory)
@@ -77,7 +77,7 @@ def test_type_hints_on_class() -> None:
 
 def test_annotated_type_hint() -> None:
     def factory(
-        a: Annotated[int, Inject()],  # noqa: ARG001
+        a: Annotated[int, Inject()],
     ) -> None:
         pass
 
@@ -113,12 +113,12 @@ def test_empty_dependencies() -> None:
 
 def test_dependencies() -> None:
     def factory(
-        a: int,  # noqa: ARG001
-        service: Annotated[  # noqa: ARG001
+        a: int,
+        service: Annotated[
             dict[str, int],
             Inject(),
         ],
-        string: Annotated[str, Inject()],  # noqa: ARG001
+        string: Annotated[str, Inject()],
     ) -> None:
         pass
 
