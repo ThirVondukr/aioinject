@@ -12,46 +12,19 @@ from litestar.logging import LoggingConfig
 from aioinject import Inject
 from aioinject.ext.fastapi import inject
 from aioinject.ext.litestar import AioInjectPlugin
+from benchmark.benches._common import (
+    _get_repository_a,
+    _get_repository_b,
+    _get_service_a,
+    _get_service_b,
+    _get_session,
+    _get_usecase,
+)
 from benchmark.container import create_container
 from benchmark.dependencies import (
-    RepositoryA,
-    RepositoryB,
-    ServiceA,
-    ServiceB,
-    Session,
     UseCase,
 )
 from benchmark.dto import BenchmarkResult
-
-
-async def _get_session() -> AsyncIterator[Session]:
-    yield Session()
-
-
-async def _get_repository_a(session: Session) -> RepositoryA:
-    return RepositoryA(session)
-
-
-async def _get_repository_b(session: Session) -> RepositoryB:
-    return RepositoryB(session)
-
-
-async def _get_service_a(repository_a: RepositoryA) -> ServiceA:
-    return ServiceA(repository=repository_a)
-
-
-async def _get_service_b(repository_b: RepositoryB) -> ServiceB:
-    return ServiceB(repository=repository_b)
-
-
-async def _get_usecase(
-    service_a: ServiceA,
-    service_b: ServiceB,
-) -> UseCase:
-    return UseCase(
-        service_a=service_a,
-        service_b=service_b,
-    )
 
 
 @get("/aioinject")

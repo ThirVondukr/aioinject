@@ -9,6 +9,7 @@ from httpx import ASGITransport
 
 from aioinject import Inject
 from aioinject.ext.fastapi import AioInjectMiddleware, inject
+from benchmark.benches._common import UseCaseDepends
 from benchmark.container import create_container
 from benchmark.dependencies import (
     RepositoryA,
@@ -32,6 +33,11 @@ async def test_aioinject(use_case: Annotated[UseCase, Inject]) -> int:
 
 @router.get("/depends")
 async def test_depends(use_case: Annotated[UseCase, Depends()]) -> int:
+    return await use_case.execute()
+
+
+@router.get("/depends-wrap-async")
+async def test_depends_wrap_async(use_case: UseCaseDepends) -> int:
     return await use_case.execute()
 
 
