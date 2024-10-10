@@ -50,7 +50,6 @@ docs = [
 ]
 [tool.pdm.build]
 includes = ["aioinject/"]
-excludes = ["tests/"]
 
 [tool.pdm.scripts]
 lint = { composite = [
