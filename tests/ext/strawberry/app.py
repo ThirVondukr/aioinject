@@ -78,7 +78,7 @@ async def load_numbers(
 @dataclasses.dataclass(slots=True, frozen=True)
 class Context:
     request: Request | WebSocket
-    response: Response
+    response: Response | WebSocket
 
     numbers: DataLoader[int, int] = dataclasses.field(
         default_factory=lambda: DataLoader(load_numbers),
@@ -89,7 +89,7 @@ class StrawberryApp(GraphQL[Context, None]):
     async def get_context(
         self,
         request: Request | WebSocket,
-        response: Response,
+        response: Response | WebSocket,
     ) -> Context:
         return Context(
             request=request,

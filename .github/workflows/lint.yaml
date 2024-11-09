@@ -9,7 +9,7 @@ jobs:
           - 3.11.7
         job:
           - mypy .
-          - black --check .
+          - ruff format --check .
           - ruff check .
 
     steps:

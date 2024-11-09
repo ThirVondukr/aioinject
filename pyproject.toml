@@ -27,26 +27,25 @@ build-backend = "pdm.pep517.api"
 
 [tool.pdm]
 [tool.pdm.dev-dependencies]
-dev = [
-    "aiogram>=3.13.0",
-    "anyio>=4.4.0",
-    "asgi-lifespan>=2.1.0",
-    "black>=24.8.0",
-    "commitizen>=3.29.0",
-    "coverage[toml]>=7.6.1",
-    "fastapi>=0.114.2",
-    "litestar>=2.11.0",
-    "mypy>=1.11.2",
-    "pydantic-settings>=2.5.2",
-    "pytest>=8.3.3",
-    "ruff>=0.6.5",
-    "strawberry-graphql>=0.241.0",
-    "trio>=0.26.2",
-    "uvicorn>=0.30.6",
-]
 docs = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.19",
+]
+dev = [
+    "aiogram>=3.14.0",
+    "anyio>=4.6.2.post1",
+    "asgi-lifespan>=2.1.0",
+    "commitizen>=3.30.0",
+    "coverage[toml]>=7.6.4",
+    "fastapi>=0.115.4",
+    "litestar>=2.12.1",
+    "mypy>=1.13.0",
+    "pydantic-settings>=2.6.1",
+    "pytest>=8.3.3",
+    "ruff>=0.7.3",
+    "strawberry-graphql>=0.248.1",
+    "trio>=0.27.0",
+    "uvicorn>=0.32.0",
 ]
 [tool.pdm.build]
 includes = ["aioinject/"]
@@ -129,6 +128,8 @@ ignore = [
     "TCH002",
     "TCH003",
     "EXE",
+    "ISC001", # ruff format conflict
+    "COM812", # ruff format conflict
 ]
 
 
