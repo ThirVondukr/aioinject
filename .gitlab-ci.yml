@@ -2,20 +2,20 @@ stages:
   - lint
 
 .lint-job:
-  image: python:3.10-slim
+  image: python:3.12-slim
   stage: lint
   interruptible: true
   cache:
     - key:
         files:
-          - pdm.lock
+          - uv.lock
       paths:
         - .venv
         - .cache/pip
 
   before_script:
-    - pip install pdm
-    - pdm install
+    - pip install uv
+    - uv sync
   variables:
     GIT_STRATEGY: clone
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -23,24 +23,24 @@ stages:
 mypy:
   extends: .lint-job
   script:
-    - pdm run mypy .
+    - uv run mypy .
 
 black:
   extends: .lint-job
   script:
-    - pdm run black --check .
+    - uv run black --check .
 
 ruff:
   extends: .lint-job
   script:
-    - pdm run ruff check .
+    - uv run ruff check .
 
 pytest:
   extends: .lint-job
   script:
-    - pdm run coverage run
-    - pdm run coverage report -m
-    - pdm run coverage xml
+    - uv run coverage run
+    - uv run coverage report -m
+    - uv run coverage xml
   coverage: "/^TOTAL.*\\s(\\d*)/"
   artifacts:
     reports:

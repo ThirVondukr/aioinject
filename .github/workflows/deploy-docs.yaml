@@ -12,15 +12,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.11
-      - name: Cache PIP
-        uses: actions/cache@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
         with:
-          path: |
-            ~/.cache/pip
-            .venv
-          key: pip-${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
-      - name: Install PDM
-        run: |
-          pip install pdm
-          pdm sync --clean
-      - run: pdm run mkdocs gh-deploy --force
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - run: uv run mkdocs gh-deploy --force
