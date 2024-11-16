@@ -1,11 +1,10 @@
 from collections.abc import AsyncGenerator, AsyncIterator, Generator, Iterator
-from typing import Annotated, Any
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 
-from aioinject import Inject, Provider, providers
-from aioinject.providers import Dependency
+from aioinject import Provider, providers
 
 
 class _Test:
@@ -50,43 +49,6 @@ async def test_provide_async() -> None:
     assert await provider.provide({}) == return_value
 
 
-def test_type_hints_on_function() -> None:
-    def factory(a: int, b: str) -> None:
-        pass
-
-    provider = providers.Scoped(factory)
-    expected = {
-        "a": Annotated[int, Inject],
-        "b": Annotated[str, Inject],
-    }
-    assert provider.type_hints() == expected
-
-
-def test_type_hints_on_class() -> None:
-    class Test:
-        def __init__(self, a: int, b: str) -> None:
-            pass
-
-    provider = providers.Scoped(Test)
-    expected = {
-        "a": Annotated[int, Inject],
-        "b": Annotated[str, Inject],
-    }
-    assert provider.type_hints() == expected
-
-
-def test_annotated_type_hint() -> None:
-    def factory(
-        a: Annotated[int, Inject()],
-    ) -> None:
-        pass
-
-    provider = providers.Scoped(factory)
-    assert provider.type_hints() == {
-        "a": Annotated[int, Inject()],
-    }
-
-
 def test_is_async_on_sync() -> None:
     def factory() -> None:
         pass
@@ -101,43 +63,6 @@ def test_is_async_on_async() -> None:
 
     provider = providers.Scoped[None](factory)
     assert provider.is_async
-
-
-def test_empty_dependencies() -> None:
-    def factory() -> None:
-        pass
-
-    provider = providers.Scoped(factory)
-    assert provider.resolve_dependencies() == ()
-
-
-def test_dependencies() -> None:
-    def factory(
-        a: int,
-        service: Annotated[
-            dict[str, int],
-            Inject(),
-        ],
-        string: Annotated[str, Inject()],
-    ) -> None:
-        pass
-
-    provider = providers.Scoped(factory)
-    expected = (
-        Dependency(
-            name="a",
-            type_=int,
-        ),
-        Dependency(
-            name="service",
-            type_=dict[str, int],
-        ),
-        Dependency(
-            name="string",
-            type_=str,
-        ),
-    )
-    assert provider.resolve_dependencies() == expected
 
 
 def iterable() -> Iterator[int]:

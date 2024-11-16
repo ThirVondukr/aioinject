@@ -39,7 +39,9 @@ def test_can_register_single(container: Container) -> None:
     container.register(provider)
 
     expected = {_ServiceA: provider}
-    assert container.providers == expected
+    assert {
+        key: provider.provider for key, provider in container.providers.items()
+    } == expected
 
 
 def test_can_register_batch(container: Container) -> None:
@@ -47,7 +49,9 @@ def test_can_register_batch(container: Container) -> None:
     provider2 = providers.Scoped(_ServiceB)
     container.register(provider1, provider2)
     excepted = {_ServiceA: provider1, _ServiceB: provider2}
-    assert container.providers == excepted
+    assert {
+        key: provider.provider for key, provider in container.providers.items()
+    } == excepted
 
 
 def test_cant_register_multiple_providers_for_same_type(

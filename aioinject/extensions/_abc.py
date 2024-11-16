@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
+
+if TYPE_CHECKING:
+    from aioinject.providers import Dependency
 
 if TYPE_CHECKING:
     from contextlib import AbstractAsyncContextManager
@@ -51,6 +54,22 @@ class SyncOnResolveExtension(Protocol):
     ) -> None: ...
 
 
-Extension = LifespanExtension | OnInitExtension
+@runtime_checkable
+class SupportsDependencyExtraction(Protocol):
+    def extract_supports(self, provider: Provider[Any]) -> bool: ...
+
+    def extract_dependencies(
+        self,
+        provider: Provider[Any],
+        context: dict[str, Any],
+    ) -> tuple[Dependency[object], ...]: ...
+
+    def extract_type(
+        self,
+        provider: Provider[T],
+    ) -> type[T]: ...
+
+
+Extension = LifespanExtension | OnInitExtension | SupportsDependencyExtraction
 ContextExtension = OnResolveExtension
 SyncContextExtension = SyncOnResolveExtension

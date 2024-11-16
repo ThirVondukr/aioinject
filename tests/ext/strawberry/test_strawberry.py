@@ -84,7 +84,7 @@ async def test_subscription(
     def wrap_mock() -> ScopedNode:
         return generate_node_mock()
 
-    with container.override(provider, aioinject.Scoped(wrap_mock)):
+    with container.override(provider.provider, aioinject.Scoped(wrap_mock)):
         results = []
         async for res in ensure_agen(await schema.subscribe(subscription)):
             assert res.data

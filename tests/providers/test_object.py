@@ -1,8 +1,4 @@
-from typing import Annotated, Any
-
-import pytest
-
-from aioinject import Inject, Object
+from aioinject import Object
 
 
 async def test_would_provide_same_object() -> None:
@@ -13,43 +9,15 @@ async def test_would_provide_same_object() -> None:
     assert await provider.provide({}) is obj
 
 
-@pytest.fixture
-def dependencies_test_data() -> tuple[Any, ...]:
-    class Test:
-        def __init__(
-            self,
-            a: Annotated[int, Inject],
-        ) -> None:
-            pass
-
-    def test(
-        a: Annotated[int, Inject],
-        b: Annotated[Test, Inject],
-    ) -> None:
-        pass
-
-    return object(), Test, test
+async def _async_func() -> None:
+    pass
 
 
-def test_should_have_no_dependencies(
-    dependencies_test_data: tuple[Any, ...],
-) -> None:
-    for obj in dependencies_test_data:
-        provider = Object(object_=obj)
-        assert not provider.resolve_dependencies()
+class _Class:
+    pass
 
 
-def test_should_have_empty_type_hints(
-    dependencies_test_data: tuple[Any, ...],
-) -> None:
-    for obj in dependencies_test_data:
-        provider = Object(object_=obj)
-        assert not provider.type_hints()
-
-
-def test_should_not_be_async(
-    dependencies_test_data: tuple[Any, ...],
-) -> None:
-    for obj in dependencies_test_data:
+def test_should_not_be_async() -> None:
+    for obj in [_async_func, _Class]:
         provider = Object(object_=obj)
         assert provider.is_async is False

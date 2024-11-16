@@ -29,13 +29,13 @@ from benchmark.dto import BenchmarkResult
 
 @get("/aioinject")
 @inject
-async def test_aioinject(use_case: Annotated[UseCase, Inject]) -> int:
-    return await use_case.execute()
+async def test_aioinject(use_case: Annotated[UseCase, Inject]) -> None:
+    assert use_case
 
 
 @get("/litestar")
-async def test_litestar(use_case: UseCase) -> int:
-    return await use_case.execute()
+async def test_litestar(use_case: UseCase) -> None:
+    assert use_case
 
 
 async def litestar_bench(
@@ -74,7 +74,7 @@ async def litestar_bench(
                 timedelta(seconds=time.perf_counter() - start),
             )
             response.raise_for_status()
-            assert response.content == b"42"  # noqa: S101
+            assert response.content == b"null"
 
     yield BenchmarkResult(
         name=f"Litestar - {endpoint}",

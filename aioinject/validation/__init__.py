@@ -10,9 +10,9 @@ from aioinject.validation.abc import ContainerValidator
 
 
 forbid_singleton_on_scoped_dependency = ForbidDependency(
-    dependant=lambda p: isinstance(p, Singleton),
-    dependency=lambda p: isinstance(p, Scoped)
-    and not isinstance(p, Singleton),
+    dependant=lambda p: isinstance(p.provider, Singleton),
+    dependency=lambda p: isinstance(p.provider, Scoped)
+    and not isinstance(p.provider, Singleton),
 )
 
 DEFAULT_VALIDATORS: Sequence[ContainerValidator] = [

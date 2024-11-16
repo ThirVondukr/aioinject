@@ -2,7 +2,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 import aioinject
-from aioinject import Provider
+from aioinject.providers import InitializedProvider
 from aioinject.validation.abc import ContainerValidator
 from aioinject.validation.error import (
     ContainerValidationError,
@@ -15,7 +15,7 @@ def all_dependencies_are_present(
 ) -> Sequence[ContainerValidationError]:
     errors = []
     for provider in container.providers.values():
-        for dependency in provider.resolve_dependencies(
+        for dependency in provider.dependencies(
             container.type_context,
         ):
             dep_type = dependency.type_
@@ -32,8 +32,8 @@ def all_dependencies_are_present(
 class ForbidDependency(ContainerValidator):
     def __init__(
         self,
-        dependant: Callable[[Provider[Any]], bool],
-        dependency: Callable[[Provider[Any]], bool],
+        dependant: Callable[[InitializedProvider[Any]], bool],
+        dependency: Callable[[InitializedProvider[Any]], bool],
     ) -> None:
         self.dependant = dependant
         self.dependency = dependency
@@ -47,7 +47,7 @@ class ForbidDependency(ContainerValidator):
             if not self.dependant(provider):
                 continue
 
-            for dependency in provider.resolve_dependencies(
+            for dependency in provider.dependencies(
                 container.type_context,
             ):
                 dep_type = dependency.type_

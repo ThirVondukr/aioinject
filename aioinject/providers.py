@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import collections.abc
+import dataclasses
 import enum
-import functools
 import inspect
 import typing
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from inspect import isclass
 from typing import (
-    Annotated,
     Any,
     ClassVar,
     Generic,
@@ -28,6 +27,7 @@ from aioinject._utils import (
     is_context_manager_function,
     remove_annotation,
 )
+from aioinject.extensions import Extension, SupportsDependencyExtraction
 from aioinject.markers import Inject
 
 
@@ -105,30 +105,6 @@ def _typevar_map(
     return resolved_source, typevar_map
 
 
-def _get_provider_type_hints(
-    provider: Provider[Any],
-    context: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    source, typevar_map = _typevar_map(source=provider.impl)
-
-    if inspect.isclass(source):
-        source = source.__init__
-
-    if isinstance(source, functools.partial):
-        return {}
-
-    type_hints = _get_type_hints(source, context=context)
-    for key, value in type_hints.items():
-        _, args = _get_annotation_args(value)
-        for arg in args:
-            if isinstance(arg, Inject):
-                break
-        else:
-            type_hints[key] = Annotated[typevar_map.get(value, value), Inject]
-
-    return type_hints
-
-
 _GENERATORS = {
     collections.abc.Generator,
     collections.abc.Iterator,
@@ -198,6 +174,47 @@ def _guess_return_type(factory: _FactoryType[_T]) -> type[_T]:  # noqa: C901
     return return_type
 
 
+@dataclasses.dataclass(slots=True, kw_only=True)
+class InitializedProvider(Generic[_T]):
+    provider: Provider[_T]
+    type: type[_T]
+    dependency_extractor: SupportsDependencyExtraction
+
+    _dependencies: tuple[Dependency[object], ...] | None = None
+
+    def dependencies(
+        self, context: dict[str, Any]
+    ) -> tuple[Dependency[object], ...]:
+        if self._dependencies is None:
+            self._dependencies = (
+                self.dependency_extractor.extract_dependencies(
+                    provider=self.provider, context=context
+                )
+            )
+        return self._dependencies
+
+
+def initialize_provider(
+    provider: Provider[_T],
+    extensions: Sequence[Extension],
+) -> InitializedProvider[_T]:
+    for extension in extensions:
+        if not isinstance(
+            extension, SupportsDependencyExtraction
+        ) or not extension.extract_supports(provider):
+            continue
+        break
+    else:
+        msg = f"Couldn't find appropriate {SupportsDependencyExtraction.__name__} extension for provider {provider!r}"
+        raise ValueError(msg)
+
+    return InitializedProvider(
+        provider=provider,
+        dependency_extractor=extension,
+        type=extension.extract_type(provider),
+    )
+
+
 class DependencyLifetime(enum.Enum):
     transient = enum.auto()
     scoped = enum.auto()
@@ -209,32 +226,12 @@ class Provider(Protocol[_T]):
     impl: Any
     type_: type[_T]
     lifetime: DependencyLifetime
-    _cached_dependencies: tuple[Dependency[object], ...]
+    is_async: bool
+    is_generator: bool
 
     async def provide(self, kwargs: Mapping[str, Any]) -> _T: ...
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T: ...
-
-    def resolve_dependencies(
-        self,
-        context: dict[str, Any] | None = None,
-    ) -> tuple[Dependency[object], ...]:
-        try:
-            return self._cached_dependencies
-        except AttributeError:
-            self._cached_dependencies = tuple(
-                collect_dependencies(self.type_hints(context), ctx=context),
-            )
-            return self._cached_dependencies
-
-    def type_hints(self, context: dict[str, Any] | None) -> dict[str, Any]: ...
-
-    @property
-    def is_async(self) -> bool: ...
-
-    @functools.cached_property
-    def is_generator(self) -> bool:
-        return is_context_manager_function(self.impl)
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"{self.__class__.__qualname__}(type={self.type_}, implementation={self.impl})"
@@ -250,6 +247,8 @@ class Scoped(Provider[_T]):
     ) -> None:
         self.impl = factory
         self.type_ = type_ or _guess_return_type(factory)
+        self.is_async = inspect.iscoroutinefunction(self.impl)
+        self.is_generator = is_context_manager_function(self.impl)
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T:
         return self.impl(**kwargs)  # type: ignore[return-value]
@@ -259,19 +258,6 @@ class Scoped(Provider[_T]):
             return await self.impl(**kwargs)  # type: ignore[misc]
 
         return self.provide_sync(kwargs)
-
-    def type_hints(
-        self,
-        context: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        type_hints = _get_provider_type_hints(self, context=context)
-        if "return" in type_hints:
-            del type_hints["return"]
-        return type_hints
-
-    @functools.cached_property
-    def is_async(self) -> bool:
-        return inspect.iscoroutinefunction(self.impl)
 
 
 class Singleton(Scoped[_T]):
@@ -285,6 +271,7 @@ class Transient(Scoped[_T]):
 class Object(Provider[_T]):
     _type_hints: ClassVar[dict[str, Any]] = {}
     is_async = False
+    is_generator = False
     impl: _T
     lifetime = DependencyLifetime.scoped  # It's ok to cache it
 
@@ -301,6 +288,3 @@ class Object(Provider[_T]):
 
     async def provide(self, kwargs: Mapping[str, Any]) -> _T:  # noqa: ARG002
         return self.impl
-
-    def type_hints(self, _: dict[str, Any] | None = None) -> dict[str, Any]:
-        return self._type_hints

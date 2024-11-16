@@ -4,18 +4,17 @@ from typing import Any
 import pytest
 
 from aioinject import Container, Provider, Scoped, Singleton
-from aioinject.validation import ForbidDependency, validate_container
+from aioinject.validation import (
+    forbid_singleton_on_scoped_dependency,
+    validate_container,
+)
 from aioinject.validation.error import (
     ContainerValidationErrorGroup,
 )
 
 
 _VALIDATORS = [
-    ForbidDependency(
-        dependant=lambda p: isinstance(p, Singleton),
-        dependency=lambda p: isinstance(p, Scoped)
-        and not isinstance(p, Singleton),
-    ),
+    forbid_singleton_on_scoped_dependency,
 ]
 
 
