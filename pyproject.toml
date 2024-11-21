@@ -125,6 +125,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
+"benchmark/*" = ["S101"]
 "docs/*" = [
     "INP001", # Implicit package (no __init__.py)
     "A002", # shadows built-int
@@ -151,7 +152,7 @@ fixture-parentheses = false
 mark-parentheses = false
 
 [tool.ruff.lint.flake8-tidy-imports]
-ban-relative-imports = "all"
+ban-relative-imports = "parents"
 
 
 [tool.mypy]

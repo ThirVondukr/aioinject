@@ -39,7 +39,9 @@ def test_can_register_single(container: Container) -> None:
     container.register(provider)
 
     expected = {_ServiceA: provider}
-    assert container.providers == expected
+    assert {
+        key: provider.provider for key, provider in container.providers.items()
+    } == expected
 
 
 def test_can_register_batch(container: Container) -> None:
@@ -47,7 +49,9 @@ def test_can_register_batch(container: Container) -> None:
     provider2 = providers.Scoped(_ServiceB)
     container.register(provider1, provider2)
     excepted = {_ServiceA: provider1, _ServiceB: provider2}
-    assert container.providers == excepted
+    assert {
+        key: provider.provider for key, provider in container.providers.items()
+    } == excepted
 
 
 def test_cant_register_multiple_providers_for_same_type(
@@ -116,3 +120,14 @@ def test_should_close_singletons_sync() -> None:
 
         assert shutdown is False
     assert shutdown is True
+
+
+def test_dependency_extractor_not_found() -> None:
+    provider = Singleton(_ServiceA)
+    container = Container(default_extensions=[])
+    with pytest.raises(ValueError) as err_info:  # noqa: PT011
+        container.register(provider)
+    assert (
+        str(err_info.value)
+        == f"Couldn't find appropriate SupportsDependencyExtraction extension for provider {provider!r}"
+    )

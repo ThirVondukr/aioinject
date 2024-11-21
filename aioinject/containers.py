@@ -6,7 +6,6 @@ from typing import Any
 
 from typing_extensions import Self
 
-from aioinject import _types
 from aioinject._store import SingletonStore
 from aioinject._types import T
 from aioinject.context import InjectionContext, SyncInjectionContext
@@ -17,17 +16,34 @@ from aioinject.extensions import (
     OnInitExtension,
     SyncContextExtension,
 )
-from aioinject.providers import Provider
+from aioinject.extensions.builtin import DEFAULT_EXTENSIONS
+from aioinject.providers import (
+    InitializedProvider,
+    Provider,
+    initialize_provider,
+)
 
 
 class Container:
-    def __init__(self, extensions: Sequence[Extension] | None = None) -> None:
+    def __init__(
+        self,
+        extensions: Sequence[Extension] | None = None,
+        *,
+        default_extensions: Sequence[Extension] | None = None,
+    ) -> None:
+        default_extensions = (
+            default_extensions
+            if default_extensions is not None
+            else DEFAULT_EXTENSIONS
+        )
+
         self._exit_stack = AsyncExitStack()
         self._singletons = SingletonStore(exit_stack=self._exit_stack)
 
-        self.providers: _types.Providers[Any] = {}
+        self.providers: dict[type[Any], InitializedProvider[Any]] = {}
         self.type_context: dict[str, type[Any]] = {}
         self.extensions = extensions or []
+        self.extensions = tuple(self.extensions) + tuple(default_extensions)
         self._init_extensions(self.extensions)
 
     def _init_extensions(self, extensions: Sequence[Extension]) -> None:
@@ -40,17 +56,22 @@ class Container:
         *providers: Provider[Any],
     ) -> None:
         for provider in providers:
-            if provider.type_ in self.providers:
+            initialized = initialize_provider(
+                provider,
+                extensions=self.extensions,
+            )
+
+            if initialized.type in self.providers:
                 msg = (
                     f"Provider for type {provider.type_} is already registered"
                 )
                 raise ValueError(msg)
 
-            self.providers[provider.type_] = provider
-            if class_name := getattr(provider.type_, "__name__", None):
-                self.type_context[class_name] = provider.type_
+            if class_name := getattr(initialized.type, "__name__", None):
+                self.type_context[class_name] = initialized.type
+            self.providers[initialized.type] = initialized
 
-    def get_provider(self, type_: type[T]) -> Provider[T]:
+    def get_provider(self, type_: type[T]) -> InitializedProvider[T]:
         try:
             return self.providers[type_]
         except KeyError as exc:
@@ -79,18 +100,23 @@ class Container:
 
     @contextlib.contextmanager
     def override(self, *providers: Provider[Any]) -> Iterator[None]:
-        previous: dict[type[Any], Provider[Any] | None] = {}
-        for provider in providers:
-            previous[provider.type_] = self.providers.get(provider.type_)
-            self.providers[provider.type_] = provider
+        initialized_providers = [
+            initialize_provider(provider, extensions=self.extensions)
+            for provider in providers
+        ]
+
+        previous: dict[type[Any], InitializedProvider[Any] | None] = {}
+        for provider in initialized_providers:
+            previous[provider.type] = self.providers.get(provider.type)
+            self.providers[provider.type] = provider
 
         yield
 
-        for provider in providers:
-            del self.providers[provider.type_]
-            prev = previous[provider.type_]
+        for provider in initialized_providers:
+            del self.providers[provider.type]
+            prev = previous[provider.type]
             if prev is not None:
-                self.providers[provider.type_] = prev
+                self.providers[provider.type] = prev
 
     async def __aenter__(self) -> Self:
         for extension in self.extensions:

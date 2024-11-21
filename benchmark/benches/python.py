@@ -25,7 +25,7 @@ async def bench_aioinject_raw(
         start = time.perf_counter()
         async with container.context() as ctx:
             use_case = await ctx.resolve(UseCase)
-            await use_case.execute()
+            assert use_case
 
         durations.append(
             timedelta(seconds=time.perf_counter() - start),
@@ -45,8 +45,8 @@ async def bench_aioinject_decorator(
     durations = []
 
     @inject
-    async def injectee(use_case: Annotated[UseCase, Inject]) -> int:
-        return await use_case.execute()
+    async def injectee(use_case: Annotated[UseCase, Inject]) -> None:
+        assert use_case
 
     for _ in range(iterations):
         start = time.perf_counter()
@@ -71,7 +71,7 @@ async def bench_python(iterations: int) -> AsyncIterator[BenchmarkResult]:
                 service_a=ServiceA(repository=RepositoryA(session=session)),
                 service_b=ServiceB(repository=RepositoryB(session=session)),
             )
-            await use_case.execute()
+            assert use_case
         durations.append(
             timedelta(seconds=time.perf_counter() - start),
         )

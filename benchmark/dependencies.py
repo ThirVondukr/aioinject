@@ -58,6 +58,3 @@ class UseCase:
     ) -> None:
         self._service_a = service_a
         self._service_b = service_b
-
-    async def execute(self) -> int:
-        return 42

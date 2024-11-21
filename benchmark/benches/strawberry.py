@@ -27,18 +27,18 @@ from benchmark.dto import BenchmarkResult
 @strawberry.type
 class Query:
     @strawberry.field
-    async def by_hand(self) -> int:
+    async def by_hand(self) -> None:
         async with create_session() as session:
             use_case = UseCase(
                 service_a=ServiceA(repository=RepositoryA(session=session)),
                 service_b=ServiceB(repository=RepositoryB(session=session)),
             )
-            return await use_case.execute()
+            assert use_case
 
     @strawberry.field
     @inject
-    async def aioinject(self, use_case: Annotated[UseCase, Inject]) -> int:
-        return await use_case.execute()
+    async def aioinject(self, use_case: Annotated[UseCase, Inject]) -> None:
+        assert use_case
 
 
 async def bench_strawberry(
@@ -74,8 +74,8 @@ async def bench_strawberry(
                     timedelta(seconds=time.perf_counter() - start),
                 )
                 response.raise_for_status()
-                assert response.json() == {  # noqa: S101
-                    "data": {"result": 42},
+                assert response.json() == {
+                    "data": {"result": None},
                 }
 
             yield BenchmarkResult(
