@@ -31,7 +31,11 @@ class Container:
         *,
         default_extensions: Sequence[Extension] | None = None,
     ) -> None:
-        default_extensions = default_extensions or DEFAULT_EXTENSIONS
+        default_extensions = (
+            default_extensions
+            if default_extensions is not None
+            else DEFAULT_EXTENSIONS
+        )
 
         self._exit_stack = AsyncExitStack()
         self._singletons = SingletonStore(exit_stack=self._exit_stack)

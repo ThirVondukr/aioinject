@@ -120,3 +120,14 @@ def test_should_close_singletons_sync() -> None:
 
         assert shutdown is False
     assert shutdown is True
+
+
+def test_dependency_extractor_not_found() -> None:
+    provider = Singleton(_ServiceA)
+    container = Container(default_extensions=[])
+    with pytest.raises(ValueError) as err_info:  # noqa: PT011
+        container.register(provider)
+    assert (
+        str(err_info.value)
+        == f"Couldn't find appropriate SupportsDependencyExtraction extension for provider {provider!r}"
+    )
