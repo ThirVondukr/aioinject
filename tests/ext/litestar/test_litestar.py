@@ -3,9 +3,10 @@ import uuid
 from collections.abc import AsyncIterator
 
 import httpx
+import pytest
 
 import aioinject
-from aioinject import Scoped
+from aioinject import Provider, Scoped, Singleton, Transient
 
 
 async def test_function_route(
@@ -28,9 +29,19 @@ async def test_function_route_override(
     assert response.json() == {"value": expected}
 
 
+@pytest.mark.parametrize(
+    ("provider_type", "should_propagate"),
+    [
+        (Singleton, False),
+        (Scoped, True),
+        (Transient, True),
+    ],
+)
 async def test_should_propagate_exceptions(
     http_client: httpx.AsyncClient,
     container: aioinject.Container,
+    provider_type: type[Provider[int]],
+    should_propagate: bool,
 ) -> None:
     exc = None
 
@@ -44,10 +55,13 @@ async def test_should_propagate_exceptions(
             raise
 
     with (
-        container.override(Scoped(dependency)),
+        container.override(provider_type(dependency)),  # type: ignore[call-arg]
         contextlib.suppress(Exception),
     ):
         await http_client.get("/raise-exception")
 
-    assert type(exc) is Exception
-    assert str(exc) == "Raised Exception"
+    if should_propagate:
+        assert type(exc) is Exception
+        assert str(exc) == "Raised Exception"
+    else:
+        assert exc is None
