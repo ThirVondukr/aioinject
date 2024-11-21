@@ -51,7 +51,7 @@ class AioInjectMiddleware(MiddlewareProtocol):
             await self.app(scope, receive, send)
 
 
-async def after_exception(exception: BaseException, scope: Scope) -> None:
+async def _after_exception(exception: BaseException, scope: Scope) -> None:
     if _SCOPE_CONTEXT_KEY in scope:
         await scope[_SCOPE_CONTEXT_KEY].__aexit__(  # type: ignore[literal-required]
             type(exception),
@@ -76,5 +76,5 @@ class AioInjectPlugin(InitPluginProtocol):
         app_config.state[_STATE_KEY] = self.container
         app_config.middleware.append(AioInjectMiddleware)
         app_config.lifespan.append(self._lifespan)
-        app_config.after_exception.append(after_exception)
+        app_config.after_exception.append(_after_exception)
         return app_config
