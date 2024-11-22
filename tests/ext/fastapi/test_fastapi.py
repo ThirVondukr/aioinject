@@ -7,7 +7,7 @@ import pytest
 from _pytest.fixtures import SubRequest
 
 import aioinject
-from aioinject import Scoped, Transient, Singleton
+from aioinject import Scoped, Singleton, Transient
 from tests.ext.utils import ExceptionPropagation, PropagatedError
 
 
@@ -37,6 +37,7 @@ async def test_function_route_override(
     assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"value": expected}
 
+
 @pytest.mark.parametrize(
     ("provider_type", "should_propagate"),
     [
@@ -48,16 +49,14 @@ async def test_function_route_override(
 async def test_propagation(
     http_client: httpx.AsyncClient,
     container: aioinject.Container,
-    route: str,
     provider_type: Any,
     should_propagate: bool,
 ) -> None:
     propagation = ExceptionPropagation()
 
     with (
-        container.override(provider_type(propagation.dependency, type_=int)),  # type: ignore[call-arg]
+        container.override(provider_type(propagation.dependency, type_=int)),
         contextlib.suppress(Exception),
-
     ):
         await http_client.get("/raise-exception")
 

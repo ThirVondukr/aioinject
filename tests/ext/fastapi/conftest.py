@@ -36,7 +36,6 @@ def app(container: aioinject.Container) -> FastAPI:
     ) -> dict[str, str | int]:
         return {"value": number}
 
-
     @app_.get("/raise-exception")
     @inject
     async def raises_exception(
