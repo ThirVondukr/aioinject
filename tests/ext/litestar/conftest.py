@@ -9,6 +9,7 @@ from litestar import Litestar, get
 import aioinject
 from aioinject import Inject
 from aioinject.ext.litestar import AioInjectPlugin, inject
+from tests.ext.utils import PropagatedError
 
 
 @pytest.fixture
@@ -26,8 +27,7 @@ def app(container: aioinject.Container) -> Litestar:
         provided: Annotated[int, Inject],
     ) -> dict[str, str | int]:
         if provided == 0:
-            msg = "Raised Exception"
-            raise Exception(msg)  # noqa: TRY002
+            raise PropagatedError
         return {"value": provided}
 
     return Litestar(

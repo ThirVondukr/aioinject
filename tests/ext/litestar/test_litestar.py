@@ -1,12 +1,12 @@
 import contextlib
 import uuid
-from collections.abc import AsyncIterator
 
 import httpx
 import pytest
 
 import aioinject
 from aioinject import Provider, Scoped, Singleton, Transient
+from tests.ext.utils import ExceptionPropagation, PropagatedError
 
 
 async def test_function_route(
@@ -43,25 +43,15 @@ async def test_should_propagate_exceptions(
     provider_type: type[Provider[int]],
     should_propagate: bool,
 ) -> None:
-    exc = None
-
-    @contextlib.asynccontextmanager
-    async def dependency() -> AsyncIterator[int]:
-        nonlocal exc
-        try:
-            yield 0
-        except Exception as e:
-            exc = e
-            raise
+    propagation = ExceptionPropagation()
 
     with (
-        container.override(provider_type(dependency)),  # type: ignore[call-arg]
+        container.override(provider_type(propagation.dependency)),  # type: ignore[call-arg]
         contextlib.suppress(Exception),
     ):
         await http_client.get("/raise-exception")
 
     if should_propagate:
-        assert type(exc) is Exception
-        assert str(exc) == "Raised Exception"
+        assert isinstance(propagation.exc, PropagatedError)
     else:
-        assert exc is None
+        assert propagation.exc is None

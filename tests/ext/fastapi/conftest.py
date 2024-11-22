@@ -9,6 +9,7 @@ from httpx import ASGITransport
 import aioinject
 from aioinject import Inject
 from aioinject.ext.fastapi import AioInjectMiddleware, inject
+from tests.ext.utils import PropagatedError
 
 
 @inject
@@ -33,6 +34,16 @@ def app(container: aioinject.Container) -> FastAPI:
     async def route_with_depends(
         number: Annotated[int, Depends(dependency)],
     ) -> dict[str, str | int]:
+        return {"value": number}
+
+
+    @app_.get("/raise-exception")
+    @inject
+    async def raises_exception(
+        number: Annotated[int, Depends(dependency)],
+    ) -> dict[str, str | int]:
+        if number == 0:
+            raise PropagatedError
         return {"value": number}
 
     return app_
