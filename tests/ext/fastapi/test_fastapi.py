@@ -56,7 +56,7 @@ async def test_propagation(
 
     with (
         container.override(provider_type(propagation.dependency, type_=int)),
-        contextlib.suppress(Exception),
+        contextlib.suppress(PropagatedError),
     ):
         await http_client.get("/raise-exception")
 

@@ -53,6 +53,8 @@ class _BaseInjectionContext(Generic[_TExtension]):
         self._token: contextvars.Token[AnyCtx] | None = None
         self._providers: _types.Providers[Any] = {}
 
+        self._closed = False
+
     def _get_store(self, lifetime: DependencyLifetime) -> InstanceStore:
         if lifetime is DependencyLifetime.singleton:
             return self._singletons
@@ -160,8 +162,12 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        context_var.reset(self._token)  # type: ignore[arg-type]
+        if self._closed:
+            return
+
         await self._store.__aexit__(exc_type, exc_val, exc_tb)
+        context_var.reset(self._token)  # type: ignore[arg-type]
+        self._closed = True
 
 
 class SyncInjectionContext(_BaseInjectionContext[SyncContextExtension]):
@@ -232,5 +238,9 @@ class SyncInjectionContext(_BaseInjectionContext[SyncContextExtension]):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        context_var.reset(self._token)  # type: ignore[arg-type]
+        if self._closed:  # pragma: no cover
+            return
+
         self._store.__exit__(exc_type, exc_val, exc_tb)
+        context_var.reset(self._token)  # type: ignore[arg-type]
+        self._closed = True
