@@ -1,3 +1,9 @@
+## 0.35.3 (2024-11-22)
+
+### Fix
+
+- avoid closing context multiple times
+
 ## 0.35.2 (2024-11-22)
 
 ### Fix
