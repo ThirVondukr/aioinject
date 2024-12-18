@@ -110,7 +110,7 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
                     t.get_args(dependency.type_)
 
                 ]
-                resolved_type = dependency.type_[*resolved_args]
+                resolved_type = dependency.type_.__class_getitem__(*resolved_args)
                 dependencies[dependency.name] = await self.resolve(
                     type_=resolved_type,
                 )
