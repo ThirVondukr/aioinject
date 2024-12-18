@@ -1,10 +1,14 @@
 from __future__ import annotations
+import types
+from typing_extensions import Annotated, TypeGuard
+import typing as t
+import sys
 
 import contextvars
 import inspect
 from collections.abc import Callable, Coroutine, Iterable, Mapping, Sequence
 from contextvars import ContextVar
-from types import TracebackType
+from types import GenericAlias, TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -13,6 +17,7 @@ from typing import (
     overload,
 )
 
+from litestar.utils import is_generic
 from typing_extensions import Self
 
 from aioinject._store import InstanceStore, NotInCache
@@ -53,6 +58,8 @@ class _BaseInjectionContext(Generic[_TExtension]):
         self._token: contextvars.Token[AnyCtx] | None = None
         self._providers: _types.Providers[Any] = {}
 
+        self._closed = False
+
     def _get_store(self, lifetime: DependencyLifetime) -> InstanceStore:
         if lifetime is DependencyLifetime.singleton:
             return self._singletons
@@ -67,6 +74,10 @@ class _BaseInjectionContext(Generic[_TExtension]):
         self._providers[provider.type_] = provider
 
 
+def is_generic_alias(type_: Any) -> TypeGuard[GenericAlias]:
+    return isinstance(type_, types.GenericAlias | t._GenericAlias) and type_ not in (int, tuple, list, dict, set)
+
+
 class InjectionContext(_BaseInjectionContext[ContextExtension]):
     async def resolve(
         self,
@@ -78,12 +89,35 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
             return cached
 
         dependencies = {}
+        args_map: dict[str, Any] = {}
+        if type_is_generic := is_generic_alias(type_):
+            args = type_.__args__
+            params = type_.__origin__.__parameters__
+            for param, arg in zip(params, args, strict=False):
+                args_map[param.__name__] = arg
+
+
+
         for dependency in provider.resolve_dependencies(
             self._container.type_context,
         ):
-            dependencies[dependency.name] = await self.resolve(
-                type_=dependency.type_,
-            )
+            if type_is_generic and is_generic_alias(dependency.type_):
+                # This is a generic type, we need to resolve the type arguments
+                # and pass them to the provider.
+                resolved_args = [
+                    args_map[arg.__name__]
+                    for arg in
+                    t.get_args(dependency.type_)
+
+                ]
+                resolved_type = dependency.type_[*resolved_args]
+                dependencies[dependency.name] = await self.resolve(
+                    type_=resolved_type,
+                )
+            else:
+                dependencies[dependency.name] = await self.resolve(
+                    type_=dependency.type_,
+                )
 
         if provider.lifetime is DependencyLifetime.singleton:
             async with store.lock(provider) as should_provide:
@@ -160,8 +194,12 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        context_var.reset(self._token)  # type: ignore[arg-type]
+        if self._closed:
+            return
+
         await self._store.__aexit__(exc_type, exc_val, exc_tb)
+        context_var.reset(self._token)  # type: ignore[arg-type]
+        self._closed = True
 
 
 class SyncInjectionContext(_BaseInjectionContext[SyncContextExtension]):
@@ -232,5 +270,9 @@ class SyncInjectionContext(_BaseInjectionContext[SyncContextExtension]):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        context_var.reset(self._token)  # type: ignore[arg-type]
+        if self._closed:  # pragma: no cover
+            return
+
         self._store.__exit__(exc_type, exc_val, exc_tb)
+        context_var.reset(self._token)  # type: ignore[arg-type]
+        self._closed = True
