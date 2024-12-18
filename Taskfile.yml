@@ -14,15 +14,14 @@ tasks:
     desc: Lint python source files
     cmds:
       - "{{.RUNNER}} ruff check {{.SOURCES}}"
-      - "{{.RUNNER}} black --check --diff {{.SOURCES}}"
+      - "{{.RUNNER}} ruff format --checm {{.SOURCES}}"
 
   format:
     desc: Format python source files
     aliases: ["fmt"]
     cmds:
       - "{{.RUNNER}} ruff check --fix {{.SOURCES}}"
-      - "{{.RUNNER}} black {{ .SOURCES }}"
-      - "{{.RUNNER}} ruff check --fix {{.SOURCES}}"
+      - "{{.RUNNER}} ruff format {{.SOURCES}}"
 
   typecheck:
     desc: Perform type-checking

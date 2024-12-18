@@ -86,7 +86,7 @@ class _AwaitableCls:
 
     def __await__(self) -> Generator[Any, None, None]:
         self.awaited = True
-        return anyio.sleep(0).__await__()
+        return anyio.sleep(0).__await__()  # noqa: ASYNC115
 
 
 async def _async_awaitable() -> _AwaitableCls:

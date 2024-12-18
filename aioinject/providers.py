@@ -88,8 +88,8 @@ def _typevar_map(
     source: type[Any],
 ) -> tuple[type, Mapping[object, object]]:
     origin = typing.get_origin(source)
-    if not isclass(source) and not origin:
-        return source, {}
+    if not isclass(source) and not origin:  # type: ignore[unreachable]  # It's reachable
+        return source, {}  # type: ignore[unreachable]
 
     resolved_source = origin or source
     typevar_map: dict[object, object] = {}

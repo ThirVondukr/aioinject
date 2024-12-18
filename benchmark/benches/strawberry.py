@@ -57,7 +57,7 @@ async def bench_strawberry(
     """
 
     async with httpx.AsyncClient(
-        transport=ASGITransport(app),  # type: ignore[arg-type]
+        transport=ASGITransport(app),
         base_url="http://test",
     ) as client:
         for resolver_name in resolver_names:

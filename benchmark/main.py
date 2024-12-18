@@ -50,6 +50,11 @@ BENCHMARK_FUNCTIONS: Sequence[BenchFunction] = [
     functools.partial(fastapi_bench, endpoint="/depends"),
     functools.partial(
         fastapi_bench,
+        endpoint="/depends-wrap-async",
+        enable_aioinject=True,
+    ),
+    functools.partial(
+        fastapi_bench,
         endpoint="/aioinject",
         enable_aioinject=True,
     ),

@@ -5,6 +5,7 @@ import pytest
 from aioinject import Container, Inject, Object, Scoped, inject, providers
 from aioinject.context import container_var
 from aioinject.decorators import InjectMethod
+from aioinject.markers import Injected
 
 
 class _Session:
@@ -52,6 +53,19 @@ def test_would_not_inject_without_inject_marker(container: Container) -> None:
 
 
 def test_simple_inject(container: Container) -> None:
+    with container.sync_context():
+        session, *_ = _injectee()  # type: ignore[call-arg]
+        assert isinstance(session, _Session)
+
+
+def test_simple_inject_with_injected(container: Container) -> None:
+    @inject
+    def injectee(
+        test: Injected[_Session],
+        test_no_cache: Injected[_Session],
+    ) -> tuple[_Session, _Session]:
+        return test, test_no_cache
+
     with container.sync_context():
         session, *_ = _injectee()  # type: ignore[call-arg]
         assert isinstance(session, _Session)

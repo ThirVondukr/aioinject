@@ -1,6 +1,6 @@
 [project]
 name = "aioinject"
-version = "0.34.0"
+version = "0.35.3"
 description = "Async dependency injection library"
 requires-python = ">=3.10"
 authors = [
@@ -20,48 +20,37 @@ dependencies = [
 Documentation = "https://thirvondukr.github.io/aioinject/"
 Repository = "https://github.com/ThirVondukr/aioinject"
 
-[build-system]
-requires = ["pdm-pep517>=1.0"]
-build-backend = "pdm.pep517.api"
-
-
-[tool.pdm]
-[tool.pdm.dev-dependencies]
+[dependency-groups]
 dev = [
-    "anyio>=4.3.0",
+    "aiogram>=3.14.0",
+    "anyio>=4.6.2.post1",
     "asgi-lifespan>=2.1.0",
-    "black>=24.4.1",
-    "commitizen>=3.24.0",
-    "coverage[toml]>=7.5.0",
-    "fastapi>=0.110.2",
-    "litestar>=2.8.2",
-    "mypy>=1.10.0",
-    "pydantic-settings>=2.2.1",
-    "pytest>=8.1.1",
-    "ruff>=0.4.1",
-    "strawberry-graphql>=0.237.1",
-    "trio>=0.25.0",
-    "uvicorn>=0.29.0",
-    "aiogram>=3.5.0",
+    "coverage[toml]>=7.6.7",
+    "fastapi>=0.115.5",
+    "litestar>=2.12.1",
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.5.44",
+    "mypy>=1.13.0",
+    "pydantic-settings>=2.6.1",
+    "pytest>=8.3.3",
+    "ruff>=0.7.4",
+    "strawberry-graphql>=0.248.1",
+    "trio>=0.27.0",
+    "uvicorn>=0.32.0",
 ]
-docs = [
-    "mkdocs>=1.6.0",
-    "mkdocs-material>=9.5.19",
-]
-[tool.pdm.build]
-includes = ["aioinject"]
 
-[tool.pdm.scripts]
-lint = { composite = [
-    "black .",
-    "ruff check --fix .",
-    "mypy .",
-    "black --check .",
-] }
-test = { composite = [
-    "coverage run",
-    "coverage report",
-] }
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[tool.hatch.build.targets.sdist]
+ignore-vcs = true
+include = ["aioinject/*", "tests/*", "docs/*", "benchmark/*"]
+
+[tool.hatch.build.targets.wheel]
+include = ["aioinject/*"]
+
 
 [tool.coverage.run]
 source = ["aioinject"]
@@ -85,11 +74,15 @@ fail_under = 100
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.34.0"
+version = "0.35.3"
 version_files = [
     "aioinject/__init__.py",
     "pyproject.toml:version"
 ]
+update_changelog_on_bump = true
+changelog_start_rev = "0.34.0"
+major_version_zero = true
+changelog_incremental = true
 
 
 [tool.black]
@@ -125,11 +118,14 @@ ignore = [
     "TCH002",
     "TCH003",
     "EXE",
+    "ISC001", # ruff format conflict
+    "COM812", # ruff format conflict
 ]
 
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
+"tests/*/test_*.py" = ["FBT001"]
 "docs/*" = [
     "INP001", # Implicit package (no __init__.py)
     "A002", # shadows built-int

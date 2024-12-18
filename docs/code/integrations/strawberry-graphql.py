@@ -1,4 +1,4 @@
-from typing import Annotated, Any
+from typing import Any
 
 import strawberry
 import uvicorn
@@ -6,7 +6,7 @@ from strawberry import Schema
 from strawberry.asgi import GraphQL
 
 import aioinject
-from aioinject import Inject
+from aioinject import Injected
 from aioinject.ext.strawberry import AioInjectExtension, inject  # (1)!
 
 
@@ -18,7 +18,7 @@ container.register(aioinject.Object(42))
 class Query:
     @strawberry.field
     @inject
-    async def number(self, number: Annotated[int, Inject]) -> int:
+    async def number(self, number: Injected[int]) -> int:
         return number
 
 

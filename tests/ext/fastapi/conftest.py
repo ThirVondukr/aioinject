@@ -9,6 +9,7 @@ from httpx import ASGITransport
 import aioinject
 from aioinject import Inject
 from aioinject.ext.fastapi import AioInjectMiddleware, inject
+from tests.ext.utils import PropagatedError
 
 
 @inject
@@ -35,13 +36,22 @@ def app(container: aioinject.Container) -> FastAPI:
     ) -> dict[str, str | int]:
         return {"value": number}
 
+    @app_.get("/raise-exception")
+    @inject
+    async def raises_exception(
+        number: Annotated[int, Depends(dependency)],
+    ) -> dict[str, str | int]:
+        if number == 0:
+            raise PropagatedError
+        return {"value": number}
+
     return app_
 
 
 @pytest.fixture
 async def http_client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
     async with httpx.AsyncClient(
-        transport=ASGITransport(app),  # type: ignore[arg-type]
+        transport=ASGITransport(app),
         base_url="http://test",
     ) as client:
         yield client

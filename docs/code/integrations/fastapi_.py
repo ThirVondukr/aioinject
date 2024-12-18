@@ -1,12 +1,11 @@
 import contextlib
 from collections.abc import AsyncIterator
-from typing import Annotated
 
 import uvicorn
 from fastapi import FastAPI
 
 import aioinject
-from aioinject import Inject
+from aioinject import Injected
 from aioinject.ext.fastapi import AioInjectMiddleware, inject
 
 
@@ -26,7 +25,7 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     @inject
-    async def root(number: Annotated[int, Inject]) -> int:
+    async def root(number: Injected[int]) -> int:
         return number
 
     return app

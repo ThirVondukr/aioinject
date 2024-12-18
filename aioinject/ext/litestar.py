@@ -22,6 +22,7 @@ _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 _STATE_KEY = "__aioinject_container__"
+_SCOPE_CONTEXT_KEY = "__aioinject_context__"
 
 
 def inject(function: Callable[_P, _T]) -> Callable[_P, _T]:
@@ -44,8 +45,19 @@ class AioInjectMiddleware(MiddlewareProtocol):
     ) -> None:
         app: Litestar = scope["app"]
         container: Container = app.state[_STATE_KEY]
-        async with container.context():
+
+        async with container.context() as ctx:
+            scope[_SCOPE_CONTEXT_KEY] = ctx  # type: ignore[literal-required]
             await self.app(scope, receive, send)
+
+
+async def _after_exception(exception: BaseException, scope: Scope) -> None:
+    if _SCOPE_CONTEXT_KEY in scope:
+        await scope[_SCOPE_CONTEXT_KEY].__aexit__(  # type: ignore[literal-required]
+            type(exception),
+            exception,
+            exception.__traceback__,
+        )
 
 
 class AioInjectPlugin(InitPluginProtocol):
@@ -64,4 +76,5 @@ class AioInjectPlugin(InitPluginProtocol):
         app_config.state[_STATE_KEY] = self.container
         app_config.middleware.append(AioInjectMiddleware)
         app_config.lifespan.append(self._lifespan)
+        app_config.after_exception.append(_after_exception)
         return app_config
