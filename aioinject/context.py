@@ -75,9 +75,15 @@ class _BaseInjectionContext(Generic[_TExtension]):
 
 
 def is_generic_alias(type_: Any) -> TypeGuard[GenericAlias]:
-    return isinstance(type_, types.GenericAlias | t._GenericAlias) and type_ not in (int, tuple, list, dict, set)
+    # we currently don't support tuple, list, dict, set, type
+    return isinstance(type_, types.GenericAlias | t._GenericAlias) and t.get_origin(type_) not in (tuple, list, dict, set, type)  # type: ignore[reportAttributeAccessIssue] # noqa: SLF001
 
-
+def get_typevars(type_: Any) -> tuple[t.TypeVar, ...] | None:
+    if is_generic_alias(type_):
+        args = t.get_args(type_)
+        if all(isinstance(arg, t.TypeVar) for arg in args):
+            return args
+    return None
 class InjectionContext(_BaseInjectionContext[ContextExtension]):
     async def resolve(
         self,
@@ -101,16 +107,15 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
         for dependency in provider.resolve_dependencies(
             self._container.type_context,
         ):
-            if type_is_generic and is_generic_alias(dependency.type_):
+            if type_is_generic and (args:= get_typevars(dependency.type_)):
                 # This is a generic type, we need to resolve the type arguments
                 # and pass them to the provider.
                 resolved_args = [
                     args_map[arg.__name__]
                     for arg in
-                    t.get_args(dependency.type_)
-
+                    args
                 ]
-                resolved_type = dependency.type_.__class_getitem__(*resolved_args)
+                resolved_type = dependency.type_[*resolved_args]
                 dependencies[dependency.name] = await self.resolve(
                     type_=resolved_type,
                 )

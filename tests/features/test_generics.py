@@ -1,3 +1,4 @@
+import sys
 from typing import Generic, TypeVar
 
 import pytest
@@ -67,21 +68,49 @@ async def test_resolve_generics(
         assert isinstance(instance, instanceof)
 
 
-
+# TODO: I'm pretty sure this redundant.
 class NestedGenericService(Generic[T]):
-    def __init__(self, service: GenericService[T]) -> None:
+    def __init__(self, service: T) -> None:
         self.service = service
 
+MEANING_OF_LIFE = 42
+class Something:
+    def __init__(self) -> None:
+        self.a = MEANING_OF_LIFE
 
 async def test_nested_generics() -> None:
     container = Container()
-    container.register(Scoped(NestedGenericService[int]),
-    Scoped(GenericService[int]),
+    container.register(
+        Scoped(NestedGenericService[WithGenericDependency[Something]]),
+    Scoped(WithGenericDependency[Something]),
+    Scoped(Something),
+    Object(MEANING_OF_LIFE),
+    Object("42"))
+
+    async with container.context() as ctx:
+        instance = await ctx.resolve(NestedGenericService[WithGenericDependency[Something]])
+        assert isinstance(instance, NestedGenericService)
+        assert isinstance(instance.service, WithGenericDependency)
+        assert isinstance(instance.service.dependency, Something)
+        assert instance.service.dependency.a == MEANING_OF_LIFE
+
+IS_PY_312 = sys.version_info >= (3, 12)
+skip_ifnot_312 = pytest.mark.skipif(not IS_PY_312, reason="Python 3.12+ required")
+
+class TestNestedUnresolvedGeneric(Generic[T]):
+    def __init__(self, service:  WithGenericDependency[T]) -> None:
+        self.service = service
+
+
+async def test_nested_unresolved_generic() -> None:
+    container = Container()
+    container.register(Scoped(TestNestedUnresolvedGeneric[int]),
+    Scoped(WithGenericDependency[int]),
     Object(42),
     Object("42"))
 
     async with container.context() as ctx:
-        instance = await ctx.resolve(NestedGenericService[int])
-        assert isinstance(instance, NestedGenericService)
-        assert isinstance(instance.service, GenericService)
-        assert instance.service.dependency == "42"
+        instance = await ctx.resolve(TestNestedUnresolvedGeneric[int])
+        assert isinstance(instance, TestNestedUnresolvedGeneric)
+        assert isinstance(instance.service, WithGenericDependency)
+        assert instance.service.dependency == 42
