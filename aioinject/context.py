@@ -78,6 +78,9 @@ def is_generic_alias(type_: Any) -> TypeGuard[GenericAlias]:
     # we currently don't support tuple, list, dict, set, type
     return isinstance(type_, types.GenericAlias | t._GenericAlias) and t.get_origin(type_) not in (tuple, list, dict, set, type)  # type: ignore[reportAttributeAccessIssue] # noqa: SLF001
 
+def get_orig_bases(type_: type) -> tuple[type, ...] | None:
+    return getattr(type_, "__orig_bases__", None)
+
 def get_typevars(type_: Any) -> tuple[t.TypeVar, ...] | None:
     if is_generic_alias(type_):
         args = t.get_args(type_)
@@ -96,12 +99,22 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
 
         dependencies = {}
         args_map: dict[str, Any] = {}
-        if type_is_generic := is_generic_alias(type_):
+        type_is_generic = False
+        if is_generic_alias(type_):
+            type_is_generic = True
             args = type_.__args__
             params = type_.__origin__.__parameters__
             for param, arg in zip(params, args, strict=False):
                 args_map[param.__name__] = arg
-
+        elif orig_bases := get_orig_bases(type_):
+            type_is_generic = True
+            # find the generic parent
+            for base in orig_bases:
+                if is_generic_alias(base):
+                    args = base.__args__
+                    params = base.__origin__.__parameters__
+                    for param, arg in zip(params, args, strict=False):
+                        args_map[param.__name__] = arg
 
 
         for dependency in provider.resolve_dependencies(

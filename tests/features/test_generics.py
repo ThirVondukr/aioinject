@@ -114,3 +114,24 @@ async def test_nested_unresolved_generic() -> None:
         assert isinstance(instance, TestNestedUnresolvedGeneric)
         assert isinstance(instance.service, WithGenericDependency)
         assert instance.service.dependency == 42
+
+
+
+
+
+async def test_nested_unresolved_concrete_generic() -> None:
+    class GenericImpl(TestNestedUnresolvedGeneric[str]):
+        pass
+    
+
+    container = Container()
+    container.register(Scoped(GenericImpl),
+    Scoped(WithGenericDependency[str]),
+    Object(42),
+    Object("42"))
+
+    async with container.context() as ctx:
+        instance = await ctx.resolve(GenericImpl)
+        assert isinstance(instance, GenericImpl)
+        assert isinstance(instance.service, WithGenericDependency)
+        assert instance.service.dependency == "42"
