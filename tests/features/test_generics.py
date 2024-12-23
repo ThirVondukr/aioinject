@@ -73,10 +73,12 @@ class NestedGenericService(Generic[T]):
     def __init__(self, service: T) -> None:
         self.service = service
 
-MEANING_OF_LIFE = 42
+MEANING_OF_LIFE_INT = 42
+MEANING_OF_LIFE_STR = "42"
+
 class Something:
     def __init__(self) -> None:
-        self.a = MEANING_OF_LIFE
+        self.a = MEANING_OF_LIFE_INT
 
 async def test_nested_generics() -> None:
     container = Container()
@@ -84,7 +86,7 @@ async def test_nested_generics() -> None:
         Scoped(NestedGenericService[WithGenericDependency[Something]]),
     Scoped(WithGenericDependency[Something]),
     Scoped(Something),
-    Object(MEANING_OF_LIFE),
+    Object(MEANING_OF_LIFE_INT),
     Object("42"))
 
     async with container.context() as ctx:
@@ -92,7 +94,7 @@ async def test_nested_generics() -> None:
         assert isinstance(instance, NestedGenericService)
         assert isinstance(instance.service, WithGenericDependency)
         assert isinstance(instance.service.dependency, Something)
-        assert instance.service.dependency.a == MEANING_OF_LIFE
+        assert instance.service.dependency.a == MEANING_OF_LIFE_INT
 
 IS_PY_312 = sys.version_info >= (3, 12)
 skip_ifnot_312 = pytest.mark.skipif(not IS_PY_312, reason="Python 3.12+ required")
@@ -113,7 +115,7 @@ async def test_nested_unresolved_generic() -> None:
         instance = await ctx.resolve(TestNestedUnresolvedGeneric[int])
         assert isinstance(instance, TestNestedUnresolvedGeneric)
         assert isinstance(instance.service, WithGenericDependency)
-        assert instance.service.dependency == 42
+        assert instance.service.dependency == MEANING_OF_LIFE_INT
 
 
 
@@ -135,3 +137,34 @@ async def test_nested_unresolved_concrete_generic() -> None:
         assert isinstance(instance, GenericImpl)
         assert isinstance(instance.service, WithGenericDependency)
         assert instance.service.dependency == "42"
+
+
+
+async def test_partially_resolved_generic() -> None:
+    K = TypeVar("K")
+    class TwoGeneric(Generic[T, K]):
+        def __init__(self, a: WithGenericDependency[T], b: WithGenericDependency[K]) -> None:
+            self.a = a
+            self.b = b
+    
+
+    class UsesTwoGeneric(Generic[T]):
+        def __init__(self, service: TwoGeneric[T, str]) -> None:
+            self.service = service
+    
+    container = Container()
+    container.register(Scoped(UsesTwoGeneric[int]),
+    Scoped(TwoGeneric[int, str]),
+    Scoped(WithGenericDependency[int]),
+    Scoped(WithGenericDependency[str]),
+    Object(MEANING_OF_LIFE_INT),
+    Object("42"))
+
+    async with container.context() as ctx:
+        instance = await ctx.resolve(UsesTwoGeneric[int])
+        assert isinstance(instance, UsesTwoGeneric)
+        assert isinstance(instance.service, TwoGeneric)
+        assert isinstance(instance.service.a, WithGenericDependency)
+        assert isinstance(instance.service.b, WithGenericDependency)
+        assert instance.service.a.dependency == MEANING_OF_LIFE_INT
+        assert instance.service.b.dependency == MEANING_OF_LIFE_STR

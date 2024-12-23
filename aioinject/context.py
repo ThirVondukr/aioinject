@@ -81,11 +81,14 @@ def is_generic_alias(type_: Any) -> TypeGuard[GenericAlias]:
 def get_orig_bases(type_: type) -> tuple[type, ...] | None:
     return getattr(type_, "__orig_bases__", None)
 
-def get_typevars(type_: Any) -> tuple[t.TypeVar, ...] | None:
+def get_typevars(type_: Any) -> list[t.TypeVar] | None:
     if is_generic_alias(type_):
         args = t.get_args(type_)
-        if all(isinstance(arg, t.TypeVar) for arg in args):
-            return args
+        return [
+            arg
+            for arg in args
+            if isinstance(arg, t.TypeVar)
+        ]
     return None
 class InjectionContext(_BaseInjectionContext[ContextExtension]):
     async def resolve(
