@@ -1,10 +1,14 @@
 from __future__ import annotations
+import types
+from typing_extensions import Annotated, TypeGuard
+import typing as t
+import sys
 
 import contextvars
 import inspect
 from collections.abc import Callable, Coroutine, Iterable, Mapping, Sequence
 from contextvars import ContextVar
-from types import TracebackType
+from types import GenericAlias, TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -13,6 +17,7 @@ from typing import (
     overload,
 )
 
+from litestar.utils import is_generic
 from typing_extensions import Self
 
 from aioinject._store import InstanceStore, NotInCache
@@ -69,6 +74,22 @@ class _BaseInjectionContext(Generic[_TExtension]):
         self._providers[provider.type_] = provider
 
 
+def is_generic_alias(type_: Any) -> TypeGuard[GenericAlias]:
+    # we currently don't support tuple, list, dict, set, type
+    return isinstance(type_, types.GenericAlias | t._GenericAlias) and t.get_origin(type_) not in (tuple, list, dict, set, type)  # type: ignore[reportAttributeAccessIssue] # noqa: SLF001
+
+def get_orig_bases(type_: type) -> tuple[type, ...] | None:
+    return getattr(type_, "__orig_bases__", None)
+
+def get_typevars(type_: Any) -> list[t.TypeVar] | None:
+    if is_generic_alias(type_):
+        args = t.get_args(type_)
+        return [
+            arg
+            for arg in args
+            if isinstance(arg, t.TypeVar)
+        ]
+    return None
 class InjectionContext(_BaseInjectionContext[ContextExtension]):
     async def resolve(
         self,
@@ -80,12 +101,47 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
             return cached
 
         dependencies = {}
+        args_map: dict[str, Any] = {}
+        type_is_generic = False
+        if is_generic_alias(type_):
+            type_is_generic = True
+            args = type_.__args__
+            params = type_.__origin__.__parameters__
+            for param, arg in zip(params, args, strict=False):
+                args_map[param.__name__] = arg
+        elif orig_bases := get_orig_bases(type_):
+            type_is_generic = True
+            # find the generic parent
+            for base in orig_bases:
+                if is_generic_alias(base):
+                    args = base.__args__
+                    if params := getattr(base.__origin__, "__parameters__", None):
+                        for param, arg in zip(params, args, strict=False):
+                            args_map[param.__name__] = arg
+            if not args_map:
+                # type may be generic though user didn't provide any type parameters
+                type_is_generic = False
+
+
         for dependency in provider.resolve_dependencies(
             self._container.type_context,
         ):
-            dependencies[dependency.name] = await self.resolve(
-                type_=dependency.type_,
-            )
+            if type_is_generic and (args:= get_typevars(dependency.type_)):
+                # This is a generic type, we need to resolve the type arguments
+                # and pass them to the provider.
+                resolved_args = [
+                    args_map[arg.__name__]
+                    for arg in
+                    args
+                ]
+                resolved_type = dependency.type_[*resolved_args]
+                dependencies[dependency.name] = await self.resolve(
+                    type_=resolved_type,
+                )
+            else:
+                dependencies[dependency.name] = await self.resolve(
+                    type_=dependency.type_,
+                )
 
         if provider.lifetime is DependencyLifetime.singleton:
             async with store.lock(provider) as should_provide:
