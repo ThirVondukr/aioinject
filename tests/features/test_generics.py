@@ -168,3 +168,21 @@ async def test_partially_resolved_generic() -> None:
         assert isinstance(instance.service.b, WithGenericDependency)
         assert instance.service.a.dependency == MEANING_OF_LIFE_INT
         assert instance.service.b.dependency == MEANING_OF_LIFE_STR
+
+
+
+async def test_can_resolve_generic_class_without_parameters() -> None:
+    class GenericClass(Generic[T]):
+        def __init__(self, a: int) -> None:
+            self.a = a
+        
+        def so_generic(self) -> T:  # pragma: no cover
+            raise NotImplementedError
+
+    container = Container()
+    container.register(Scoped(GenericClass), Object(MEANING_OF_LIFE_INT))
+
+    async with container.context() as ctx:
+        instance = await ctx.resolve(GenericClass)
+        assert isinstance(instance, GenericClass)
+        assert instance.a == MEANING_OF_LIFE_INT

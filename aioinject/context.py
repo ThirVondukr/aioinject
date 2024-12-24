@@ -115,9 +115,12 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
             for base in orig_bases:
                 if is_generic_alias(base):
                     args = base.__args__
-                    params = base.__origin__.__parameters__
-                    for param, arg in zip(params, args, strict=False):
-                        args_map[param.__name__] = arg
+                    if params := getattr(base.__origin__, "__parameters__", None):
+                        for param, arg in zip(params, args, strict=False):
+                            args_map[param.__name__] = arg
+            if not args_map:
+                # type may be generic though user didn't provide any type parameters
+                type_is_generic = False
 
 
         for dependency in provider.resolve_dependencies(
