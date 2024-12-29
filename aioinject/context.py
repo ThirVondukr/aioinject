@@ -109,8 +109,8 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
             args = type_.__args__
             params: dict[str, Any] = {
                 param.__name__: param
-                for param in type_.__origin__.__parameters__
-            }  # type: ignore[attr-defined]
+                for param in type_.__origin__.__parameters__  # type: ignore[attr-defined]
+            }  
             args_map = dict(zip(params.keys(), args, strict=False))
         elif orig_bases := get_orig_bases(type_):
             type_is_generic = True
@@ -141,7 +141,7 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
                 resolved_args = [args_map[arg.__name__] for arg in dep_args]
                 origin = t.get_origin(dep_type)
                 assert origin is not None  # noqa: S101
-                resolved_type = dep_type.__getitem__(*resolved_args)
+                resolved_type = dep_type.__getitem__(*resolved_args)  # type: ignore[index]
                 dependencies[dependency.name] = await self.resolve(
                     type_=resolved_type,
                 )
