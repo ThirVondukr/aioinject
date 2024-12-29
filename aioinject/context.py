@@ -92,7 +92,7 @@ def get_typevars(type_: Any) -> list[t.TypeVar] | None:
 
 
 class InjectionContext(_BaseInjectionContext[ContextExtension]):
-    async def resolve(  # noqa: C901, PLR0912
+    async def resolve(  # noqa: C901
         self,
         type_: type[_T],
     ) -> _T:
@@ -119,10 +119,11 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
                 if is_generic_alias(base):
                     args = base.__args__
                     if params := {
-                        param.__name__: param	for param in
-						getattr(
-                        base.__origin__, "__parameters__", ()
-                    )}:
+                        param.__name__: param
+                        for param in getattr(
+                            base.__origin__, "__parameters__", ()
+                        )
+                    }:
                         args_map.update(
                             dict(zip(params, args, strict=False)),
                         )
