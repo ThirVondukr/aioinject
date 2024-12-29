@@ -102,15 +102,6 @@ async def test_nested_generics() -> None:
         assert instance.service.dependency.a == MEANING_OF_LIFE_INT
 
 
-IS_PY_312 = sys.version_info >= (3, 12)
-
-
-def skip_ifnot_312(reasone: str) -> pytest.MarkDecorator:
-    return pytest.mark.skipif(
-        not IS_PY_312, reason=f"Python 3.12+ required: {reasone}"
-    )
-
-
 class TestNestedUnresolvedGeneric(Generic[T]):
     def __init__(self, service: WithGenericDependency[T]) -> None:
         self.service = service
@@ -151,9 +142,6 @@ async def test_nested_unresolved_concrete_generic() -> None:
         assert instance.service.dependency == "42"
 
 
-@skip_ifnot_312(
-    "Partially concrete generics will raise TypeError in prior versions"
-)
 async def test_partially_resolved_generic() -> None:
     K = TypeVar("K")
 
