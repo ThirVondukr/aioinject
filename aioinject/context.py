@@ -110,7 +110,7 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
             params: dict[str, Any] = {
                 param.__name__: param
                 for param in type_.__origin__.__parameters__  # type: ignore[attr-defined]
-            }  
+            }
             args_map = dict(zip(params.keys(), args, strict=False))
         elif orig_bases := get_orig_bases(type_):
             type_is_generic = True
