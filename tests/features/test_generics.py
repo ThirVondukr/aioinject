@@ -68,7 +68,6 @@ async def test_resolve_generics(
         assert isinstance(instance, instanceof)
 
 
-# TODO: I'm pretty sure this redundant.
 class NestedGenericService(Generic[T]):
     def __init__(self, service: T) -> None:
         self.service = service
@@ -124,7 +123,7 @@ async def test_nested_unresolved_generic() -> None:
 async def test_nested_unresolved_concrete_generic() -> None:
     class GenericImpl(TestNestedUnresolvedGeneric[str]):
         pass
-    
+
 
     container = Container()
     container.register(Scoped(GenericImpl),
@@ -146,12 +145,12 @@ async def test_partially_resolved_generic() -> None:
         def __init__(self, a: WithGenericDependency[T], b: WithGenericDependency[K]) -> None:
             self.a = a
             self.b = b
-    
+
 
     class UsesTwoGeneric(Generic[T]):
         def __init__(self, service: TwoGeneric[T, str]) -> None:
             self.service = service
-    
+
     container = Container()
     container.register(Scoped(UsesTwoGeneric[int]),
     Scoped(TwoGeneric[int, str]),
@@ -175,7 +174,7 @@ async def test_can_resolve_generic_class_without_parameters() -> None:
     class GenericClass(Generic[T]):
         def __init__(self, a: int) -> None:
             self.a = a
-        
+
         def so_generic(self) -> T:  # pragma: no cover
             raise NotImplementedError
 

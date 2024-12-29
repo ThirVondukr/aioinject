@@ -1,11 +1,9 @@
 from __future__ import annotations
-import types
-from typing_extensions import Annotated, TypeGuard
-import typing as t
-import sys
 
 import contextvars
 import inspect
+import types
+import typing as t
 from collections.abc import Callable, Coroutine, Iterable, Mapping, Sequence
 from contextvars import ContextVar
 from types import GenericAlias, TracebackType
@@ -13,11 +11,11 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
+    TypeGuard,
     TypeVar,
     overload,
 )
 
-from litestar.utils import is_generic
 from typing_extensions import Self
 
 from aioinject._store import InstanceStore, NotInCache
@@ -91,7 +89,7 @@ def get_typevars(type_: Any) -> list[t.TypeVar] | None:
         ]
     return None
 class InjectionContext(_BaseInjectionContext[ContextExtension]):
-    async def resolve(
+    async def resolve(  # noqa: C901, PLR0912
         self,
         type_: type[_T],
     ) -> _T:
