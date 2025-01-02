@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextvars
+import functools
 import inspect
 import types
 import typing as t
@@ -84,15 +85,45 @@ def get_orig_bases(type_: type) -> tuple[type, ...] | None:
     return getattr(type_, "__orig_bases__", None)
 
 
-def get_typevars(type_: Any) -> list[t.TypeVar] | None:
+@functools.lru_cache
+def get_generic_arguments(type_: Any) -> list[t.TypeVar] | None:
+    """
+    Returns generic arguments of given class, e.g. Class[T] would return [~T]
+    """
     if is_generic_alias(type_):
         args = t.get_args(type_)
         return [arg for arg in args if isinstance(arg, t.TypeVar)]
     return None
 
 
+@functools.lru_cache
+def _get_generic_args_map(type_: type[object]) -> dict[str, type[object]]:
+    if is_generic_alias(type_):
+        args = type_.__args__
+        params: dict[str, Any] = {
+            param.__name__: param
+            for param in type_.__origin__.__parameters__  # type: ignore[attr-defined]
+        }
+        return dict(zip(params.keys(), args, strict=False))
+
+    args_map = {}
+    if orig_bases := get_orig_bases(type_):
+        # find the generic parent
+        for base in orig_bases:
+            if is_generic_alias(base):
+                args = base.__args__
+                if params := {
+                    param.__name__: param
+                    for param in getattr(base.__origin__, "__parameters__", ())
+                }:
+                    args_map.update(
+                        dict(zip(params, args, strict=True)),
+                    )
+    return args_map
+
+
 class InjectionContext(_BaseInjectionContext[ContextExtension]):
-    async def resolve(  # noqa: C901
+    async def resolve(
         self,
         type_: type[_T],
     ) -> _T:
@@ -102,53 +133,25 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
             return cached
 
         dependencies = {}
-        args_map: dict[str, Any] = {}
-        type_is_generic = False
-        if is_generic_alias(type_):
-            type_is_generic = True
-            args = type_.__args__
-            params: dict[str, Any] = {
-                param.__name__: param
-                for param in type_.__origin__.__parameters__  # type: ignore[attr-defined]
-            }
-            args_map = dict(zip(params.keys(), args, strict=False))
-        elif orig_bases := get_orig_bases(type_):
-            type_is_generic = True
-            # find the generic parent
-            for base in orig_bases:
-                if is_generic_alias(base):
-                    args = base.__args__
-                    if params := {
-                        param.__name__: param
-                        for param in getattr(
-                            base.__origin__, "__parameters__", ()
-                        )
-                    }:
-                        args_map.update(
-                            dict(zip(params, args, strict=False)),
-                        )
-            if not args_map:
-                # type may be generic though user didn't provide any type parameters
-                type_is_generic = False
+        args_map: dict[str, Any] = _get_generic_args_map(type_)  # type: ignore[arg-type]
 
         for dependency in provider.resolve_dependencies(
             self._container.type_context,
         ):
-            dep_type = dependency.type_
-            if type_is_generic and (dep_args := get_typevars(dep_type)):
+            resolved_type = dependency.type_
+            if args_map and (
+                generic_arguments := get_generic_arguments(dependency.type_)  # type: ignore[arg-type]
+            ):
                 # This is a generic type, we need to resolve the type arguments
                 # and pass them to the provider.
-                resolved_args = [args_map[arg.__name__] for arg in dep_args]
-                origin = t.get_origin(dep_type)
-                assert origin is not None  # noqa: S101
-                resolved_type = dep_type.__getitem__(*resolved_args)  # type: ignore[index]
-                dependencies[dependency.name] = await self.resolve(
-                    type_=resolved_type,
-                )
-            else:
-                dependencies[dependency.name] = await self.resolve(
-                    type_=dep_type,
-                )
+                resolved_args = [
+                    args_map[arg.__name__] for arg in generic_arguments
+                ]
+                resolved_type = dependency.type_.__getitem__(*resolved_args)  # type: ignore[index]
+
+            dependencies[dependency.name] = await self.resolve(
+                type_=resolved_type,
+            )
 
         if provider.lifetime is DependencyLifetime.singleton:
             async with store.lock(provider) as should_provide:
