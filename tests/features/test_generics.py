@@ -101,7 +101,7 @@ async def test_nested_generics() -> None:
         assert instance.service.dependency.a == MEANING_OF_LIFE_INT
 
 
-class TestNestedUnresolvedGeneric(Generic[T]):
+class NestedUnresolvedGeneric(Generic[T]):
     def __init__(self, service: WithGenericDependency[T]) -> None:
         self.service = service
 
@@ -109,21 +109,21 @@ class TestNestedUnresolvedGeneric(Generic[T]):
 async def test_nested_unresolved_generic() -> None:
     container = Container()
     container.register(
-        Scoped(TestNestedUnresolvedGeneric[int]),
+        Scoped(NestedUnresolvedGeneric[int]),
         Scoped(WithGenericDependency[int]),
         Object(42),
         Object("42"),
     )
 
     async with container.context() as ctx:
-        instance = await ctx.resolve(TestNestedUnresolvedGeneric[int])
-        assert isinstance(instance, TestNestedUnresolvedGeneric)
+        instance = await ctx.resolve(NestedUnresolvedGeneric[int])
+        assert isinstance(instance, NestedUnresolvedGeneric)
         assert isinstance(instance.service, WithGenericDependency)
         assert instance.service.dependency == MEANING_OF_LIFE_INT
 
 
 async def test_nested_unresolved_concrete_generic() -> None:
-    class GenericImpl(TestNestedUnresolvedGeneric[str]):
+    class GenericImpl(NestedUnresolvedGeneric[str]):
         pass
 
     container = Container()
