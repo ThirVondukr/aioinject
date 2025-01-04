@@ -1,3 +1,5 @@
+import abc
+from collections.abc import Sequence
 from typing import Annotated, NewType
 
 import pytest
@@ -127,3 +129,44 @@ async def test_new_type() -> None:
         service = await ctx.resolve(Service)
         assert service.a == 1
         assert service.b == 2  # noqa: PLR2004
+
+
+async def test_iterable_provider() -> None:
+    class ILogger(abc.ABC):
+        @abc.abstractmethod
+        def log(self, msg: str) -> None: ...
+
+    class ConsoleLogger(ILogger):
+        def log(self, msg: str) -> None:
+            print(msg)  # noqa: T201
+
+    class FileLogger(ILogger):
+        def log(self, msg: str) -> None:
+            pass
+
+    class Service:
+        def __init__(
+            self,
+            all_loggers: Sequence[ILogger],
+            actual_logger: ILogger,
+        ) -> None:
+            self.all_loggers = all_loggers
+            self.actual_logger = actual_logger
+
+    container = Container()
+    container.register(Scoped(ConsoleLogger, type_=ILogger))
+    container.register(Scoped(FileLogger, type_=ILogger))
+    container.register(Scoped(Service))
+
+    async with container.context() as ctx:
+        service = await ctx.resolve(Service)
+        assert isinstance(service.all_loggers[0], ConsoleLogger)
+        assert isinstance(service.all_loggers[1], FileLogger)
+        assert isinstance(service.actual_logger, FileLogger)
+
+        loggers = await ctx.resolve_iterable(ILogger)  # type: ignore[type-abstract]
+        assert len(loggers) == 2  # noqa: PLR2004
+
+    with container.sync_context() as sync_ctx:
+        loggers = sync_ctx.resolve_iterable(ILogger)  # type: ignore[type-abstract]
+        assert len(loggers) == 2  # noqa: PLR2004

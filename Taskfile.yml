@@ -14,7 +14,7 @@ tasks:
     desc: Lint python source files
     cmds:
       - "{{.RUNNER}} ruff check {{.SOURCES}}"
-      - "{{.RUNNER}} ruff format --checm {{.SOURCES}}"
+      - "{{.RUNNER}} ruff format --check {{.SOURCES}}"
 
   format:
     desc: Format python source files

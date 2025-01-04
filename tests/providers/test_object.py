@@ -36,7 +36,7 @@ def test_should_have_no_dependencies(
 ) -> None:
     for obj in dependencies_test_data:
         provider = Object(object_=obj)
-        assert not provider.resolve_dependencies()
+        assert not provider.collect_dependencies()
 
 
 def test_should_have_empty_type_hints(

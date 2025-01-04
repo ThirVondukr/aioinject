@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextvars
 import inspect
+from collections import defaultdict
 from collections.abc import Callable, Coroutine, Iterable, Mapping, Sequence
 from contextvars import ContextVar
 from types import TracebackType
@@ -9,6 +10,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
+    Literal,
     TypeVar,
     overload,
 )
@@ -52,7 +54,7 @@ class _BaseInjectionContext(Generic[_TExtension]):
         self._store = InstanceStore()
 
         self._token: contextvars.Token[AnyCtx] | None = None
-        self._providers: _types.Providers[Any] = {}
+        self._providers: _types.Providers[Any] = defaultdict(list)
 
         self._closed = False
 
@@ -61,35 +63,73 @@ class _BaseInjectionContext(Generic[_TExtension]):
             return self._singletons
         return self._store
 
-    def _get_provider(self, type_: type[_T]) -> Provider[_T]:
-        return self._providers.get(type_) or self._container.get_provider(
+    def _get_providers(self, type_: type[_T]) -> list[Provider[_T]]:
+        return self._providers.get(type_) or self._container.get_providers(
             type_,
         )
 
     def register(self, provider: Provider[Any]) -> None:
-        self._providers[provider.type_] = provider
+        self._providers[provider.type_].append(provider)
 
 
 class InjectionContext(_BaseInjectionContext[ContextExtension]):
-    async def resolve(
+    async def resolve(self, type_: type[_T]) -> _T:
+        return await self._resolve(type_, is_iterable=False)
+
+    async def resolve_iterable(self, type_: type[_T]) -> list[_T]:
+        return await self._resolve(type_, is_iterable=True)
+
+    @overload
+    async def _resolve(
         self,
         type_: type[_T],
+        *,
+        is_iterable: Literal[False],
+    ) -> _T: ...
+
+    @overload
+    async def _resolve(
+        self,
+        type_: type[_T],
+        *,
+        is_iterable: Literal[True],
+    ) -> list[_T]: ...
+
+    async def _resolve(
+        self,
+        type_: type[_T],
+        *,
+        is_iterable: bool,
+    ) -> _T | list[_T]:
+        providers = self._get_providers(type_)
+        if not is_iterable:
+            return await self._resolve_provider(providers[-1])  # type: ignore[arg-type]
+        return [
+            await self._resolve_provider(provider) for provider in providers
+        ]
+
+    async def _resolve_provider(
+        self,
+        provider: Provider[_T],
     ) -> _T:
-        provider = self._get_provider(type_)
         store = self._get_store(provider.lifetime)
         if (cached := store.get(provider)) is not NotInCache.sentinel:
             return cached
 
-        provider_dependencies = provider.resolve_dependencies(
+        provider_dependencies = provider.collect_dependencies(
             context=self._container.type_context
         )
         dependencies_map = get_generic_parameter_map(
-            type_,  # type: ignore[arg-type]
+            provider.type_,  # type: ignore[arg-type]
             provider_dependencies,
         )
         dependencies = {
-            dependency.name: await self.resolve(
-                dependencies_map.get(dependency.name, dependency.type_)
+            dependency.name: await self._resolve(  # type: ignore[call-overload]
+                type_=dependencies_map.get(
+                    dependency.name,
+                    dependency.inner_type,
+                ),
+                is_iterable=dependency.is_iterable,
             )
             for dependency in provider_dependencies
         }
@@ -97,25 +137,25 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
         if provider.lifetime is DependencyLifetime.singleton:
             async with store.lock(provider) as should_provide:
                 if should_provide:
-                    return await self._resolve(provider, store, dependencies)
-                return store.get(  # type: ignore[return-value] # pragma: no cover
-                    provider,
-                )
+                    return await self._provide_and_store(
+                        provider, store, dependencies
+                    )
+                return store.get(provider)  # type: ignore[return-value] # pragma: no cover
 
-        return await self._resolve(provider, store, dependencies)
+        return await self._provide_and_store(provider, store, dependencies)
 
-    async def _resolve(
+    async def _provide_and_store(
         self,
         provider: Provider[_T],
         store: InstanceStore,
-        dependencies: Mapping[str, Any],
+        dependencies: Mapping[str, object],
     ) -> _T:
-        resolved = await provider.provide(dependencies)
+        provided = await provider.provide(dependencies)
         if provider.is_generator:
-            resolved = await store.enter_context(resolved)
-        store.add(provider, resolved)
-        await self._on_resolve(provider=provider, instance=resolved)
-        return resolved
+            provided = await store.enter_context(provided)
+        store.add(provider, provided)
+        await self._on_resolve(provider=provider, instance=provided)
+        return provided
 
     @overload
     async def execute(
@@ -142,14 +182,15 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
         *args: Any,
         **kwargs: Any,
     ) -> _T:
-        resolved = {}
-        for dependency in dependencies:
-            if dependency.name in kwargs:
-                continue
-
-            resolved[dependency.name] = await self.resolve(
-                type_=dependency.type_,
+        resolved = {
+            dependency.name: await self._resolve(  # type: ignore[call-overload]
+                type_=dependency.inner_type,
+                is_iterable=dependency.is_iterable,
             )
+            for dependency in dependencies
+            if dependency.name not in kwargs
+        }
+
         if inspect.iscoroutinefunction(function):
             return await function(*args, **kwargs, **resolved)
         return function(*args, **kwargs, **resolved)  # type: ignore[return-value]
@@ -178,43 +219,87 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
 
 
 class SyncInjectionContext(_BaseInjectionContext[SyncContextExtension]):
-    def resolve(
+    def resolve(self, type_: type[_T]) -> _T:
+        return self._resolve(type_, is_iterable=False)
+
+    def resolve_iterable(self, type_: type[_T]) -> list[_T]:
+        return self._resolve(type_, is_iterable=True)
+
+    @overload
+    def _resolve(
         self,
         type_: type[_T],
+        *,
+        is_iterable: Literal[False],
+    ) -> _T: ...
+
+    @overload
+    def _resolve(
+        self,
+        type_: type[_T],
+        *,
+        is_iterable: Literal[True],
+    ) -> list[_T]: ...
+
+    def _resolve(
+        self,
+        type_: type[_T],
+        *,
+        is_iterable: bool,
+    ) -> _T | list[_T]:
+        providers = self._get_providers(type_)
+        if not is_iterable:
+            return self._resolve_provider(providers[-1])
+        return [self._resolve_provider(provider) for provider in providers]
+
+    def _resolve_provider(
+        self,
+        provider: Provider[_T],
     ) -> _T:
-        provider = self._get_provider(type_)
         store = self._get_store(provider.lifetime)
         if (cached := store.get(provider)) is not NotInCache.sentinel:
             return cached
 
-        dependencies = {}
-        for dependency in provider.resolve_dependencies(
-            self._container.type_context,
-        ):
-            dependencies[dependency.name] = self.resolve(
-                type_=dependency.type_,
+        provider_dependencies = provider.collect_dependencies(
+            context=self._container.type_context
+        )
+        dependencies_map = get_generic_parameter_map(
+            provider.type_,  # type: ignore[arg-type]
+            provider_dependencies,
+        )
+        dependencies = {
+            dependency.name: self._resolve(  # type: ignore[call-overload]
+                type_=dependencies_map.get(
+                    dependency.name,
+                    dependency.inner_type,
+                ),
+                is_iterable=dependency.is_iterable,
             )
+            for dependency in provider_dependencies
+        }
 
         if provider.lifetime is DependencyLifetime.singleton:
             with store.sync_lock(provider) as should_provide:
                 if should_provide:
-                    return self._resolve(provider, store, dependencies)
+                    return self._provide_and_store(
+                        provider, store, dependencies
+                    )
                 return store.get(provider)  # type: ignore[return-value] # pragma: no cover
 
-        return self._resolve(provider, store, dependencies)
+        return self._provide_and_store(provider, store, dependencies)
 
-    def _resolve(
+    def _provide_and_store(
         self,
         provider: Provider[_T],
         store: InstanceStore,
-        dependencies: Mapping[str, Any],
+        dependencies: Mapping[str, object],
     ) -> _T:
-        resolved = provider.provide_sync(dependencies)
+        provided = provider.provide_sync(dependencies)
         if provider.is_generator:
-            resolved = store.enter_sync_context(resolved)
-        store.add(provider, resolved)
-        self._on_resolve(provider=provider, instance=resolved)
-        return resolved
+            provided = store.enter_sync_context(provided)
+        store.add(provider, provided)
+        self._on_resolve(provider=provider, instance=provided)
+        return provided
 
     def execute(
         self,
@@ -223,11 +308,14 @@ class SyncInjectionContext(_BaseInjectionContext[SyncContextExtension]):
         *args: Any,
         **kwargs: Any,
     ) -> _T:
-        resolved = {}
-        for dependency in dependencies:
-            if dependency.name in kwargs:
-                continue
-            resolved[dependency.name] = self.resolve(type_=dependency.type_)
+        resolved = {
+            dependency.name: self._resolve(  # type: ignore[call-overload]
+                type_=dependency.inner_type,
+                is_iterable=dependency.is_iterable,
+            )
+            for dependency in dependencies
+            if dependency.name not in kwargs
+        }
         return function(*args, **kwargs, **resolved)
 
     def _on_resolve(self, provider: Provider[T], instance: T) -> None:

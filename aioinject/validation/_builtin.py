@@ -1,4 +1,5 @@
 from collections.abc import Callable, Sequence
+from itertools import chain
 from typing import Any
 
 import aioinject
@@ -13,20 +14,15 @@ from aioinject.validation.error import (
 def all_dependencies_are_present(
     container: aioinject.Container,
 ) -> Sequence[ContainerValidationError]:
-    errors = []
-    for provider in container.providers.values():
-        for dependency in provider.resolve_dependencies(
-            container.type_context,
-        ):
-            dep_type = dependency.type_
-            if dep_type not in container.providers:
-                error = DependencyNotFoundError(
-                    message=f"Provider for type {dep_type} not found",
-                    dependency=dep_type,
-                )
-                errors.append(error)
-
-    return errors
+    return [
+        DependencyNotFoundError(
+            message=f"Provider for type {dependency.type_} not found",
+            dependency=dependency.type_,
+        )
+        for provider in chain.from_iterable(container.providers.values())
+        for dependency in provider.collect_dependencies(container.type_context)
+        if dependency.type_ not in container.providers
+    ]
 
 
 class ForbidDependency(ContainerValidator):
@@ -43,11 +39,11 @@ class ForbidDependency(ContainerValidator):
         container: aioinject.Container,
     ) -> Sequence[ContainerValidationError]:
         errors = []
-        for provider in container.providers.values():
+        for provider in chain.from_iterable(container.providers.values()):
             if not self.dependant(provider):
                 continue
 
-            for dependency in provider.resolve_dependencies(
+            for dependency in provider.collect_dependencies(
                 container.type_context,
             ):
                 dep_type = dependency.type_
@@ -57,4 +53,17 @@ class ForbidDependency(ContainerValidator):
                 if self.dependency(dependency_provider):
                     msg = f"Provider {provider!r} cannot depend on {dependency_provider!r}"
                     errors.append(ContainerValidationError(msg))
+
         return errors
+
+
+def all_providers_for_type_have_equal_lifetime(
+    container: aioinject.Container,
+) -> Sequence[ContainerValidationError]:
+    return [
+        ContainerValidationError(
+            f"Type {type_} has providers with different scopes"
+        )
+        for type_, providers in container.providers.items()
+        if len({provider.lifetime for provider in providers}) > 1
+    ]

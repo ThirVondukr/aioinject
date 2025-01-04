@@ -4,6 +4,7 @@ from aioinject import Scoped, Singleton
 from aioinject.validation._builtin import (
     ForbidDependency,
     all_dependencies_are_present,
+    all_providers_for_type_have_equal_lifetime,
 )
 from aioinject.validation._validate import validate_container
 from aioinject.validation.abc import ContainerValidator
@@ -26,4 +27,5 @@ __all__ = [
     "all_dependencies_are_present",
     "ForbidDependency",
     "validate_container",
+    "all_providers_for_type_have_equal_lifetime",
 ]

@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import collections.abc
 import contextlib
+import functools
 import inspect
 import sys
 import typing
@@ -15,7 +19,7 @@ from aioinject.markers import Inject
 
 
 _T = TypeVar("_T")
-_F = TypeVar("_F", bound=typing.Callable[..., Any])
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 sentinel = object()
 
@@ -37,7 +41,7 @@ def clear_wrapper(wrapper: _F) -> _F:
 
 
 def get_inject_annotations(
-    function: typing.Callable[..., Any],
+    function: Callable[..., Any],
 ) -> dict[str, Any]:
     with remove_annotation(function.__annotations__, "return"):
         return {
@@ -67,13 +71,13 @@ async def enter_context_maybe(
     ),
     stack: AsyncExitStack,
 ) -> _T:
-    if isinstance(resolved, contextlib.ContextDecorator):
-        return stack.enter_context(resolved)  # type: ignore[arg-type]
-
     if isinstance(resolved, contextlib.AsyncContextDecorator):
         return await stack.enter_async_context(
             resolved,  # type: ignore[arg-type]
         )
+    if isinstance(resolved, contextlib.ContextDecorator):
+        return stack.enter_context(resolved)  # type: ignore[arg-type]
+
     return resolved  # type: ignore[return-value]
 
 
@@ -115,3 +119,12 @@ def get_return_annotation(
     context: dict[str, Any],
 ) -> type[Any]:
     return eval(ret_annotation, context)  # noqa: S307
+
+
+@functools.cache
+def is_iterable_generic_collection(type_: Any) -> bool:
+    if not (origin := typing.get_origin(type_)):
+        return False
+    return collections.abc.Iterable in inspect.getmro(origin) or issubclass(
+        origin, collections.abc.Iterable
+    )

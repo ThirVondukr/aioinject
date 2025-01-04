@@ -1,12 +1,16 @@
+import abc
+from collections.abc import Awaitable, Callable
 from typing import Generic, TypeVar
 
 import pytest
 
 from aioinject import Container, Object, Scoped
-from aioinject.providers import Dependency
+from aioinject.providers import Dependency, Transient
 
 
 T = TypeVar("T")
+ReqT = TypeVar("ReqT")
+ResT = TypeVar("ResT")
 
 
 class GenericService(Generic[T]):
@@ -24,20 +28,20 @@ class ConstrainedGenericDependency(WithGenericDependency[int]):
 
 
 async def test_generic_dependency() -> None:
-    assert Scoped(GenericService[int]).resolve_dependencies() == (
+    assert Scoped(GenericService[int]).collect_dependencies() == (
         Dependency(
             name="dependency",
             type_=str,
         ),
     )
 
-    assert Scoped(WithGenericDependency[int]).resolve_dependencies() == (
+    assert Scoped(WithGenericDependency[int]).collect_dependencies() == (
         Dependency(
             name="dependency",
             type_=int,
         ),
     )
-    assert Scoped(ConstrainedGenericDependency).resolve_dependencies() == (
+    assert Scoped(ConstrainedGenericDependency).collect_dependencies() == (
         Dependency(
             name="dependency",
             type_=int,
@@ -190,3 +194,51 @@ async def test_can_resolve_generic_class_without_parameters() -> None:
         instance = await ctx.resolve(GenericClass)
         assert isinstance(instance, GenericClass)
         assert instance.a == MEANING_OF_LIFE_INT
+
+
+async def test_can_resolve_generic_iterable() -> None:
+    class MiddlewareBase(abc.ABC, Generic[ReqT, ResT]):
+        @abc.abstractmethod
+        async def __call__(
+            self,
+            request: ReqT,
+            handle: Callable[[ReqT], Awaitable[ResT]],
+        ) -> ResT:
+            pass
+
+    class FirstMiddleware(MiddlewareBase[ReqT, ResT]):
+        async def __call__(
+            self,
+            request: ReqT,
+            handle: Callable[[ReqT], Awaitable[ResT]],
+        ) -> ResT:
+            return await handle(request)
+
+    class SecondMiddleware(MiddlewareBase[ReqT, ResT]):
+        async def __call__(
+            self,
+            request: ReqT,
+            handle: Callable[[ReqT], Awaitable[ResT]],
+        ) -> ResT:
+            return await handle(request)
+
+    class ThirdMiddleware(MiddlewareBase[ReqT, ResT]):
+        async def __call__(
+            self,
+            request: ReqT,
+            handle: Callable[[ReqT], Awaitable[ResT]],
+        ) -> ResT:
+            return await handle(request)
+
+    container = Container()
+    container.register(
+        Transient(FirstMiddleware, MiddlewareBase[str, str]),
+        Transient(SecondMiddleware, MiddlewareBase[int, int]),
+        Transient(ThirdMiddleware, MiddlewareBase[int, int]),
+    )
+
+    async with container.context() as ctx:
+        instances = await ctx.resolve_iterable(MiddlewareBase[int, int])  # type: ignore[type-abstract]
+        assert len(instances) == 2  # noqa: PLR2004
+        assert isinstance(instances[0], SecondMiddleware)
+        assert isinstance(instances[1], ThirdMiddleware)

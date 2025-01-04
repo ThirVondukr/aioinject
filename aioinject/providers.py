@@ -7,6 +7,7 @@ import inspect
 import typing
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import cached_property
 from inspect import isclass
 from typing import (
     Annotated,
@@ -26,6 +27,7 @@ from aioinject._utils import (
     get_fn_ns,
     get_return_annotation,
     is_context_manager_function,
+    is_iterable_generic_collection,
     remove_annotation,
 )
 from aioinject.markers import Inject
@@ -34,10 +36,24 @@ from aioinject.markers import Inject
 _T = TypeVar("_T")
 
 
-@dataclass(slots=True, kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class Dependency(Generic[_T]):
     name: str
     type_: type[_T]
+
+    @cached_property
+    def inner_type(self) -> type[_T]:
+        return typing.cast(
+            type[_T],
+            typing.get_args(self.type_)[0] if self.is_iterable else self.type_,
+        )
+
+    @cached_property
+    def is_iterable(self) -> bool:
+        return is_iterable_generic_collection(self.type_)  # type: ignore[arg-type]
+
+    def __hash__(self) -> int:
+        return hash(self.type_)
 
 
 def _get_annotation_args(type_hint: Any) -> tuple[type, tuple[Any, ...]]:
@@ -215,7 +231,7 @@ class Provider(Protocol[_T]):
 
     def provide_sync(self, kwargs: Mapping[str, Any]) -> _T: ...
 
-    def resolve_dependencies(
+    def collect_dependencies(
         self,
         context: dict[str, Any] | None = None,
     ) -> tuple[Dependency[object], ...]:

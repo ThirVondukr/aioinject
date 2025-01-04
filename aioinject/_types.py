@@ -6,5 +6,5 @@ if TYPE_CHECKING:
 
 P = ParamSpec("P")
 T = TypeVar("T")
-Providers: TypeAlias = dict[type[T], "Provider[T]"]
+Providers: TypeAlias = dict[type[T], list["Provider[T]"]]
 AnyCtx: TypeAlias = Union["InjectionContext", "SyncInjectionContext"]
