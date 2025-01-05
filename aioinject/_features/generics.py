@@ -75,6 +75,7 @@ def get_generic_parameter_map(
             resolved_args = [
                 args_map[arg.__name__] for arg in generic_arguments
             ]
+            #  We can use `[]` when we drop support for 3.10
             result[dependency.name] = dependency.type_.__getitem__(
                 *resolved_args
             )
