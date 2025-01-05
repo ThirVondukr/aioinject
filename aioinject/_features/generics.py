@@ -41,7 +41,8 @@ def _get_generic_args_map(type_: type[object]) -> dict[str, type[object]]:
             param.__name__: param
             for param in type_.__origin__.__parameters__  # type: ignore[attr-defined]
         }
-        return dict(zip(params.keys(), args, strict=False))
+        # TODO(Doctor, nrbnlulu): Tests pass with strct=True, is this needed?
+        return dict(zip(params, args, strict=False))
 
     args_map = {}
     if orig_bases := _get_orig_bases(type_):
