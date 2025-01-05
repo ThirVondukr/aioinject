@@ -88,10 +88,10 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
             provider_dependencies,
         )
         dependencies = {
-            depenency.name: await self.resolve(
-                dependencies_map.get(depenency.name, depenency.type_)
+            dependency.name: await self.resolve(
+                dependencies_map.get(dependency.name, dependency.type_)
             )
-            for depenency in provider_dependencies
+            for dependency in provider_dependencies
         }
 
         if provider.lifetime is DependencyLifetime.singleton:
