@@ -75,5 +75,7 @@ def get_generic_parameter_map(
             resolved_args = [
                 args_map[arg.__name__] for arg in generic_arguments
             ]
-            result[dependency.name] = dependency.type_[*resolved_args]
+            result[dependency.name] = dependency.type_.__getitem__(
+                *resolved_args
+            )
     return result
