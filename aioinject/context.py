@@ -80,15 +80,18 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
         if (cached := store.get(provider)) is not NotInCache.sentinel:
             return cached
 
+        provider_dependencies = provider.resolve_dependencies(
+            context=self._container.type_context
+        )
         dependencies_map = get_generic_parameter_map(
-            type_,
-            provider.resolve_dependencies(
-                context=self._container.type_context
-            ),
+            type_,  # type: ignore[arg-type]
+            provider_dependencies,
         )
         dependencies = {
-            dep_name: await self.resolve(dep_type)
-            for dep_name, dep_type in dependencies_map.items()
+            depenency.name: await self.resolve(
+                dependencies_map.get(depenency.name, depenency.type_)
+            )
+            for depenency in provider_dependencies
         }
 
         if provider.lifetime is DependencyLifetime.singleton:

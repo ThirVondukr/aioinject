@@ -33,7 +33,7 @@ def _get_generic_arguments(type_: Any) -> list[t.TypeVar] | None:
     return None
 
 
-@functools.cache
+@functools.lru_cache
 def _get_generic_args_map(type_: type[object]) -> dict[str, type[object]]:
     if _is_generic_alias(type_):
         args = type_.__args__
@@ -59,6 +59,7 @@ def _get_generic_args_map(type_: type[object]) -> dict[str, type[object]]:
     return args_map
 
 
+@functools.lru_cache
 def get_generic_parameter_map(
     provided_type: type[object],
     dependencies: tuple[Dependency[Any], ...],
@@ -66,7 +67,6 @@ def get_generic_parameter_map(
     args_map = _get_generic_args_map(provided_type)  # type: ignore[arg-type]
     result = {}
     for dependency in dependencies:
-        resolved_type = dependency.type_
         if args_map and (
             generic_arguments := _get_generic_arguments(dependency.type_)
         ):
@@ -75,6 +75,5 @@ def get_generic_parameter_map(
             resolved_args = [
                 args_map[arg.__name__] for arg in generic_arguments
             ]
-            resolved_type = dependency.type_[*resolved_args]
-        result[dependency.name] = resolved_type
+            result[dependency.name] = dependency.type_[*resolved_args]
     return result
