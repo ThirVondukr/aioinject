@@ -15,6 +15,7 @@ from typing import (
 
 from typing_extensions import Self
 
+from aioinject._features.generics import get_generic_parameter_map
 from aioinject._store import InstanceStore, NotInCache
 from aioinject._types import AnyCtx, T
 from aioinject.extensions import (
@@ -79,13 +80,19 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
         if (cached := store.get(provider)) is not NotInCache.sentinel:
             return cached
 
-        dependencies = {}
-        for dependency in provider.resolve_dependencies(
-            self._container.type_context,
-        ):
-            dependencies[dependency.name] = await self.resolve(
-                type_=dependency.type_,
+        provider_dependencies = provider.resolve_dependencies(
+            context=self._container.type_context
+        )
+        dependencies_map = get_generic_parameter_map(
+            type_,  # type: ignore[arg-type]
+            provider_dependencies,
+        )
+        dependencies = {
+            dependency.name: await self.resolve(
+                dependencies_map.get(dependency.name, dependency.type_)
             )
+            for dependency in provider_dependencies
+        }
 
         if provider.lifetime is DependencyLifetime.singleton:
             async with store.lock(provider) as should_provide:
