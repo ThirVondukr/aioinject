@@ -6,23 +6,18 @@ import typing as t
 from types import GenericAlias
 from typing import TYPE_CHECKING, Any, TypeGuard
 
+from aioinject._utils import is_iterable_generic_collection
+
 
 if TYPE_CHECKING:
     from aioinject.providers import Dependency
 
 
-_UNSUPPORTED_ALIASES = frozenset((tuple, list, dict, set, type))
-
-
 def _is_generic_alias(type_: Any) -> TypeGuard[GenericAlias]:
-    # we currently don't support tuple, list, dict, set, type
-    return (
-        isinstance(
-            type_,
-            types.GenericAlias | t._GenericAlias,  # type: ignore[attr-defined] # noqa: SLF001
-        )
-        and t.get_origin(type_) not in _UNSUPPORTED_ALIASES
-    )
+    return isinstance(
+        type_,
+        types.GenericAlias | t._GenericAlias,  # type: ignore[attr-defined] # noqa: SLF001
+    ) and not is_iterable_generic_collection(type_)
 
 
 def _get_orig_bases(type_: type) -> tuple[type, ...] | None:
