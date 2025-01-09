@@ -1,3 +1,22 @@
+## 0.36.0 (2025-01-09)
+
+### Feat
+
+- add iterable providers
+
+### Fix
+
+- test_partially_resolved_generic
+- update get_typevars to return a list of TypeVars and enhance nested generic tests
+- enhance generic type handling and add tests for nested concrete generics
+- correct test to -> `test_nested_unresolved_generic`
+- update resolved type handling in InjectionContext and add uv.lock for dependency management
+
+### Refactor
+
+- use is_iterable_generic_collection
+- use Provider.__hash__ in stores
+
 ## 0.35.3 (2024-11-22)
 
 ### Fix
