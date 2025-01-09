@@ -1,4 +1,5 @@
 import contextlib
+from collections import defaultdict
 from collections.abc import Iterator, Sequence
 from contextlib import AsyncExitStack
 from types import TracebackType
@@ -25,7 +26,7 @@ class Container:
         self._exit_stack = AsyncExitStack()
         self._singletons = SingletonStore(exit_stack=self._exit_stack)
 
-        self.providers: _types.Providers[Any] = {}
+        self.providers: _types.Providers[Any] = defaultdict(list)
         self.type_context: dict[str, type[Any]] = {}
         self.extensions = extensions or []
         self._init_extensions(self.extensions)
@@ -35,27 +36,42 @@ class Container:
             if isinstance(extension, OnInitExtension):
                 extension.on_init(self)
 
-    def register(
-        self,
-        *providers: Provider[Any],
-    ) -> None:
+    def register(self, *providers: Provider[Any]) -> None:
         for provider in providers:
-            if provider.type_ in self.providers:
-                msg = (
-                    f"Provider for type {provider.type_} is already registered"
-                )
-                raise ValueError(msg)
+            self._register(provider)
 
-            self.providers[provider.type_] = provider
-            if class_name := getattr(provider.type_, "__name__", None):
-                self.type_context[class_name] = provider.type_
+    def try_register(self, *providers: Provider[Any]) -> None:
+        for provider in providers:
+            with contextlib.suppress(ValueError):
+                self._register(provider)
+
+    def _register(self, provider: Provider[Any]) -> None:
+        existing_impls = {
+            existing_provider.impl
+            for existing_provider in self.providers.get(provider.type_, [])
+        }
+        if provider.impl in existing_impls:
+            msg = (
+                f"Provider for type {provider.type_} with same "
+                f"implementation already registered"
+            )
+            raise ValueError(msg)
+
+        self.providers[provider.type_].append(provider)
+
+        class_name = getattr(provider.type_, "__name__", None)
+        if class_name and class_name not in self.type_context:
+            self.type_context[class_name] = provider.type_
 
     def get_provider(self, type_: type[T]) -> Provider[T]:
-        try:
-            return self.providers[type_]
-        except KeyError as exc:
-            err_msg = f"Provider for type {type_.__qualname__} not found"
-            raise ValueError(err_msg) from exc
+        return self.get_providers(type_)[0]
+
+    def get_providers(self, type_: type[T]) -> list[Provider[T]]:
+        if providers := self.providers[type_]:
+            return providers
+
+        err_msg = f"Providers for type {type_.__qualname__} not found"
+        raise ValueError(err_msg)
 
     def context(
         self,
@@ -79,18 +95,23 @@ class Container:
 
     @contextlib.contextmanager
     def override(self, *providers: Provider[Any]) -> Iterator[None]:
-        previous: dict[type[Any], Provider[Any] | None] = {}
-        for provider in providers:
-            previous[provider.type_] = self.providers.get(provider.type_)
-            self.providers[provider.type_] = provider
+        previous = {
+            provider.type_: self.providers.get(provider.type_, None)
+            for provider in providers
+        }
+        overridden = defaultdict(
+            list,
+            {provider.type_: [provider] for provider in providers},
+        )
+
+        self.providers.update(overridden)
 
         try:
             yield
         finally:
             for provider in providers:
                 del self.providers[provider.type_]
-                prev = previous[provider.type_]
-                if prev is not None:
+                if (prev := previous[provider.type_]) is not None:
                     self.providers[provider.type_] = prev
 
     async def __aenter__(self) -> Self:

@@ -16,7 +16,7 @@ coverage.xml
 # virtualenv
 .venv
 venv*/
-
+.python-version
 
 # python cached files
 *.py[cod]

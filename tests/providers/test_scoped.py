@@ -108,7 +108,7 @@ def test_empty_dependencies() -> None:
         pass
 
     provider = providers.Scoped(factory)
-    assert provider.resolve_dependencies() == ()
+    assert provider.collect_dependencies() == ()
 
 
 def test_dependencies() -> None:
@@ -137,7 +137,7 @@ def test_dependencies() -> None:
             type_=str,
         ),
     )
-    assert provider.resolve_dependencies() == expected
+    assert provider.collect_dependencies() == expected
 
 
 def iterable() -> Iterator[int]:
