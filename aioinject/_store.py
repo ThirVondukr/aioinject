@@ -34,32 +34,28 @@ class InstanceStore:
         exit_stack: contextlib.AsyncExitStack | None = None,
         sync_exit_stack: contextlib.ExitStack | None = None,
     ) -> None:
-        self._cache: dict[tuple[type[Any], Any], Any] = {}
+        self._cache: dict[Provider[Any], Any] = {}
         self._exit_stack = exit_stack or contextlib.AsyncExitStack()
         self._sync_exit_stack = sync_exit_stack or contextlib.ExitStack()
 
     def get(self, provider: Provider[T]) -> T | Literal[NotInCache.sentinel]:
-        return self._cache.get(self._cache_key(provider), NotInCache.sentinel)
+        return self._cache.get(provider, NotInCache.sentinel)
 
     def add(self, provider: Provider[T], obj: T) -> None:
         if provider.lifetime is not DependencyLifetime.transient:
-            self._cache[self._cache_key(provider)] = obj
+            self._cache[provider] = obj
 
     def lock(
         self,
         provider: Provider[Any],
     ) -> AbstractAsyncContextManager[bool]:
-        return contextlib.nullcontext(
-            self._cache_key(provider) not in self._cache
-        )
+        return contextlib.nullcontext(provider not in self._cache)
 
     def sync_lock(
         self,
         provider: Provider[Any],
     ) -> AbstractContextManager[bool]:
-        return contextlib.nullcontext(
-            self._cache_key(provider) not in self._cache
-        )
+        return contextlib.nullcontext(provider not in self._cache)
 
     @typing.overload
     async def enter_context(
@@ -116,9 +112,6 @@ class InstanceStore:
     def close(self) -> None:
         self.__exit__(None, None, None)
 
-    def _cache_key(self, provider: Provider[T]) -> tuple[type[T], Any]:
-        return provider.type_, provider.impl
-
 
 class SingletonStore(InstanceStore):
     def __init__(
@@ -127,12 +120,10 @@ class SingletonStore(InstanceStore):
         sync_exit_stack: contextlib.ExitStack | None = None,
     ) -> None:
         super().__init__(exit_stack, sync_exit_stack)
-        self._locks: dict[tuple[type[Any], Any], anyio.Lock] = (
-            collections.defaultdict(
-                anyio.Lock,
-            )
+        self._locks: dict[Provider[Any], anyio.Lock] = collections.defaultdict(
+            anyio.Lock,
         )
-        self._sync_locks: dict[tuple[type[Any], Any], threading.Lock] = (
+        self._sync_locks: dict[Provider[Any], threading.Lock] = (
             collections.defaultdict(
                 threading.Lock,
             )
@@ -140,10 +131,9 @@ class SingletonStore(InstanceStore):
 
     @contextlib.asynccontextmanager
     async def lock(self, provider: Provider[Any]) -> AsyncIterator[bool]:
-        cache_key = self._cache_key(provider)
-        if cache_key not in self._cache:
-            async with self._locks[cache_key]:
-                yield cache_key not in self._cache
+        if provider not in self._cache:
+            async with self._locks[provider]:
+                yield provider not in self._cache
                 return
         yield False
 
@@ -152,9 +142,8 @@ class SingletonStore(InstanceStore):
         self,
         provider: Provider[Any],
     ) -> Iterator[bool]:
-        cache_key = self._cache_key(provider)
-        if cache_key not in self._cache:
-            with self._sync_locks[cache_key]:
-                yield cache_key not in self._cache
+        if provider not in self._cache:
+            with self._sync_locks[provider]:
+                yield provider not in self._cache
                 return
         yield False
