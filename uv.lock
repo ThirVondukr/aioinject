@@ -131,6 +131,7 @@ dev = [
     { name = "anyio" },
     { name = "asgi-lifespan" },
     { name = "coverage", extra = ["toml"] },
+    { name = "dishka" },
     { name = "fastapi" },
     { name = "litestar" },
     { name = "mkdocs" },
@@ -153,6 +154,7 @@ dev = [
     { name = "anyio", specifier = ">=4.6.2.post1" },
     { name = "asgi-lifespan", specifier = ">=2.1.0" },
     { name = "coverage", extras = ["toml"], specifier = ">=7.6.7" },
+    { name = "dishka", specifier = ">=1.4.2" },
     { name = "fastapi", specifier = ">=0.115.5" },
     { name = "litestar", specifier = ">=2.12.1" },
     { name = "mkdocs", specifier = ">=1.6.1" },
@@ -421,6 +423,18 @@ wheels = [
 [package.optional-dependencies]
 toml = [
     { name = "tomli", marker = "python_full_version <= '3.11'" },
+]
+
+[[package]]
+name = "dishka"
+version = "1.4.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1e/a8/e78e0d08e9a2e7839d2742527600eb6f55313c6df07774a26848aa6a87b0/dishka-1.4.2.tar.gz", hash = "sha256:fe1e7b2d0df4306b39650cf4c05485aa79ce1fc31507d1f73300dec3c64b2397", size = 57511 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/30/403cbe18d8dda6ce1d95ecd1039e5b01fd39011dd6bf31647e9b61bd5758/dishka-1.4.2-py3-none-any.whl", hash = "sha256:5a59c6bf5ac9f34b3e698093207ddb871c13a0721eeb3948eb29011aee61f69c", size = 79798 },
 ]
 
 [[package]]

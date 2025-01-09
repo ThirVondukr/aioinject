@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator, Sequence
 from datetime import timedelta
 from typing import Protocol
 
+from benchmark.benches.dishka import bench_dishka
 from benchmark.benches.fastapi import fastapi_bench
 from benchmark.benches.litestar import litestar_bench
 from benchmark.benches.python import (
@@ -41,6 +42,7 @@ BENCHMARK_FUNCTIONS: Sequence[BenchFunction] = [
     bench_python,
     bench_aioinject_raw,
     bench_aioinject_decorator,
+    bench_dishka,
     functools.partial(
         litestar_bench,
         endpoint="/aioinject",
@@ -81,8 +83,9 @@ async def main() -> None:
 
     for bench_functions in BENCHMARK_FUNCTIONS:
         for count in iterations:
-            async for result in bench_functions(iterations=count):
-                print(format_result(result, row_template))  # noqa: T201
+            for _ in range(1):
+                async for result in bench_functions(iterations=count):
+                    print(format_result(result, row_template))  # noqa: T201
         print()  # noqa: T201
 
 

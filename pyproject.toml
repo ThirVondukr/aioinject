@@ -26,6 +26,7 @@ dev = [
     "anyio>=4.6.2.post1",
     "asgi-lifespan>=2.1.0",
     "coverage[toml]>=7.6.7",
+    "dishka>=1.4.2",
     "fastapi>=0.115.5",
     "litestar>=2.12.1",
     "mkdocs>=1.6.1",

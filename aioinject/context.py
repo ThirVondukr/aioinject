@@ -17,6 +17,7 @@ from typing import (
 
 from typing_extensions import Self
 
+from aioinject._features import codegen
 from aioinject._features.generics import get_generic_parameter_map
 from aioinject._store import InstanceStore, NotInCache
 from aioinject._types import AnyCtx, T
@@ -71,6 +72,7 @@ class _BaseInjectionContext(Generic[_TExtension]):
     def register(self, provider: Provider[Any]) -> None:
         self._providers[provider.type_].append(provider)
 
+cached = {}
 
 class InjectionContext(_BaseInjectionContext[ContextExtension]):
     async def resolve(self, type_: type[_T]) -> _T:
@@ -112,37 +114,41 @@ class InjectionContext(_BaseInjectionContext[ContextExtension]):
         self,
         provider: Provider[_T],
     ) -> _T:
-        store = self._get_store(provider.lifetime)
-        if (cached := store.get(provider)) is not NotInCache.sentinel:
-            return cached
-
-        provider_dependencies = provider.collect_dependencies(
-            context=self._container.type_context
-        )
-        dependencies_map = get_generic_parameter_map(
-            provider.type_,  # type: ignore[arg-type]
-            provider_dependencies,
-        )
-        dependencies = {
-            dependency.name: await self._resolve(  # type: ignore[call-overload]
-                type_=dependencies_map.get(
-                    dependency.name,
-                    dependency.inner_type,
-                ),
-                is_iterable=dependency.is_iterable,
-            )
-            for dependency in provider_dependencies
-        }
-
-        if provider.lifetime is DependencyLifetime.singleton:
-            async with store.lock(provider) as should_provide:
-                if should_provide:
-                    return await self._provide_and_store(
-                        provider, store, dependencies
-                    )
-                return store.get(provider)  # type: ignore[return-value] # pragma: no cover
-
-        return await self._provide_and_store(provider, store, dependencies)
+        if provider not in cached:
+            cached[provider] = codegen.context_resolve(type=provider.type_, context=self)
+        return await cached[provider](self)
+        # return await codegen.context_resolve(type=provider.type_, context=self)(self)
+        # store = self._get_store(provider.lifetime)
+        # if (cached := store.get(provider)) is not NotInCache.sentinel:
+        #     return cached
+        #
+        # provider_dependencies = provider.collect_dependencies(
+        #     context=self._container.type_context
+        # )
+        # dependencies_map = get_generic_parameter_map(
+        #     provider.type_,  # type: ignore[arg-type]
+        #     provider_dependencies,
+        # )
+        # dependencies = {
+        #     dependency.name: await self._resolve(  # type: ignore[call-overload]
+        #         type_=dependencies_map.get(
+        #             dependency.name,
+        #             dependency.inner_type,
+        #         ),
+        #         is_iterable=dependency.is_iterable,
+        #     )
+        #     for dependency in provider_dependencies
+        # }
+        #
+        # if provider.lifetime is DependencyLifetime.singleton:
+        #     async with store.lock(provider) as should_provide:
+        #         if should_provide:
+        #             return await self._provide_and_store(
+        #                 provider, store, dependencies
+        #             )
+        #         return store.get(provider)  # type: ignore[return-value] # pragma: no cover
+        #
+        # return await self._provide_and_store(provider, store, dependencies)
 
     async def _provide_and_store(
         self,
