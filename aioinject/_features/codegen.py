@@ -96,7 +96,7 @@ def make_dag(
     context: _BaseInjectionContext[Any],
 ) -> TopologicalSorter[GraphNode]:
     graph = collections.defaultdict(list)
-    print(list(walk_dependencies(provider, context)))
+
     for dependency, provider in walk_dependencies(provider, context):
         dependencies = provider.collect_dependencies(
             context=context._container.type_context
@@ -105,8 +105,8 @@ def make_dag(
             provider.type_,  # type: ignore[arg-type]
             dependencies=dependencies,
         )
-        graph[GraphNode(dependency.inner_type, dependency.is_iterable)].extend(
-            GraphNode(generic_types_map.get(dependency.name, dependency.inner_type), is_iterable=dependency.is_iterable) for
+        graph[dependency.inner_type].extend(
+            generic_types_map.get(dependency.name, dependency.inner_type) for
             dependency in
             dependencies
         )
@@ -131,12 +131,11 @@ def context_resolve(
     root_provider = context._get_providers(type)[0]
     order: list[GraphNode] = [
         *make_dag(context._get_providers(type)[-1], context).static_order(),
-        root_provider,
+        root_provider.type_,
     ]
-    print(order)
     seen_lifetimes = set()
     for node in order:
-        for provider in context._get_providers(node.type):
+        for provider in context._get_providers(node):
             seen_lifetimes.add(provider.lifetime)
 
     for lifetime in seen_lifetimes:
@@ -150,7 +149,8 @@ def context_resolve(
     }
 
     for node in order:
-        provider = context._get_providers(node.type)
+        provider = context._get_providers(node)[-1]
+        provider_type = node
 
         dependencies = provider.collect_dependencies(
             context._container.type_context)
