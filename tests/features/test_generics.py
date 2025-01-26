@@ -1,47 +1,68 @@
 import abc
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 import pytest
 
 from aioinject import Container, Object, Scoped
-from aioinject.providers import Dependency, Transient
+from aioinject.providers import Dependency, Singleton, Transient
 
 
 T = TypeVar("T")
+U = TypeVar("U")
 ReqT = TypeVar("ReqT")
 ResT = TypeVar("ResT")
 
 
-class GenericService(Generic[T]):
+class UnusedGeneric(Generic[T]):
     def __init__(self, dependency: str) -> None:
         self.dependency = dependency
 
 
-class WithGenericDependency(Generic[T]):
+class SimpleGeneric(Generic[T]):
     def __init__(self, dependency: T) -> None:
         self.dependency = dependency
 
 
-class ConstrainedGenericDependency(WithGenericDependency[int]):
+class SimpleGenericExtended(SimpleGeneric[int]):
     pass
 
 
+class MultipleSimpleGeneric(Generic[T, U]):
+    def __init__(self, service: T, b: U) -> None:
+        self.service = service
+        self.b = b
+
+class NestedGeneric(Generic[T, U]):
+    def __init__(self, simple_gen: MultipleSimpleGeneric[T, U], u: U) -> None:
+        self.simple_gen = simple_gen
+        self.u = u
+
+class Something:
+    def __init__(self) -> None:
+        self.a = MEANING_OF_LIFE_INT
+
+
+MEANING_OF_LIFE_INT = 42
+MEANING_OF_LIFE_STR = "42"
+
+
 async def test_generic_dependency() -> None:
-    assert Scoped(GenericService[int]).collect_dependencies() == (
+    assert Scoped(UnusedGeneric[int]).collect_dependencies() == (
         Dependency(
             name="dependency",
             type_=str,
         ),
     )
 
-    assert Scoped(WithGenericDependency[int]).collect_dependencies() == (
+    assert Scoped(SimpleGeneric[int]).collect_dependencies() == (
         Dependency(
             name="dependency",
             type_=int,
         ),
     )
-    assert Scoped(ConstrainedGenericDependency).collect_dependencies() == (
+    assert Scoped(SimpleGenericExtended).collect_dependencies() == (
         Dependency(
             name="dependency",
             type_=int,
@@ -52,9 +73,9 @@ async def test_generic_dependency() -> None:
 @pytest.mark.parametrize(
     ("type_", "instanceof"),
     [
-        (GenericService, GenericService),
-        (WithGenericDependency[int], WithGenericDependency),
-        (ConstrainedGenericDependency, ConstrainedGenericDependency),
+        (UnusedGeneric, UnusedGeneric),
+        (SimpleGeneric[int], SimpleGeneric),
+        (SimpleGenericExtended, SimpleGenericExtended),
     ],
 )
 async def test_resolve_generics(
@@ -71,42 +92,27 @@ async def test_resolve_generics(
         assert isinstance(instance, instanceof)
 
 
-class NestedGenericService(Generic[T]):
-    def __init__(self, service: T) -> None:
-        self.service = service
-
-
-MEANING_OF_LIFE_INT = 42
-MEANING_OF_LIFE_STR = "42"
-
-
-class Something:
-    def __init__(self) -> None:
-        self.a = MEANING_OF_LIFE_INT
-
-
+@pytest.mark.py_gte_311
 async def test_nested_generics() -> None:
     container = Container()
     container.register(
-        Scoped(NestedGenericService[WithGenericDependency[Something]]),
-        Scoped(WithGenericDependency[Something]),
-        Scoped(Something),
+        Scoped(NestedGeneric[int, str]),
+        Scoped(MultipleSimpleGeneric[int, str]),
         Object(MEANING_OF_LIFE_INT),
-        Object("42"),
+        Object(MEANING_OF_LIFE_STR),
     )
 
     async with container.context() as ctx:
-        instance = await ctx.resolve(
-            NestedGenericService[WithGenericDependency[Something]]
-        )
-        assert isinstance(instance, NestedGenericService)
-        assert isinstance(instance.service, WithGenericDependency)
-        assert isinstance(instance.service.dependency, Something)
-        assert instance.service.dependency.a == MEANING_OF_LIFE_INT
+        instance = await ctx.resolve(NestedGeneric[int, str])
+        assert isinstance(instance, NestedGeneric)
+        assert isinstance(instance.simple_gen, MultipleSimpleGeneric)
+        assert instance.simple_gen.service == MEANING_OF_LIFE_INT
+        assert instance.simple_gen.b == MEANING_OF_LIFE_STR
+        assert instance.u == MEANING_OF_LIFE_STR
 
 
 class NestedUnresolvedGeneric(Generic[T]):
-    def __init__(self, service: WithGenericDependency[T]) -> None:
+    def __init__(self, service: SimpleGeneric[T]) -> None:
         self.service = service
 
 
@@ -114,7 +120,7 @@ async def test_nested_unresolved_generic() -> None:
     container = Container()
     container.register(
         Scoped(NestedUnresolvedGeneric[int]),
-        Scoped(WithGenericDependency[int]),
+        Scoped(SimpleGeneric[int]),
         Object(42),
         Object("42"),
     )
@@ -122,7 +128,7 @@ async def test_nested_unresolved_generic() -> None:
     async with container.context() as ctx:
         instance = await ctx.resolve(NestedUnresolvedGeneric[int])
         assert isinstance(instance, NestedUnresolvedGeneric)
-        assert isinstance(instance.service, WithGenericDependency)
+        assert isinstance(instance.service, SimpleGeneric)
         assert instance.service.dependency == MEANING_OF_LIFE_INT
 
 
@@ -133,7 +139,7 @@ async def test_nested_unresolved_concrete_generic() -> None:
     container = Container()
     container.register(
         Scoped(GenericImpl),
-        Scoped(WithGenericDependency[str]),
+        Scoped(SimpleGeneric[str]),
         Object(42),
         Object("42"),
     )
@@ -141,7 +147,7 @@ async def test_nested_unresolved_concrete_generic() -> None:
     async with container.context() as ctx:
         instance = await ctx.resolve(GenericImpl)
         assert isinstance(instance, GenericImpl)
-        assert isinstance(instance.service, WithGenericDependency)
+        assert isinstance(instance.service, SimpleGeneric)
         assert instance.service.dependency == "42"
 
 
@@ -150,7 +156,7 @@ async def test_partially_resolved_generic() -> None:
 
     class TwoGeneric(Generic[T, K]):
         def __init__(
-            self, a: WithGenericDependency[T], b: WithGenericDependency[K]
+            self, a: SimpleGeneric[T], b: SimpleGeneric[K]
         ) -> None:
             self.a = a
             self.b = b
@@ -163,8 +169,8 @@ async def test_partially_resolved_generic() -> None:
     container.register(
         Scoped(UsesTwoGeneric[int]),
         Scoped(TwoGeneric[int, str]),
-        Scoped(WithGenericDependency[int]),
-        Scoped(WithGenericDependency[str]),
+        Scoped(SimpleGeneric[int]),
+        Scoped(SimpleGeneric[str]),
         Object(MEANING_OF_LIFE_INT),
         Object("42"),
     )
@@ -173,8 +179,8 @@ async def test_partially_resolved_generic() -> None:
         instance = await ctx.resolve(UsesTwoGeneric[int])
         assert isinstance(instance, UsesTwoGeneric)
         assert isinstance(instance.service, TwoGeneric)
-        assert isinstance(instance.service.a, WithGenericDependency)
-        assert isinstance(instance.service.b, WithGenericDependency)
+        assert isinstance(instance.service.a, SimpleGeneric)
+        assert isinstance(instance.service.b, SimpleGeneric)
         assert instance.service.a.dependency == MEANING_OF_LIFE_INT
         assert instance.service.b.dependency == MEANING_OF_LIFE_STR
 

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 import functools
+import sys
+from textwrap import wrap
+import textwrap
 import types
 import typing as t
 from types import GenericAlias
@@ -72,9 +76,42 @@ def get_generic_parameter_map(
         ):
             # This is a generic type, we need to resolve the type arguments
             # and pass them to the provider.
-            resolved_args = [
+            resolved_args = tuple(
                 args_map[arg.__name__] for arg in generic_arguments
-            ]
+            )
             #  We can use `[]` when we drop support for 3.10
-            result[dependency.name] = inner_type.__getitem__(*resolved_args)
+            result[dependency.name] = _py310_compat_resolve_generics(
+                inner_type, resolved_args
+            )
     return result
+
+
+def is_py_gt3_311() -> bool:
+    return sys.version_info >= (3, 11)
+
+def _py310_compat_resolve_generics_factory(
+) -> Callable[[type, tuple[type, ...]], type]:
+    # we need to exec a string to avoid syntax errors
+    # we will create a function that will return the resolved generic
+
+    if False:
+        fn_impl = textwrap.dedent("""
+        def _resolve_generic(
+            generic_alias: type,
+            args: tuple[type, ...],
+        ) -> type:
+            return generic_alias[*args]
+        """)
+    else:
+        fn_impl = textwrap.dedent("""
+        def _resolve_generic(
+            generic_alias: type,
+            args: tuple[type, ...],
+        ) -> type:
+            return generic_alias.__getitem__(*args)
+        """)
+    exec_globals = {}
+    exec(fn_impl, exec_globals)  # noqa: S102
+    return exec_globals["_resolve_generic"]
+
+_py310_compat_resolve_generics = _py310_compat_resolve_generics_factory()
