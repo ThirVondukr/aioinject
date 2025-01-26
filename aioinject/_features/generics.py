@@ -94,7 +94,7 @@ def _py310_compat_resolve_generics_factory(
     # we need to exec a string to avoid syntax errors
     # we will create a function that will return the resolved generic
 
-    if False:
+    if is_py_gt3_311:
         fn_impl = textwrap.dedent("""
         def _resolve_generic(
             generic_alias: type,
