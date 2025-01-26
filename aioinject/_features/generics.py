@@ -85,19 +85,19 @@ def get_generic_parameter_map(
     return result
 
 
-def is_py_gt3_311() -> bool:
+def is_py_gt3_311() -> bool:  # pragma: no cover
     return sys.version_info >= (3, 11)
 
 
 def _py310_compat_resolve_generics_factory() -> (
     Callable[[type, tuple[type, ...]], type]
-):
+):  # pragma: no cover
     # we need to exec a string to avoid syntax errors
     # we will create a function that will return the resolved generic
     # for python 3.11 and later we can use `generic_alias[*args]` which will consider
     # see `test_partially_resolved_generic` for more details
 
-    if is_py_gt3_311:
+    if is_py_gt3_311():
         fn_impl = textwrap.dedent("""
         def _resolve_generic(
             generic_alias: type,
@@ -113,7 +113,7 @@ def _py310_compat_resolve_generics_factory() -> (
         ) -> type:
             return generic_alias.__getitem__(*args)
         """)
-    exec_globals = {}
+    exec_globals: dict[str, Any] = {}
     exec(fn_impl, exec_globals)  # noqa: S102
     return exec_globals["_resolve_generic"]
 

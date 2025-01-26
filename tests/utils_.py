@@ -18,7 +18,8 @@ def dummy_decorator(func: Callable[P, T]) -> Callable[P, T]:
     return decorator
 
 
-py_gte_311 = pytest.mark.skipif(
-    sys.version_info < (3, 11),
-    reason="This test requires Python 3.11 or later",
-)
+def py_gte_311(reason: str) -> pytest.MarkDecorator:
+    return pytest.mark.skipif(
+        sys.version_info < (3, 11),
+        reason=reason,
+    )
