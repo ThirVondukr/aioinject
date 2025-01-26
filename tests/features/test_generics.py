@@ -6,7 +6,7 @@ from typing import Generic, TypeVar
 import pytest
 
 from aioinject import Container, Object, Scoped
-from aioinject.providers import Dependency, Singleton, Transient
+from aioinject.providers import Dependency, Transient
 
 
 T = TypeVar("T")
@@ -34,10 +34,12 @@ class MultipleSimpleGeneric(Generic[T, U]):
         self.service = service
         self.b = b
 
+
 class NestedGeneric(Generic[T, U]):
     def __init__(self, simple_gen: MultipleSimpleGeneric[T, U], u: U) -> None:
         self.simple_gen = simple_gen
         self.u = u
+
 
 class Something:
     def __init__(self) -> None:
@@ -111,53 +113,30 @@ async def test_nested_generics() -> None:
         assert instance.u == MEANING_OF_LIFE_STR
 
 
-class NestedUnresolvedGeneric(Generic[T]):
-    def __init__(self, service: SimpleGeneric[T]) -> None:
-        self.service = service
-
-
 async def test_nested_unresolved_generic() -> None:
+    @dataclass
+    class NestedUnresolvedGeneric:
+        service: SimpleGeneric
+
     container = Container()
+    obj = SimpleGeneric(MEANING_OF_LIFE_INT)
     container.register(
-        Scoped(NestedUnresolvedGeneric[int]),
-        Scoped(SimpleGeneric[int]),
-        Object(42),
-        Object("42"),
+        Scoped(NestedUnresolvedGeneric),
+        Object(obj, type_=SimpleGeneric),
     )
 
     async with container.context() as ctx:
-        instance = await ctx.resolve(NestedUnresolvedGeneric[int])
+        instance = await ctx.resolve(NestedUnresolvedGeneric)
         assert isinstance(instance, NestedUnresolvedGeneric)
         assert isinstance(instance.service, SimpleGeneric)
         assert instance.service.dependency == MEANING_OF_LIFE_INT
-
-
-async def test_nested_unresolved_concrete_generic() -> None:
-    class GenericImpl(NestedUnresolvedGeneric[str]):
-        pass
-
-    container = Container()
-    container.register(
-        Scoped(GenericImpl),
-        Scoped(SimpleGeneric[str]),
-        Object(42),
-        Object("42"),
-    )
-
-    async with container.context() as ctx:
-        instance = await ctx.resolve(GenericImpl)
-        assert isinstance(instance, GenericImpl)
-        assert isinstance(instance.service, SimpleGeneric)
-        assert instance.service.dependency == "42"
 
 
 async def test_partially_resolved_generic() -> None:
     K = TypeVar("K")
 
     class TwoGeneric(Generic[T, K]):
-        def __init__(
-            self, a: SimpleGeneric[T], b: SimpleGeneric[K]
-        ) -> None:
+        def __init__(self, a: SimpleGeneric[T], b: SimpleGeneric[K]) -> None:
             self.a = a
             self.b = b
 

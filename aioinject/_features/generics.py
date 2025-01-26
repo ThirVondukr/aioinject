@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 import functools
 import sys
-from textwrap import wrap
 import textwrap
 import types
 import typing as t
+from collections.abc import Callable
 from types import GenericAlias
 from typing import TYPE_CHECKING, Any, TypeGuard
 
@@ -89,8 +88,10 @@ def get_generic_parameter_map(
 def is_py_gt3_311() -> bool:
     return sys.version_info >= (3, 11)
 
-def _py310_compat_resolve_generics_factory(
-) -> Callable[[type, tuple[type, ...]], type]:
+
+def _py310_compat_resolve_generics_factory() -> (
+    Callable[[type, tuple[type, ...]], type]
+):
     # we need to exec a string to avoid syntax errors
     # we will create a function that will return the resolved generic
     # for python 3.11 and later we can use `generic_alias[*args]` which will consider
@@ -115,5 +116,6 @@ def _py310_compat_resolve_generics_factory(
     exec_globals = {}
     exec(fn_impl, exec_globals)  # noqa: S102
     return exec_globals["_resolve_generic"]
+
 
 _py310_compat_resolve_generics = _py310_compat_resolve_generics_factory()
