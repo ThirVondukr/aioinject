@@ -119,7 +119,7 @@ wheels = [
 
 [[package]]
 name = "aioinject"
-version = "0.35.3"
+version = "0.36.0"
 source = { editable = "." }
 dependencies = [
     { name = "typing-extensions" },

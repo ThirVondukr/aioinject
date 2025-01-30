@@ -46,11 +46,10 @@ class Container:
                 self._register(provider)
 
     def _register(self, provider: Provider[Any]) -> None:
-        existing_impls = {
-            existing_provider.impl
+        if any(
+            provider.impl == existing_provider.impl
             for existing_provider in self.providers.get(provider.type_, [])
-        }
-        if provider.impl in existing_impls:
+        ):
             msg = (
                 f"Provider for type {provider.type_} with same "
                 f"implementation already registered"

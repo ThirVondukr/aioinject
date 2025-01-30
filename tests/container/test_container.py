@@ -2,8 +2,9 @@ import contextlib
 from collections.abc import AsyncIterator, Iterator
 
 import pytest
+from pydantic_settings import BaseSettings
 
-from aioinject import Scoped, Singleton, providers
+from aioinject import Object, Scoped, Singleton, providers
 from aioinject.containers import Container
 from aioinject.context import InjectionContext
 
@@ -48,6 +49,16 @@ def test_can_register_batch(container: Container) -> None:
     container.register(provider1, provider2)
     excepted = {_ServiceA: [provider1], _ServiceB: [provider2]}
     assert container.providers == excepted
+
+
+async def test_register_unhashable_implementation(
+    container: Container,
+) -> None:
+    class ExampleSettings(BaseSettings):
+        value: list[str] = []
+
+    container.register(Object([], type_=list[int]))
+    container.register(Object(ExampleSettings(), type_=ExampleSettings))
 
 
 def test_cant_register_multiple_providers_for_same_type(
