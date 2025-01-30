@@ -1,3 +1,9 @@
+## 0.36.1 (2025-01-30)
+
+### Fix
+
+- **container**: handle registering providers with unhashable implementations
+
 ## 0.36.0 (2025-01-09)
 
 ### Feat
