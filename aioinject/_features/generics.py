@@ -72,9 +72,9 @@ def get_generic_parameter_map(
         ):
             # This is a generic type, we need to resolve the type arguments
             # and pass them to the provider.
-            resolved_args = [
+            resolved_args = tuple(
                 args_map[arg.__name__] for arg in generic_arguments
-            ]
+            )
             #  We can use `[]` when we drop support for 3.10
-            result[dependency.name] = inner_type.__getitem__(*resolved_args)
+            result[dependency.name] = inner_type[resolved_args]
     return result
