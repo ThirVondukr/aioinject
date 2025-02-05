@@ -7,7 +7,6 @@ import pytest
 
 from aioinject import Container, Object, Scoped
 from aioinject.providers import Dependency, Transient
-from tests.utils_ import py_gte_311
 
 
 T = TypeVar("T")
@@ -95,10 +94,6 @@ async def test_resolve_generics(
         assert isinstance(instance, instanceof)
 
 
-@py_gte_311("""
-            prior to 3.11 using generic_alias[] considered a syntax error
-            its very hard to overcome this due to `test_partially_resolved_generic`
-            """)
 async def test_nested_generics() -> None:
     container = Container()
     container.register(
