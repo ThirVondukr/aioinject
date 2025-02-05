@@ -1,3 +1,15 @@
+## 0.37.0 (2025-02-05)
+
+### Fix
+
+- update compatibility check for Python version greater than 3.11
+
+### Refactor
+
+- **generics**: try using Generic[args] to make generics
+- enhance Python 3.11 compatibility checks and update test decorators
+- improve compatibility handling and clean up generics code
+
 ## 0.36.1 (2025-01-30)
 
 ### Fix
