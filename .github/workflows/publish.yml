@@ -21,5 +21,8 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
+      - name: Build
+        run: uv build
+
       - name: Publish
         run: uv publish
