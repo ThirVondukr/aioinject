@@ -1,4 +1,4 @@
-name: Lint
+name: Publish to PyPi
 on:
   release:
     types:
