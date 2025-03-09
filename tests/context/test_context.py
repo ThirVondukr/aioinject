@@ -9,6 +9,7 @@ from typing_extensions import Self
 from aioinject import Object, Provider, Scoped, Singleton, providers
 from aioinject.containers import Container
 from aioinject.markers import Inject
+from tests.utils_ import maybe_async_context, maybe_await
 
 
 class _TestError(Exception):
@@ -174,3 +175,15 @@ async def test_returns_self() -> None:
         async with container.context() as ctx:
             instance = await ctx.resolve(Class)
             assert instance.number == "42"
+
+
+@pytest.mark.parametrize("context_method_name", ["sync_context", "context"])
+async def test_context_providers(context_method_name: str) -> None:
+    container = Container()
+    container.register(Scoped(_Repository))
+    context_method = getattr(container, context_method_name)
+    session = _Session()
+
+    async with maybe_async_context(context_method({_Session: session})) as ctx:
+        repo = await maybe_await(ctx.resolve(_Repository))
+        assert repo.session is session

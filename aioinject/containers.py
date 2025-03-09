@@ -1,6 +1,6 @@
 import contextlib
 from collections import defaultdict
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AsyncExitStack
 from types import TracebackType
 from typing import Any
@@ -74,22 +74,26 @@ class Container:
 
     def context(
         self,
+        context: Mapping[Any, Any] | None = None,
         extensions: Sequence[ContextExtension] = (),
     ) -> InjectionContext:
         return InjectionContext(
             container=self,
             singletons=self._singletons,
             extensions=extensions,
+            context=context,
         )
 
     def sync_context(
         self,
+        context: Mapping[Any, Any] | None = None,
         extensions: Sequence[SyncContextExtension] = (),
     ) -> SyncInjectionContext:
         return SyncInjectionContext(
             container=self,
             singletons=self._singletons,
             extensions=extensions,
+            context=context,
         )
 
     @contextlib.contextmanager

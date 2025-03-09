@@ -26,7 +26,7 @@ from aioinject.extensions import (
     SyncContextExtension,
     SyncOnResolveExtension,
 )
-from aioinject.providers import Dependency, DependencyLifetime
+from aioinject.providers import Dependency, DependencyLifetime, Object
 
 
 if TYPE_CHECKING:
@@ -46,6 +46,7 @@ class _BaseInjectionContext(Generic[_TExtension]):
         container: Container,
         singletons: InstanceStore,
         extensions: Sequence[_TExtension],
+        context: Mapping[Any, Any] | None = None,
     ) -> None:
         self._container = container
         self._extensions = extensions
@@ -55,6 +56,10 @@ class _BaseInjectionContext(Generic[_TExtension]):
 
         self._token: contextvars.Token[AnyCtx] | None = None
         self._providers: _types.Providers[Any] = defaultdict(list)
+
+        if context:
+            for key, value in context.items():
+                self.register(Object(value, type_=key))
 
         self._closed = False
 
