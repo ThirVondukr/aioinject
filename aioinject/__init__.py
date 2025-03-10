@@ -25,4 +25,4 @@ __all__ = [
     "inject",
 ]
 
-__version__ = "0.37.4"
+__version__ = "0.38.0"

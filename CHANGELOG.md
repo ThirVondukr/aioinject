@@ -1,3 +1,9 @@
+## 0.38.0 (2025-03-10)
+
+### Feat
+
+- add ability to use providers from context
+
 ## 0.37.4 (2025-02-12)
 
 ## 0.37.3 (2025-02-12)
