@@ -16,7 +16,7 @@ from aioinject import _utils, decorators
 if TYPE_CHECKING:
     from aioinject.containers import Container
 
-__all__ = ["inject", "AioInjectMiddleware", "AioInjectPlugin"]
+__all__ = ["AioInjectMiddleware", "AioInjectPlugin", "inject"]
 
 _T = TypeVar("_T")
 _P = ParamSpec("_P")

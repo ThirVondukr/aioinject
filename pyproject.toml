@@ -22,22 +22,22 @@ Repository = "https://github.com/ThirVondukr/aioinject"
 
 [dependency-groups]
 dev = [
-    "aiogram>=3.14.0",
-    "anyio>=4.6.2.post1",
+    "aiogram>=3.18.0",
+    "anyio>=4.8.0",
     "asgi-lifespan>=2.1.0",
-    "coverage[toml]>=7.6.7",
-    "fastapi>=0.115.5",
-    "litestar>=2.12.1",
+    "coverage[toml]>=7.6.12",
+    "fastapi>=0.115.11",
+    "litestar>=2.15.1",
     "mkdocs>=1.6.1",
-    "mkdocs-material>=9.5.44",
-    "mypy>=1.13.0",
-    "pydantic-settings>=2.6.1",
+    "mkdocs-material>=9.6.7",
+    "mypy>=1.15.0",
+    "pydantic-settings>=2.8.1",
+    "pytest>=8.3.5",
     "pytest-cov>=6.0.0",
-    "pytest>=8.3.3",
-    "ruff>=0.7.4",
-    "strawberry-graphql>=0.248.1",
-    "trio>=0.27.0",
-    "uvicorn>=0.32.0",
+    "ruff>=0.9.10",
+    "strawberry-graphql>=0.262.1",
+    "trio>=0.29.0",
+    "uvicorn>=0.34.0",
 ]
 
 [build-system]
@@ -104,6 +104,7 @@ fixable = [
     "PT",
     "TID",
     "COM",
+    "RUF022",
 ]
 unfixable = [
     "F841", # Variable  is assigned to but never used
@@ -112,19 +113,16 @@ ignore = [
     "D",
     "PD", # pandas-vet
     "E501",
-    "ANN101",
-    "ANN102",
     "ANN401",
-    "TCH001",
-    "TCH002",
-    "TCH003",
+    "TC001",
+    "TC002",
+    "TC003",
     "EXE",
     "ISC001", # ruff format conflict
     "COM812", # ruff format conflict
     "TD003", # Missing TODO link
     "FIX002", # TODO in code
 ]
-
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
@@ -135,6 +133,9 @@ ignore = [
     "S101", # assert
     "T201", # print
 ]
+
+[tool.ruff.lint.flake8-builtins]
+builtins-strict-checking = false
 
 [tool.ruff.lint.mccabe]
 max-complexity = 6
@@ -176,3 +177,5 @@ warn_unreachable = true
 pretty = true
 show_column_numbers = true
 show_error_codes = true
+
+

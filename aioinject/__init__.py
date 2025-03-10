@@ -14,6 +14,7 @@ from aioinject.providers import (
 __all__ = [
     "Container",
     "Inject",
+    "Injected",
     "InjectionContext",
     "Object",
     "Provider",
@@ -22,7 +23,6 @@ __all__ = [
     "SyncInjectionContext",
     "Transient",
     "inject",
-    "Injected",
 ]
 
 __version__ = "0.37.4"

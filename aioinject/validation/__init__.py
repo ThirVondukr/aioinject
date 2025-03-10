@@ -24,8 +24,8 @@ DEFAULT_VALIDATORS: Sequence[ContainerValidator] = [
 __all__ = [
     "DEFAULT_VALIDATORS",
     "ContainerValidator",
-    "all_dependencies_are_present",
     "ForbidDependency",
-    "validate_container",
+    "all_dependencies_are_present",
     "all_providers_for_type_have_equal_lifetime",
+    "validate_container",
 ]

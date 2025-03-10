@@ -9,7 +9,7 @@ from aioinject import _utils, decorators
 from aioinject._types import P, T
 
 
-__all__ = ["inject", "AioInjectMiddleware"]
+__all__ = ["AioInjectMiddleware", "inject"]
 
 
 def inject(function: Callable[P, T]) -> Callable[P, T]:
