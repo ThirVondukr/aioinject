@@ -1,3 +1,9 @@
+## 0.38.1 (2025-04-10)
+
+### Fix
+
+- correctly resolve type context types when lazy annotations are used
+
 ## 0.38.0 (2025-03-10)
 
 ### Feat
