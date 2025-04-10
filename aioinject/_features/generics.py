@@ -78,3 +78,9 @@ def get_generic_parameter_map(
             #  We can use `[]` when we drop support for 3.10
             result[dependency.name] = inner_type[resolved_args]
     return result
+
+
+def get_generic_origin(generic: type[object]) -> type[object]:
+    if _is_generic_alias(generic):
+        return t.get_origin(generic)
+    return generic
