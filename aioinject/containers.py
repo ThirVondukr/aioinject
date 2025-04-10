@@ -8,6 +8,7 @@ from typing import Any
 from typing_extensions import Self
 
 from aioinject import _types
+from aioinject._features.generics import get_generic_origin
 from aioinject._store import SingletonStore
 from aioinject._types import T
 from aioinject.context import InjectionContext, SyncInjectionContext
@@ -60,7 +61,7 @@ class Container:
 
         class_name = getattr(provider.type_, "__name__", None)
         if class_name and class_name not in self.type_context:
-            self.type_context[class_name] = provider.type_
+            self.type_context[class_name] = get_generic_origin(provider.type_)
 
     def get_provider(self, type_: type[T]) -> Provider[T]:
         return self.get_providers(type_)[0]

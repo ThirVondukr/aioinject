@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import types
+import typing
 import typing as t
 from types import GenericAlias
 from typing import TYPE_CHECKING, Any, TypeGuard
@@ -78,3 +79,9 @@ def get_generic_parameter_map(
             #  We can use `[]` when we drop support for 3.10
             result[dependency.name] = inner_type[resolved_args]
     return result
+
+
+def get_generic_origin(generic: type[object]) -> type[object]:
+    if _is_generic_alias(generic):
+        return typing.get_origin(generic)
+    return generic
