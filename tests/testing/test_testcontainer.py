@@ -25,7 +25,7 @@ async def test_override() -> None:
     async with (
         container.context() as ctx,
     ):
-        with testcontainer.override(Object(override)):
+        with testcontainer.override_sync(Object(override)):
             assert await ctx.resolve(int) is override
 
     async with container.context() as ctx:
@@ -152,4 +152,31 @@ async def test_should_remove_dependant_objects() -> None:
 
     c = await container.root.resolve(C)
     assert c is not c_mocked
+    assert c.b.a is not a_mock
+
+
+async def test_multiple_overrides() -> None:
+    class A:
+        pass
+
+    @dataclasses.dataclass
+    class B:
+        a: A
+
+    @dataclasses.dataclass
+    class C:
+        b: B
+
+    container = Container()
+    container.register(Singleton(A), Singleton(B), Singleton(C))
+    testcontainer = TestContainer(container)
+
+    a_mock = A()
+    b_mock = B(a_mock)
+    async with testcontainer.override(Object(a_mock), Object(b_mock)):
+        c_mocked = await container.root.resolve(C)
+
+    c = await container.root.resolve(C)
+    assert c is not c_mocked
+    assert c.b is not b_mock
     assert c.b.a is not a_mock
