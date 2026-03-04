@@ -63,9 +63,9 @@ def inject(function: Callable[P, T]) -> Callable[P, T]:
                 name="aioinject__background_tasks", type_=BackgroundTasks
             ),
         ),
-        context_getter=lambda args, kwargs: kwargs[  # noqa: ARG005
-            parameter_name
-        ].state.aioinject_context,
+        context_getter=lambda args, kwargs: (  # noqa: ARG005
+            kwargs[parameter_name].state.aioinject_context
+        ),
     )
 
 

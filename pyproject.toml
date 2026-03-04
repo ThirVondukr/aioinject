@@ -31,8 +31,8 @@ benchmark = [
     "wireup>=2.0.1",
 ]
 dev = [
-    "mypy>=1.17.1",
-    "ruff>=0.12.10",
+    "mypy>=1.19.1",
+    "ruff>=0.15.4",
 ]
 docs = [
     "mkdocs>=1.6.1",

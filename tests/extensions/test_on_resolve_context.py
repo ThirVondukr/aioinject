@@ -66,9 +66,9 @@ async def test_executes_for_each_dependency_in_order(
     async with container.context() as ctx:
         await ctx.resolve(_Service)
         assert extension.provided == [
-            _Singleton,
-            datetime,
             _Repository,
+            datetime,
+            _Singleton,
             _Service,
         ]
 

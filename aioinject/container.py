@@ -14,8 +14,10 @@ from aioinject._compilation import (
     compile_fn,
 )
 from aioinject._compilation.resolve import (
+    create_graph,
+    find_scss,
     resolve_dependencies,
-    sort_nodes,
+    sort_graph,
 )
 from aioinject._internal.type_sources import (
     ClassSource,
@@ -25,7 +27,7 @@ from aioinject._internal.type_sources import (
 )
 from aioinject._types import CompiledFn, SyncCompiledFn, T, get_generic_origin
 from aioinject.context import Context, ProviderRecord, SyncContext
-from aioinject.errors import ProviderNotFoundError
+from aioinject.errors import CyclicDependencyError, ProviderNotFoundError
 from aioinject.extensions import (
     Extension,
     LifespanExtension,
@@ -52,6 +54,7 @@ __all__ = [
     "Registry",
     "SyncContainer",
 ]
+
 
 DEFAULT_EXTENSIONS = (
     ScopedProviderExtension(),
@@ -218,13 +221,25 @@ class Registry:
         key = (type_, is_async)
         if key not in self.compilation_cache:
             nodes = list(resolve_dependencies(root_type=type_, registry=self))
-            nodes.reverse()
-            result = tuple(sort_nodes(nodes))
+            graph = create_graph(nodes)
+            sorted_nodes = list(sort_graph(graph))
+            if not sorted_nodes:
+                components = [c for c in find_scss(graph) if len(c) > 1]
+                formatted = "\n".join(
+                    " - ".join(str(c) for c in component)
+                    for component in components
+                )
+                err_msg = f"Cyclic dependency found between:\n{formatted}"
+                raise CyclicDependencyError(err_msg)
 
+            nodes.sort(
+                key=lambda node: sorted_nodes.index(node.type_),
+                reverse=True,
+            )
             self.compilation_cache[key] = compile_fn(
                 CompilationParams(
-                    root=result[-1],
-                    nodes=result,
+                    root=nodes[-1],
+                    nodes=nodes,
                     scopes=self.scopes,
                 ),
                 registry=self,

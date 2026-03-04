@@ -3,9 +3,9 @@ from __future__ import annotations
 import collections
 import dataclasses
 import typing
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from types import GenericAlias
-from typing import TYPE_CHECKING, Any, Generic
+from typing import TYPE_CHECKING, Any, Generic, TypeAlias, TypeVar
 
 from aioinject._compilation.naming import make_dependency_name
 from aioinject._types import (
@@ -23,6 +23,10 @@ from aioinject.scope import BaseScope, CurrentScope
 if TYPE_CHECKING:
     from aioinject.container import Registry
 from aioinject.extensions.providers import Dependency
+
+
+V = TypeVar("V")
+Graph: TypeAlias = Mapping[V, Sequence[V]]
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)
@@ -322,31 +326,74 @@ def resolve_dependencies(  # noqa: C901
                 typing.assert_never(node)  # type: ignore[unreachable]
 
 
-def sort_nodes(nodes: Sequence[AnyNode]) -> Iterator[AnyNode]:
-    postponed_nodes: dict[AnyNode, int] = collections.defaultdict(int)
-    max_attempts = len(nodes)
-
-    seen_types = set()
-    queue: collections.deque[AnyNode] = collections.deque()
+def create_graph(
+    nodes: Sequence[AnyNode],
+) -> Graph[type[object] | GenericAlias]:
+    graph: dict[
+        type[object] | GenericAlias, list[type[object | GenericAlias]]
+    ] = collections.defaultdict(list)
     for node in nodes:
-        queue.appendleft(node)
+        graph[node.type_].extend(dep.type_ for dep in node.dependencies)
+    return graph
 
-    while queue:
-        node = queue.pop()
 
-        dependencies_satisfied = all(
-            dep.type_ in seen_types for dep in node.dependencies
-        )
-        if not dependencies_satisfied:
-            if postponed_nodes[node] >= max_attempts:
-                msg = (
-                    f"Could not resolve dependencies for type {node.type_}\n"
-                    f"  unresolved dependencies: {[dep.type_ for dep in node.dependencies if dep.type_ not in seen_types]}"
-                )
-                raise ValueError(msg)
-            postponed_nodes[node] += 1
-            queue.insert(max(0, len(queue) - postponed_nodes[node]), node)
-            continue
+def sort_graph(graph: Graph[V]) -> Sequence[V]:  # noqa: C901
+    indegree = collections.defaultdict(int)
+    for node in graph:
+        indegree[node] = 0
+    for dependencies in graph.values():
+        for dependency in dependencies:
+            indegree[dependency] += 1
 
-        yield node
-        seen_types.add(node.type_)
+    result = []
+    stack = collections.deque(
+        [node for (node, degree) in indegree.items() if degree == 0]
+    )
+    while stack:
+        node = stack.popleft()
+        result.append(node)
+        for dependency in graph[node]:
+            indegree[dependency] -= 1
+            if indegree[dependency] == 0:
+                stack.append(dependency)
+    return result
+
+
+def find_scss(graph: Graph[V]) -> Sequence[Sequence[V]]:  # noqa: C901
+    index = {}
+    lowlink = {}
+    stack: list[V] = []
+    on_stack: set[V] = set()
+    result: list[list[V]] = []
+
+    index_counter = 0
+
+    def strongconnect(v: V) -> None:  # noqa: C901
+        nonlocal index_counter
+        index[v] = lowlink[v] = index_counter
+        index_counter += 1
+        stack.append(v)
+        on_stack.add(v)
+
+        for w in graph.get(v, ()):
+            if w not in index:
+                strongconnect(w)
+                lowlink[v] = min(lowlink[v], lowlink[w])
+            elif w in on_stack:
+                lowlink[v] = min(lowlink[v], index[w])
+
+        if lowlink[v] == index[v]:
+            component: list[V] = []
+            while True:
+                w = stack.pop()
+                on_stack.remove(w)
+                component.append(w)
+                if w == v:
+                    break
+            result.append(component)
+
+    for node in graph:
+        if node not in index:
+            strongconnect(node)
+
+    return result

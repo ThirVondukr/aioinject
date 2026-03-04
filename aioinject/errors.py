@@ -8,3 +8,7 @@ class ProviderNotFoundError(Exception):
 
 class ScopeNotFoundError(Exception):
     pass
+
+
+class CyclicDependencyError(Exception):
+    pass

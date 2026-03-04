@@ -51,7 +51,7 @@ async def main() -> None:
         Singleton(SingletonClient),
         Scoped(setup_db_connection),
         Object(42),
-        Transient(lambda: datetime.now(), interface=Now),  # noqa: DTZ005
+        Transient(datetime.now, interface=Now),
         Scoped(Service),
     )
 
