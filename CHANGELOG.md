@@ -1,3 +1,9 @@
+## 1.11.0 (2026-06-02)
+
+### Feat
+
+- improve cyclic dependency detection
+
 ## 1.10.2 (2025-11-18)
 
 ### Fix
