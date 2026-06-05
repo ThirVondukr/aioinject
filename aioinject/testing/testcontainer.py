@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
+from contextlib import (
+    AsyncExitStack,
+    ExitStack,
+    asynccontextmanager,
+    contextmanager,
+)
 from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
@@ -123,5 +129,22 @@ class TestContainer:
     def __init__(self, container: Container | SyncContainer) -> None:
         self.container = container
 
-    def override(self, provider: Provider[Any]) -> _Override:
-        return _Override(self.container, provider)
+    @asynccontextmanager
+    async def override(self, *providers: Provider[Any]) -> AsyncIterator[None]:
+        overrides = [
+            _Override(self.container, provider) for provider in providers
+        ]
+        async with AsyncExitStack() as exitstack:
+            for override in overrides:
+                await exitstack.enter_async_context(override)
+            yield
+
+    @contextmanager
+    def override_sync(self, *providers: Provider[Any]) -> Iterator[None]:
+        overrides = [
+            _Override(self.container, provider) for provider in providers
+        ]
+        with ExitStack() as exitstack:
+            for override in overrides:
+                exitstack.enter_context(override)
+            yield
