@@ -173,14 +173,12 @@ def _resolve_provider_node_dependencies(
         resolved_type = (
             dependency_args_map.get(
                 provider_dependency.name,
-                dependency_type
-                if is_generic_alias(dependency_type)
-                else dependency_provider.info.type_,
+                dependency_provider.info.type_,
             )
             if not is_iterable
             else dependency_type
         )
-        variable_name = make_dependency_name(resolved_type)  # type: ignore[arg-type]
+        variable_name = make_dependency_name(resolved_type)
 
         if isinstance(dependency_provider.provider, Transient):
             variable_name = (
@@ -197,7 +195,7 @@ def _resolve_provider_node_dependencies(
         dependency = BoundDependency(
             variable_name=variable_name,
             name=provider_dependency.name,
-            type_=resolved_type,  # type: ignore[arg-type]
+            type_=resolved_type,
             provider=dependency_provider,
         )
         dependencies.append(dependency)
